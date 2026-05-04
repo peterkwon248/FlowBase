@@ -310,20 +310,14 @@ function Cell({ field, value }: CellProps) {
           </Tooltip>
         )
       }
-      // Channel field - icon only with tooltip
+      // Channel field - icon + text
       if (field.name === "channel") {
         const channel = String(value)
         return (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="inline-flex items-center justify-center w-6 h-6 rounded hover:bg-foreground/5 transition-colors cursor-default">
-                <ChannelIcon channel={channel} />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="top" sideOffset={4}>
-              채널: {channel}
-            </TooltipContent>
-          </Tooltip>
+          <div className="inline-flex items-center gap-1.5">
+            <ChannelIcon channel={channel} />
+            <span className="text-sm text-muted-foreground">{channel}</span>
+          </div>
         )
       }
       // Other select fields (tier, etc.)
