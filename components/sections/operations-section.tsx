@@ -3,16 +3,29 @@
 
 import { useMemo, useState } from "react"
 import {
+  AlertCircle,
   Calendar,
   Check,
   ChevronDown,
+  Circle,
+  CircleCheck,
+  CircleDashed,
+  CircleDot,
+  Clock,
   Filter,
+  Flame,
   LayoutGrid,
   List,
+  Minus,
   MoreHorizontal,
   Plus,
   Search,
+  Signal,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
   Sparkles,
+  User,
   X,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -63,6 +76,36 @@ const PRIORITY_ORDER: Record<TicketPriority, number> = {
   High: 1,
   Med: 2,
   Low: 3,
+}
+
+// Status icons - Linear style
+function StatusIcon({ status, className }: { status: TicketStatus; className?: string }) {
+  const iconClass = cn("w-4 h-4", className)
+  switch (status) {
+    case "미처리":
+      return <CircleDashed className={iconClass} strokeWidth={1.5} />
+    case "진행중":
+      return <CircleDot className={iconClass} strokeWidth={1.5} />
+    case "대기":
+      return <Clock className={iconClass} strokeWidth={1.5} />
+    case "완료":
+      return <CircleCheck className={iconClass} strokeWidth={1.5} />
+  }
+}
+
+// Priority icons - signal bars style
+function PriorityIcon({ priority, className }: { priority: TicketPriority; className?: string }) {
+  const iconClass = cn("w-3.5 h-3.5", className)
+  switch (priority) {
+    case "Urgent":
+      return <Flame className={iconClass} strokeWidth={1.5} />
+    case "High":
+      return <SignalHigh className={iconClass} strokeWidth={1.5} />
+    case "Med":
+      return <SignalMedium className={iconClass} strokeWidth={1.5} />
+    case "Low":
+      return <SignalLow className={iconClass} strokeWidth={1.5} />
+  }
 }
 
 export function OperationsSection() {
@@ -233,24 +276,33 @@ export function OperationsSection() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-3 p-4 bg-surface border-b border-border/60">
-        {stats.map((stat) => (
-          <Card key={stat.label} className="py-0 border-border/60">
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground font-medium">
-                  {stat.label}
-                </span>
-                <span
-                  className={cn("text-xl font-semibold tabular-nums", stat.tone)}
-                >
-                  {stat.value}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Stats - Status tabs with icons */}
+      <div className="flex items-center gap-1 px-4 py-2 bg-surface border-b border-border/60">
+        {STATUSES.map((status) => {
+          const count = counts[status]
+          const isActive = count > 0
+          return (
+            <button
+              key={status}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
+                "hover:bg-foreground/5",
+                isActive ? "text-foreground" : "text-muted-foreground"
+              )}
+            >
+              <StatusIcon status={status} className={statusColorClass(status)} />
+              <span className="font-medium">{status}</span>
+              <span className={cn(
+                "min-w-[20px] h-5 px-1.5 rounded-full text-xs font-medium flex items-center justify-center tabular-nums",
+                count > 0 
+                  ? cn("bg-foreground/10", statusColorClass(status))
+                  : "bg-muted text-muted-foreground"
+              )}>
+                {count}
+              </span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Content */}
@@ -316,12 +368,7 @@ function KanbanView({ tickets, customerById, agentById, onSelect }: ViewProps) {
           <div key={status} className="flex flex-col min-h-0">
             <div className="flex items-center justify-between mb-2.5">
               <div className="flex items-center gap-2">
-                <span
-                  className={cn(
-                    "w-2 h-2 rounded-full",
-                    toneDotClassDual(STATUS_TONE[status]),
-                  )}
-                />
+                <StatusIcon status={status} className={statusColorClass(status)} />
                 <span className="font-medium text-sm">{status}</span>
                 <span className="text-xs text-muted-foreground tabular-nums">
                   {items.length}
@@ -372,22 +419,14 @@ function TicketCard({ ticket, customer, assignee, onSelect }: TicketCardProps) {
       onClick={onSelect}
     >
       <CardContent className="p-3 space-y-2">
-        {/* Priority dot + ID */}
-        <div className="flex items-center gap-2">
-          <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", priorityDotClass(ticket.priority))} />
-          <code className="text-[10px] font-mono text-muted-foreground">
-            {ticket.id}
-          </code>
-        </div>
-        {/* Subject */}
-        <div className="text-sm font-medium leading-snug">
-          {ticket.subject}
-        </div>
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-1">
-          <span className="text-xs text-muted-foreground truncate">
-            {customer?.name} · {customer?.company}
-          </span>
+        {/* Priority icon + ID */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <PriorityIcon priority={ticket.priority} className={priorityDotClass(ticket.priority).replace("bg-", "text-")} />
+            <code className="text-[10px] font-mono text-muted-foreground">
+              {ticket.id}
+            </code>
+          </div>
           {assignee ? (
             <Avatar className="size-5">
               <AvatarFallback className="text-[10px] bg-muted">
@@ -395,8 +434,24 @@ function TicketCard({ ticket, customer, assignee, onSelect }: TicketCardProps) {
               </AvatarFallback>
             </Avatar>
           ) : (
-            <span className="text-[10px] text-muted-foreground">미지정</span>
+            <div className="size-5 rounded-full border border-dashed border-border flex items-center justify-center">
+              <User className="w-2.5 h-2.5 text-muted-foreground" strokeWidth={1.5} />
+            </div>
           )}
+        </div>
+        {/* Subject */}
+        <div className="text-sm font-medium leading-snug">
+          {ticket.subject}
+        </div>
+        {/* Footer */}
+        <div className="flex items-center gap-1.5 pt-0.5">
+          <span className="text-xs text-muted-foreground truncate">
+            {customer?.name}
+          </span>
+          <span className="text-muted-foreground/40">·</span>
+          <span className="text-xs text-muted-foreground truncate">
+            {customer?.company}
+          </span>
         </div>
       </CardContent>
     </Card>
@@ -429,15 +484,13 @@ function ListView({ tickets, customerById, agentById, onSelect }: ViewProps) {
             )}
           >
             <CardContent className="p-3 flex items-center gap-3">
-              {/* Priority dot */}
-              <div className="flex flex-col items-center gap-1 w-12 shrink-0">
-                <span
-                  className={cn(
-                    "w-2 h-2 rounded-full",
-                    priorityDotClass(tk.priority),
-                  )}
+              {/* Priority icon */}
+              <div className="flex flex-col items-center gap-0.5 w-10 shrink-0">
+                <PriorityIcon 
+                  priority={tk.priority} 
+                  className={priorityDotClass(tk.priority).replace("bg-", "text-")} 
                 />
-                <span className="text-[10px] font-medium text-muted-foreground">{tk.priority}</span>
+                <span className="text-[9px] font-medium text-muted-foreground">{tk.priority}</span>
               </div>
               {/* Content */}
               <div className="flex-1 min-w-0">
@@ -453,19 +506,20 @@ function ListView({ tickets, customerById, agentById, onSelect }: ViewProps) {
                   <span>
                     {c?.name} · {c?.company}
                   </span>
-                  <span>·</span>
+                  <span className="text-muted-foreground/40">·</span>
                   <span>{tk.channel}</span>
-                  <span>·</span>
+                  <span className="text-muted-foreground/40">·</span>
                   <span className={cn(stale && "text-destructive font-medium")}>
                     {age}시간 경과
                   </span>
                 </div>
               </div>
-              {/* Status badge */}
+              {/* Status badge with icon */}
               <Badge
                 variant="outline"
-                className={cn("font-medium text-xs", toneBadgeClassDual(STATUS_TONE[tk.status]))}
+                className={cn("font-medium text-xs gap-1", toneBadgeClassDual(STATUS_TONE[tk.status]))}
               >
+                <StatusIcon status={tk.status} className="w-3 h-3" />
                 {tk.status}
               </Badge>
               {/* Assignee */}

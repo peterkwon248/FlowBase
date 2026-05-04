@@ -6,16 +6,26 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  AtSign,
+  Calendar,
   Check,
   ChevronDown,
   Copy,
   Download,
+  FileText,
   Filter,
+  Hash,
+  Key,
+  Link,
+  List,
   MoreHorizontal,
   Pencil,
+  Phone,
   Plus,
   Search,
+  ToggleLeft,
   Trash2,
+  Type,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -65,6 +75,35 @@ import { toneBadgeClassDual } from "@/lib/tokens"
 
 type AnyRow = Customer | Ticket | Agent | Note
 type SortDir = "asc" | "desc"
+
+// Field type icons for table columns
+function FieldTypeIcon({ type, className }: { type: FieldType; className?: string }) {
+  const iconClass = cn("w-3.5 h-3.5 text-muted-foreground", className)
+  switch (type) {
+    case "uuid":
+      return <Key className={iconClass} strokeWidth={1.5} />
+    case "string":
+      return <Type className={iconClass} strokeWidth={1.5} />
+    case "email":
+      return <AtSign className={iconClass} strokeWidth={1.5} />
+    case "phone":
+      return <Phone className={iconClass} strokeWidth={1.5} />
+    case "text":
+      return <FileText className={iconClass} strokeWidth={1.5} />
+    case "number":
+      return <Hash className={iconClass} strokeWidth={1.5} />
+    case "datetime":
+      return <Calendar className={iconClass} strokeWidth={1.5} />
+    case "select":
+      return <List className={iconClass} strokeWidth={1.5} />
+    case "status":
+      return <ToggleLeft className={iconClass} strokeWidth={1.5} />
+    case "fk":
+      return <Link className={iconClass} strokeWidth={1.5} />
+    default:
+      return <Type className={iconClass} strokeWidth={1.5} />
+  }
+}
 
 const TABLE_DATA: Record<string, AnyRow[]> = {
   customers: CUSTOMERS,
@@ -219,9 +258,10 @@ function Th({ field, sort, onSort }: ThProps) {
     >
       <button
         onClick={() => onSort(field.name)}
-        className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+        className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
       >
-        {field.name}
+        <FieldTypeIcon type={field.type} className={active ? "text-foreground" : ""} />
+        <span>{field.name}</span>
         <ArrowIcon className="w-3 h-3" strokeWidth={1.5} />
       </button>
     </th>

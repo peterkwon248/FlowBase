@@ -4,17 +4,27 @@
 import { useCallback, useMemo, useRef, useState } from "react"
 import {
   AlignStartVertical,
+  AtSign,
+  Calendar,
   Check,
   ChevronDown,
   ClipboardCopy,
   Columns3,
   FileCode,
+  FileText,
+  Hash,
+  Key,
+  Link,
   Link2,
+  List,
   Maximize2,
   MousePointer2,
   Move,
   Network,
+  Phone,
   Plus,
+  ToggleLeft,
+  Type,
   ZoomIn,
   ZoomOut,
 } from "lucide-react"
@@ -90,6 +100,35 @@ const SNAP_POSITIONS: Record<string, { x: number; y: number }> = {
 
 function cardHeight(table: TableNode): number {
   return CARD_HEADER_HEIGHT + table.fields.length * FIELD_ROW_HEIGHT + CARD_BODY_PADDING
+}
+
+// Field type icons for ER diagram
+function FieldTypeIcon({ type, className }: { type: Field["type"]; className?: string }) {
+  const iconClass = cn("w-3 h-3 text-muted-foreground shrink-0", className)
+  switch (type) {
+    case "uuid":
+      return <Key className={iconClass} strokeWidth={1.5} />
+    case "string":
+      return <Type className={iconClass} strokeWidth={1.5} />
+    case "email":
+      return <AtSign className={iconClass} strokeWidth={1.5} />
+    case "phone":
+      return <Phone className={iconClass} strokeWidth={1.5} />
+    case "text":
+      return <FileText className={iconClass} strokeWidth={1.5} />
+    case "number":
+      return <Hash className={iconClass} strokeWidth={1.5} />
+    case "datetime":
+      return <Calendar className={iconClass} strokeWidth={1.5} />
+    case "select":
+      return <List className={iconClass} strokeWidth={1.5} />
+    case "status":
+      return <ToggleLeft className={iconClass} strokeWidth={1.5} />
+    case "fk":
+      return <Link className={iconClass} strokeWidth={1.5} />
+    default:
+      return <Type className={iconClass} strokeWidth={1.5} />
+  }
 }
 
 interface BezierResult {
@@ -700,32 +739,35 @@ function SchemaLens({
               </span>
             </div>
             <div className="p-1.5">
-              {table.fields.map((field) => (
-                <div
-                  key={field.name}
-                  className="flex items-center justify-between px-2 py-1 text-sm hover:bg-foreground/[0.02] dark:hover:bg-foreground/[0.04] rounded"
-                >
-                  <span
-                    className={cn(
-                      "font-mono text-xs",
-                      field.pk && "font-medium text-foreground",
-                    )}
-                  >
-                    {field.name}
-                    {field.required && !field.pk && (
-                      <span className="text-destructive"> *</span>
-                    )}
-                  </span>
-                  <span
-                    className={cn(
-                      "text-[10px] px-1.5 py-0.5 rounded font-mono",
-                      fieldKindClass(field),
-                    )}
-                  >
-                    {fieldKindLabel(field)}
-                  </span>
-                </div>
-              ))}
+  {table.fields.map((field) => (
+    <div
+      key={field.name}
+      className="flex items-center justify-between px-2 py-1 text-sm hover:bg-foreground/[0.02] dark:hover:bg-foreground/[0.04] rounded"
+    >
+      <div className="flex items-center gap-1.5">
+        <FieldTypeIcon type={field.type} />
+        <span
+          className={cn(
+            "font-mono text-xs",
+            field.pk && "font-medium text-foreground",
+          )}
+        >
+          {field.name}
+          {field.required && !field.pk && (
+            <span className="text-destructive"> *</span>
+          )}
+        </span>
+      </div>
+      <span
+        className={cn(
+          "text-[10px] px-1.5 py-0.5 rounded font-mono",
+          fieldKindClass(field),
+        )}
+      >
+        {fieldKindLabel(field)}
+      </span>
+    </div>
+  ))}
             </div>
           </Card>
         ))}
@@ -803,6 +845,7 @@ function FieldsLens({ tables, activeTableId, onSelect }: FieldsLensProps) {
                   className="flex items-center justify-between px-3 py-1.5 text-sm border-b border-border/40 last:border-0"
                 >
                   <div className="flex items-center gap-2">
+                    <FieldTypeIcon type={field.type} />
                     <span
                       className={cn(
                         "text-[10px] px-1.5 py-0.5 rounded font-mono",
