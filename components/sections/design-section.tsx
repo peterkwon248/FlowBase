@@ -32,6 +32,11 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
   RELATIONS as INITIAL_RELATIONS,
   SCHEMA as INITIAL_SCHEMA,
   type ChartColor,
@@ -256,33 +261,54 @@ export function DesignSection() {
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center bg-secondary rounded-md p-0.5 border border-border/60">
-            <Button
-              variant={activeTool === "select" ? "default" : "ghost"}
-              size="icon-sm"
-              aria-label="선택"
-              onClick={() => setActiveTool("select")}
-              className="h-7 w-7"
-            >
-              <MousePointer2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-            </Button>
-            <Button
-              variant={activeTool === "move" ? "default" : "ghost"}
-              size="icon-sm"
-              aria-label="이동"
-              onClick={() => setActiveTool("move")}
-              className="h-7 w-7"
-            >
-              <Move className="w-3.5 h-3.5" strokeWidth={1.5} />
-            </Button>
-            <Button
-              variant={activeTool === "connect" ? "default" : "ghost"}
-              size="icon-sm"
-              aria-label="연결"
-              onClick={() => setActiveTool("connect")}
-              className="h-7 w-7"
-            >
-              <Link2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={activeTool === "select" ? "default" : "ghost"}
+                  size="icon-sm"
+                  aria-label="선택"
+                  onClick={() => setActiveTool("select")}
+                  className="h-7 w-7"
+                >
+                  <MousePointer2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={8}>
+                선택 도구 - 노드 클릭하여 선택
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={activeTool === "move" ? "default" : "ghost"}
+                  size="icon-sm"
+                  aria-label="이동"
+                  onClick={() => setActiveTool("move")}
+                  className="h-7 w-7"
+                >
+                  <Move className="w-3.5 h-3.5" strokeWidth={1.5} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={8}>
+                이동 도구 - 드래그하여 노드 위치 이동
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={activeTool === "connect" ? "default" : "ghost"}
+                  size="icon-sm"
+                  aria-label="연결"
+                  onClick={() => setActiveTool("connect")}
+                  className="h-7 w-7"
+                >
+                  <Link2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={8}>
+                연결 도구 - 테이블 간 관계 생성
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           <div className="w-px h-5 bg-border/60" />

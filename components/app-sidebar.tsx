@@ -75,7 +75,11 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
       {/* Quick Actions - tight spacing */}
       {!collapsed && (
         <div className="px-2 py-2 space-y-1">
-          <Button className="w-full justify-start gap-2 h-8 text-sm font-medium" size="sm">
+          <Button 
+            className="w-full justify-start gap-2 h-8 text-sm font-medium" 
+            size="sm"
+            onClick={() => onSectionChange("workspaces")}
+          >
             <Plus className="w-4 h-4" strokeWidth={1.5} />
             새 워크스페이스
           </Button>
@@ -131,11 +135,16 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
             </div>
             <div className="mt-1.5 space-y-0.5">
               <button
-                onClick={() => console.log("navigate /dashboard")}
-                className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-foreground/5 transition-colors"
+                onClick={() => onSectionChange("workspaces")}
+                className={cn(
+                  "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm transition-colors",
+                  activeSection === "workspaces"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground hover:bg-foreground/5"
+                )}
               >
                 <BarChart3 className="w-4 h-4 shrink-0" strokeWidth={1.5} />
-                <span className="flex-1 text-left">대시보드</span>
+                <span className="flex-1 text-left">워크스페이스 관리</span>
               </button>
             </div>
           </>
@@ -193,7 +202,7 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-sidebar-foreground hover:bg-foreground/5"
-              onClick={() => console.log("navigate /settings")}
+              onClick={() => onSectionChange("settings")}
             >
               <Settings className="w-4 h-4" strokeWidth={1.5} />
             </Button>
@@ -201,7 +210,7 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-sidebar-foreground hover:bg-foreground/5 relative"
-              onClick={() => console.log("navigate /trash")}
+              onClick={() => onSectionChange("trash")}
             >
               <Trash2 className="w-4 h-4" strokeWidth={1.5} />
               {TRASH_ITEMS.length > 0 && (
