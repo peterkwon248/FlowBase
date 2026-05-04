@@ -19,6 +19,8 @@ import {
   Key,
   Link,
   List,
+  Mail,
+  MessageCircle,
   MoreHorizontal,
   Pencil,
   Phone,
@@ -120,6 +122,33 @@ function PriorityIcon({ priority, className }: { priority: TicketPriority; class
     case "Low":
       return <SignalLow className={iconClass} strokeWidth={1.5} />
   }
+}
+
+// Channel icons - known channels get icons, custom channels get first letter
+const CHANNEL_ICONS: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
+  Email: Mail,
+  Phone: Phone,
+  Chat: MessageCircle,
+}
+
+function ChannelIcon({ channel, className }: { channel: string; className?: string }) {
+  const IconComponent = CHANNEL_ICONS[channel]
+  const iconClass = cn("w-4 h-4 text-muted-foreground", className)
+  
+  if (IconComponent) {
+    return <IconComponent className={iconClass} strokeWidth={1.5} />
+  }
+  
+  // Custom channel - show first letter in a circle
+  const firstChar = channel.charAt(0).toUpperCase()
+  return (
+    <div className={cn(
+      "w-4 h-4 rounded-full bg-muted flex items-center justify-center text-[9px] font-medium text-muted-foreground",
+      className
+    )}>
+      {firstChar}
+    </div>
+  )
 }
 
 // Field type icons for table columns
@@ -277,6 +306,22 @@ function Cell({ field, value }: CellProps) {
             </TooltipTrigger>
             <TooltipContent side="top" sideOffset={4}>
               우선순위: {priority}
+            </TooltipContent>
+          </Tooltip>
+        )
+      }
+      // Channel field - icon only with tooltip
+      if (field.name === "channel") {
+        const channel = String(value)
+        return (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="inline-flex items-center justify-center w-6 h-6 rounded hover:bg-foreground/5 transition-colors cursor-default">
+                <ChannelIcon channel={channel} />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={4}>
+              채널: {channel}
             </TooltipContent>
           </Tooltip>
         )
