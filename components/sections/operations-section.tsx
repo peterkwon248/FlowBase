@@ -7,27 +7,31 @@ import {
   Calendar,
   Check,
   ChevronDown,
-  Circle,
-  CircleCheck,
-  CircleDashed,
-  CircleDot,
-  Clock,
   Filter,
   Flame,
+  GitBranch,
   LayoutGrid,
+  Lightbulb,
   List,
-  Minus,
   MoreHorizontal,
   Plus,
   Search,
-  Signal,
   SignalHigh,
   SignalLow,
   SignalMedium,
   Sparkles,
   User,
+  Wand2,
   X,
+  Zap,
 } from "lucide-react"
+import {
+  Circle,
+  CircleDashed,
+  CircleHalf,
+  CircleNotch,
+  CheckCircle,
+} from "@phosphor-icons/react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -78,18 +82,18 @@ const PRIORITY_ORDER: Record<TicketPriority, number> = {
   Low: 3,
 }
 
-// Status icons - Linear style
+// Status icons - Linear style using Phosphor
 function StatusIcon({ status, className }: { status: TicketStatus; className?: string }) {
   const iconClass = cn("w-4 h-4", className)
   switch (status) {
     case "미처리":
-      return <CircleDashed className={iconClass} strokeWidth={1.5} />
+      return <CircleDashed className={iconClass} weight="bold" />
     case "진행중":
-      return <CircleDot className={iconClass} strokeWidth={1.5} />
+      return <CircleHalf className={iconClass} weight="fill" />
     case "대기":
-      return <Clock className={iconClass} strokeWidth={1.5} />
+      return <CircleNotch className={iconClass} weight="bold" />
     case "완료":
-      return <CircleCheck className={iconClass} strokeWidth={1.5} />
+      return <CheckCircle className={iconClass} weight="fill" />
   }
 }
 
@@ -271,7 +275,7 @@ export function OperationsSection() {
           )}
           <Button size="sm" className="gap-1.5 h-8 text-sm">
             <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
-            티켓 추가
+            작업 추가
           </Button>
         </div>
       </div>
@@ -561,6 +565,21 @@ interface SuggestionRailProps {
   onHide: () => void
 }
 
+// Suggestion kind icons
+function SuggestionKindIcon({ kind, className }: { kind: string; className?: string }) {
+  const iconClass = cn("w-3.5 h-3.5", className)
+  switch (kind) {
+    case "구조":
+      return <Zap className={iconClass} strokeWidth={1.5} />
+    case "정리":
+      return <Wand2 className={iconClass} strokeWidth={1.5} />
+    case "관계":
+      return <GitBranch className={iconClass} strokeWidth={1.5} />
+    default:
+      return <Lightbulb className={iconClass} strokeWidth={1.5} />
+  }
+}
+
 function SuggestionRail({
   suggestions,
   onDismiss,
@@ -570,7 +589,7 @@ function SuggestionRail({
     <aside className="w-72 shrink-0 border-l border-border/60 bg-surface overflow-y-auto">
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/60">
         <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+          <Sparkles className="w-4 h-4 text-primary" strokeWidth={1.5} />
           <span className="font-medium text-sm">자동화 추천</span>
           <Badge variant="secondary" className="font-mono text-[10px] h-5 px-1.5">
             {suggestions.length}
@@ -590,9 +609,12 @@ function SuggestionRail({
         {suggestions.map((s) => (
           <Card key={s.id} className="py-0 border-border/60">
             <CardContent className="p-3 space-y-2">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                {s.kind}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <SuggestionKindIcon kind={s.kind} className="text-muted-foreground" />
+                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  {s.kind}
+                </span>
+              </div>
               <div className="text-sm font-medium leading-snug">{s.title}</div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {s.body}
