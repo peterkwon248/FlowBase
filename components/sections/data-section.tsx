@@ -6,6 +6,8 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Check,
+  ChevronDown,
   Copy,
   Download,
   Filter,
@@ -25,6 +27,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+  WORKSPACES,
+  ACTIVE_WORKSPACE_ID,
+  getActiveWorkspace,
+  workspaceColorDotClass,
+} from "@/lib/mock-workspaces"
 import {
   AGENTS,
   CUSTOMERS,
@@ -330,6 +343,45 @@ export function DataSection() {
         {/* Toolbar */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 bg-surface">
           <div className="flex items-center gap-3">
+            {/* Workspace Selector */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-foreground/5 transition-colors">
+                  <span
+                    className={cn(
+                      "w-2 h-2 rounded-full shrink-0",
+                      workspaceColorDotClass(getActiveWorkspace()?.color ?? "blue")
+                    )}
+                  />
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {getActiveWorkspace()?.name ?? "워크스페이스"}
+                  </span>
+                  <ChevronDown className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-56 p-0" sideOffset={4}>
+                <div className="py-1 max-h-60 overflow-y-auto">
+                  {WORKSPACES.filter(w => !w.archived).map((ws) => {
+                    const isActive = ws.id === ACTIVE_WORKSPACE_ID
+                    return (
+                      <button
+                        key={ws.id}
+                        onClick={() => console.log("switch workspace:", ws.id)}
+                        className={cn(
+                          "w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-foreground/5 transition-colors",
+                          isActive && "bg-foreground/[0.03]"
+                        )}
+                      >
+                        <span className={cn("w-2 h-2 rounded-full shrink-0", workspaceColorDotClass(ws.color))} />
+                        <span className={cn("text-sm flex-1", isActive && "font-semibold")}>{ws.name}</span>
+                        {isActive && <Check className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />}
+                      </button>
+                    )
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+            <span className="text-muted-foreground/40">/</span>
             <h2 className="text-base font-semibold">{table?.label}</h2>
             <span className="text-xs text-muted-foreground tabular-nums">
               {rows.length}개 / 전체 {data.length}개
