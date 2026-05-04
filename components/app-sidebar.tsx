@@ -11,7 +11,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Search,
   Upload,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -88,20 +87,6 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
             <Upload className="w-4 h-4" strokeWidth={1.5} />
             CSV 업로드
           </Button>
-        </div>
-      )}
-
-      {/* Search - minimal */}
-      {!collapsed && (
-        <div className="px-2 pb-2">
-          <div className="flex items-center gap-2 px-2.5 py-1.5 bg-sidebar-accent/50 rounded-md border border-sidebar-border/40">
-            <Search className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
-            <input
-              type="text"
-              placeholder="검색..."
-              className="bg-transparent border-none outline-none text-sm flex-1 text-sidebar-foreground placeholder:text-muted-foreground"
-            />
-          </div>
         </div>
       )}
 
