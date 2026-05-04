@@ -14,6 +14,7 @@ import {
   Download,
   FileText,
   Filter,
+  Flame,
   Hash,
   Key,
   Link,
@@ -23,10 +24,25 @@ import {
   Phone,
   Plus,
   Search,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
   ToggleLeft,
   Trash2,
   Type,
 } from "lucide-react"
+import {
+  Circle,
+  CircleDashed,
+  CircleHalf,
+  CircleNotch,
+  CheckCircle,
+} from "@phosphor-icons/react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -71,10 +87,40 @@ import {
   getAgentName,
   getCustomerName,
 } from "@/lib/mock-data"
-import { toneBadgeClassDual } from "@/lib/tokens"
+import { toneBadgeClassDual, statusColorClass, statusBgClass, priorityTextClass } from "@/lib/tokens"
 
 type AnyRow = Customer | Ticket | Agent | Note
 type SortDir = "asc" | "desc"
+
+// Status icons - Linear style using Phosphor
+function StatusIcon({ status, className }: { status: TicketStatus; className?: string }) {
+  const iconClass = cn("w-4 h-4", statusColorClass(status), className)
+  switch (status) {
+    case "미처리":
+      return <CircleDashed className={iconClass} weight="bold" />
+    case "진행중":
+      return <CircleHalf className={iconClass} weight="fill" />
+    case "대기":
+      return <CircleNotch className={iconClass} weight="bold" />
+    case "완료":
+      return <CheckCircle className={iconClass} weight="fill" />
+  }
+}
+
+// Priority icons - signal bars style
+function PriorityIcon({ priority, className }: { priority: TicketPriority; className?: string }) {
+  const iconClass = cn("w-4 h-4", priorityTextClass(priority), className)
+  switch (priority) {
+    case "Urgent":
+      return <Flame className={iconClass} strokeWidth={1.5} />
+    case "High":
+      return <SignalHigh className={iconClass} strokeWidth={1.5} />
+    case "Med":
+      return <SignalMedium className={iconClass} strokeWidth={1.5} />
+    case "Low":
+      return <SignalLow className={iconClass} strokeWidth={1.5} />
+  }
+}
 
 // Field type icons for table columns
 function FieldTypeIcon({ type, className }: { type: FieldType; className?: string }) {
@@ -199,18 +245,45 @@ function Cell({ field, value }: CellProps) {
       )
     }
     case "status": {
-      const tone: Tone = STATUS_TONE[value as TicketStatus] ?? "muted"
+      const status = value as TicketStatus
       return (
-        <Badge variant="outline" className={cn("font-medium text-xs", toneBadgeClassDual(tone))}>
-          {String(value)}
-        </Badge>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={cn(
+              "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium",
+              statusBgClass(status),
+              statusColorClass(status)
+            )}>
+              <StatusIcon status={status} className="w-3.5 h-3.5" />
+              <span>{status}</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top" sideOffset={4}>
+            상태: {status}
+          </TooltipContent>
+        </Tooltip>
       )
     }
     case "select": {
-      let tone: Tone = "muted"
+      // Priority field - icon only with tooltip
       if (field.name === "priority") {
-        tone = PRIORITY_TONE[value as TicketPriority] ?? "muted"
-      } else if (field.name === "tier") {
+        const priority = value as TicketPriority
+        return (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="inline-flex items-center justify-center w-6 h-6 rounded hover:bg-foreground/5 transition-colors cursor-default">
+                <PriorityIcon priority={priority} />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={4}>
+              우선순위: {priority}
+            </TooltipContent>
+          </Tooltip>
+        )
+      }
+      // Other select fields (tier, etc.)
+      let tone: Tone = "muted"
+      if (field.name === "tier") {
         tone = TIER_TONE[value as CustomerTier] ?? "muted"
       }
       return (
