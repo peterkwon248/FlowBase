@@ -12,7 +12,9 @@ import {
   ChevronRight,
   Plus,
   Upload,
+  Trash2,
 } from "lucide-react"
+import { TRASH_ITEMS } from "@/lib/mock-trash"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -151,23 +153,43 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
 
       {/* Footer - compact */}
       <div className="px-2 py-2 border-t border-sidebar-border/60">
-        <div className={cn("flex items-center", collapsed ? "justify-center" : "justify-between")}>
-          {!collapsed && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-sidebar-foreground hover:bg-foreground/5">
-              <Settings className="w-4 h-4" strokeWidth={1.5} />
-            </Button>
-          )}
-          <ThemeToggle />
-          {collapsed && (
+        <div className={cn("flex items-center", collapsed ? "justify-center gap-1" : "justify-between")}>
+          <div className="flex items-center gap-0.5">
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-sidebar-foreground hover:bg-foreground/5"
-              onClick={() => setCollapsed(false)}
+              onClick={() => console.log("navigate /settings")}
             >
-              <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
+              <Settings className="w-4 h-4" strokeWidth={1.5} />
             </Button>
-          )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-sidebar-foreground hover:bg-foreground/5 relative"
+              onClick={() => console.log("navigate /trash")}
+            >
+              <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+              {TRASH_ITEMS.length > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-1 text-[9px] font-medium bg-primary text-primary-foreground rounded-full flex items-center justify-center tabular-nums">
+                  {TRASH_ITEMS.length > 9 ? "9+" : TRASH_ITEMS.length}
+                </span>
+              )}
+            </Button>
+          </div>
+          <div className="flex items-center gap-0.5">
+            <ThemeToggle />
+            {collapsed && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-sidebar-foreground hover:bg-foreground/5"
+                onClick={() => setCollapsed(false)}
+              >
+                <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </aside>

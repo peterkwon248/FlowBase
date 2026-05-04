@@ -249,7 +249,7 @@ export function DesignSection() {
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 bg-surface">
         <div className="flex items-center gap-3">
-          <h2 className="text-base font-semibold">차트 설계</h2>
+          <h2 className="text-base font-semibold">스키마 설계</h2>
           <span className="text-xs text-muted-foreground">
             테이블과 관계를 시각적으로 설계하세요
           </span>
