@@ -1,17 +1,37 @@
+// visual: Linear-style operations — cards 6px rounded, priority as left dot, subtle shadows
 "use client"
 
 import { useMemo, useState } from "react"
 import {
+  AlertCircle,
   Calendar,
+  Check,
+  ChevronDown,
   Filter,
+  Flame,
+  GitBranch,
   LayoutGrid,
+  Lightbulb,
   List,
   MoreHorizontal,
   Plus,
   Search,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
   Sparkles,
+  User,
+  Wand2,
   X,
+  Zap,
 } from "lucide-react"
+import {
+  Circle,
+  CircleDashed,
+  CircleHalf,
+  CircleNotch,
+  CheckCircle,
+} from "@phosphor-icons/react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,7 +44,18 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import {
+  WORKSPACES,
+  ACTIVE_WORKSPACE_ID,
+  getActiveWorkspace,
+  workspaceColorDotClass,
+} from "@/lib/mock-workspaces"
 import {
   AGENTS,
   CUSTOMERS,
@@ -39,9 +70,8 @@ import {
   type TicketPriority,
   type TicketStatus,
   ageInHours,
-  toneBadgeClass,
-  toneDotClass,
 } from "@/lib/mock-data"
+import { toneBadgeClassDual, toneDotClassDual, priorityDotClass, priorityTextClass, statusColorClass, statusBgClass } from "@/lib/tokens"
 
 type ViewMode = "kanban" | "list"
 
@@ -52,11 +82,34 @@ const PRIORITY_ORDER: Record<TicketPriority, number> = {
   Low: 3,
 }
 
-const STATS_TONE: Record<TicketStatus, string> = {
-  미처리: "text-destructive",
-  진행중: "text-primary",
-  대기: "text-warning-foreground",
-  완료: "text-success",
+// Status icons - Linear style using Phosphor
+function StatusIcon({ status, className }: { status: TicketStatus; className?: string }) {
+  const iconClass = cn("w-4 h-4", className)
+  switch (status) {
+    case "미처리":
+      return <CircleDashed className={iconClass} weight="bold" />
+    case "진행중":
+      return <CircleHalf className={iconClass} weight="fill" />
+    case "대기":
+      return <CircleNotch className={iconClass} weight="bold" />
+    case "완료":
+      return <CheckCircle className={iconClass} weight="fill" />
+  }
+}
+
+// Priority icons - signal bars style with proper light/dark mode colors
+function PriorityIcon({ priority, className }: { priority: TicketPriority; className?: string }) {
+  const iconClass = cn("w-3.5 h-3.5", priorityTextClass(priority), className)
+  switch (priority) {
+    case "Urgent":
+      return <Flame className={iconClass} strokeWidth={1.5} />
+    case "High":
+      return <SignalHigh className={iconClass} strokeWidth={1.5} />
+    case "Med":
+      return <SignalMedium className={iconClass} strokeWidth={1.5} />
+    case "Low":
+      return <SignalLow className={iconClass} strokeWidth={1.5} />
+  }
 }
 
 export function OperationsSection() {
@@ -118,7 +171,7 @@ export function OperationsSection() {
   const stats = STATUSES.map((s) => ({
     label: s,
     value: counts[s],
-    tone: STATS_TONE[s],
+    tone: statusColorClass(s),
   }))
 
   const openTickets = filtered
@@ -128,80 +181,132 @@ export function OperationsSection() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 bg-surface">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold">업무 관리</h2>
-          <span className="text-sm text-muted-foreground">
+          {/* Workspace Selector */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-foreground/5 transition-colors">
+                <span
+                  className={cn(
+                    "w-2 h-2 rounded-full shrink-0",
+                    workspaceColorDotClass(getActiveWorkspace()?.color ?? "blue")
+                  )}
+                />
+                <span className="text-sm font-medium text-muted-foreground">
+                  {getActiveWorkspace()?.name ?? "워크스페이스"}
+                </span>
+                <ChevronDown className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-56 p-0" sideOffset={4}>
+              <div className="py-1 max-h-60 overflow-y-auto">
+                {WORKSPACES.filter(w => !w.archived).map((ws) => {
+                  const isActive = ws.id === ACTIVE_WORKSPACE_ID
+                  return (
+                    <button
+                      key={ws.id}
+                      onClick={() => console.log("switch workspace:", ws.id)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-foreground/5 transition-colors",
+                        isActive && "bg-foreground/[0.03]"
+                      )}
+                    >
+                      <span className={cn("w-2 h-2 rounded-full shrink-0", workspaceColorDotClass(ws.color))} />
+                      <span className={cn("text-sm flex-1", isActive && "font-semibold")}>{ws.name}</span>
+                      {isActive && <Check className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />}
+                    </button>
+                  )
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
+          <span className="text-muted-foreground/40">/</span>
+          <h2 className="text-base font-semibold">업무 관리</h2>
+          <span className="text-xs text-muted-foreground">
             오늘 미처리: {counts.미처리}건 · 평균 응답 1시간 47분
           </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
             <input
               type="text"
               placeholder="제목·고객·ID 검색"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 text-sm bg-secondary border-none rounded-md outline-none focus:ring-2 focus:ring-ring w-64"
+              className="pl-8 pr-3 py-1.5 text-sm bg-secondary border border-border/60 rounded-md outline-none focus:ring-1 focus:ring-ring w-56"
             />
           </div>
-          <Button variant="outline" size="sm" className="gap-2">
-            <Filter className="w-4 h-4" />
+          <Button variant="outline" size="sm" className="gap-1.5 h-8 text-sm border-border/60">
+            <Filter className="w-3.5 h-3.5" strokeWidth={1.5} />
             필터
           </Button>
-          <div className="flex items-center bg-secondary rounded-lg p-1">
+          <div className="flex items-center bg-secondary rounded-md p-0.5 border border-border/60">
             <Button
               variant={viewMode === "kanban" ? "default" : "ghost"}
               size="icon-sm"
               aria-label="칸반 뷰"
               onClick={() => setViewMode("kanban")}
+              className="h-7 w-7"
             >
-              <LayoutGrid className="w-4 h-4" />
+              <LayoutGrid className="w-3.5 h-3.5" strokeWidth={1.5} />
             </Button>
             <Button
               variant={viewMode === "list" ? "default" : "ghost"}
               size="icon-sm"
               aria-label="리스트 뷰"
               onClick={() => setViewMode("list")}
+              className="h-7 w-7"
             >
-              <List className="w-4 h-4" />
+              <List className="w-3.5 h-3.5" strokeWidth={1.5} />
             </Button>
           </div>
           {!showRail && (
             <Button
               variant="outline"
               size="sm"
-              className="gap-2"
+              className="gap-1.5 h-8 text-sm border-border/60"
               onClick={() => setShowRail(true)}
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />
               추천 열기
             </Button>
           )}
-          <Button size="sm" className="gap-2">
-            <Plus className="w-4 h-4" />
-            티켓 추가
+          <Button size="sm" className="gap-1.5 h-8 text-sm">
+            <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
+            작업 추가
           </Button>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 p-4 bg-card border-b border-border">
-        {stats.map((stat) => (
-          <Card key={stat.label} className="p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">
-                {stat.label}
+      {/* Stats - Status tabs with icons */}
+      <div className="flex items-center gap-1 px-4 py-2 bg-surface border-b border-border/60">
+        {STATUSES.map((status) => {
+          const count = counts[status]
+          const isActive = count > 0
+          return (
+            <button
+              key={status}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
+                "hover:bg-foreground/5",
+                isActive ? "text-foreground" : "text-muted-foreground"
+              )}
+            >
+              <StatusIcon status={status} className={statusColorClass(status)} />
+              <span className="font-medium">{status}</span>
+              <span className={cn(
+                "min-w-[20px] h-5 px-1.5 rounded-full text-xs font-medium flex items-center justify-center tabular-nums",
+                count > 0 
+                  ? cn(statusBgClass(status), statusColorClass(status))
+                  : "bg-muted text-muted-foreground"
+              )}>
+                {count}
               </span>
-              <span
-                className={cn("text-2xl font-bold tabular-nums", stat.tone)}
-              >
-                {stat.value}
-              </span>
-            </div>
-          </Card>
-        ))}
+            </button>
+          )
+        })}
       </div>
 
       {/* Content */}
@@ -265,24 +370,19 @@ function KanbanView({ tickets, customerById, agentById, onSelect }: ViewProps) {
         const items = tickets.filter((t) => t.status === status)
         return (
           <div key={status} className="flex flex-col min-h-0">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-2.5">
               <div className="flex items-center gap-2">
-                <span
-                  className={cn(
-                    "w-2 h-2 rounded-full",
-                    toneDotClass(STATUS_TONE[status]),
-                  )}
-                />
-                <span className="font-medium">{status}</span>
-                <span className="text-sm text-muted-foreground tabular-nums">
+                <StatusIcon status={status} className={statusColorClass(status)} />
+                <span className="font-medium text-sm">{status}</span>
+                <span className="text-xs text-muted-foreground tabular-nums">
                   {items.length}
                 </span>
               </div>
-              <Button variant="ghost" size="icon" className="h-7 w-7">
-                <Plus className="w-4 h-4" />
+              <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-foreground/5">
+                <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
               </Button>
             </div>
-            <div className="flex-1 space-y-3 overflow-y-auto pr-1">
+            <div className="flex-1 space-y-2 overflow-y-auto pr-1">
               {items.map((tk) => (
                 <TicketCard
                   key={tk.id}
@@ -297,7 +397,7 @@ function KanbanView({ tickets, customerById, agentById, onSelect }: ViewProps) {
                 />
               ))}
               {items.length === 0 && (
-                <div className="text-xs text-muted-foreground py-6 text-center border border-dashed border-border rounded-md">
+                <div className="text-xs text-muted-foreground py-6 text-center border border-dashed border-border/60 rounded-md">
                   비어 있음
                 </div>
               )}
@@ -319,37 +419,43 @@ interface TicketCardProps {
 function TicketCard({ ticket, customer, assignee, onSelect }: TicketCardProps) {
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-shadow py-0"
+      className="cursor-pointer hover:bg-foreground/[0.02] dark:hover:bg-foreground/[0.04] transition-colors py-0 border-border/60 shadow-sm hover:shadow-md"
       onClick={onSelect}
     >
       <CardContent className="p-3 space-y-2">
-        <div className="flex items-start justify-between">
-          <code className="text-xs font-mono text-muted-foreground">
-            {ticket.id}
-          </code>
-          <Badge
-            variant="outline"
-            className={cn("text-xs", toneBadgeClass(PRIORITY_TONE[ticket.priority]))}
-          >
-            {ticket.priority}
-          </Badge>
-        </div>
-        <div className="text-sm font-medium leading-snug">
-          {ticket.subject}
-        </div>
-        <div className="flex items-center justify-between pt-1">
-          <span className="text-xs text-muted-foreground truncate">
-            {customer?.name} · {customer?.company}
-          </span>
+        {/* Priority icon + ID */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <PriorityIcon priority={ticket.priority} />
+            <code className="text-[10px] font-mono text-muted-foreground">
+              {ticket.id}
+            </code>
+          </div>
           {assignee ? (
-            <Avatar className="size-6">
-              <AvatarFallback className="text-xs">
+            <Avatar className="size-5">
+              <AvatarFallback className="text-[10px] bg-muted">
                 {assignee.name.slice(-1)}
               </AvatarFallback>
             </Avatar>
           ) : (
-            <span className="text-xs text-muted-foreground">미지정</span>
+            <div className="size-5 rounded-full border border-dashed border-border flex items-center justify-center">
+              <User className="w-2.5 h-2.5 text-muted-foreground" strokeWidth={1.5} />
+            </div>
           )}
+        </div>
+        {/* Subject */}
+        <div className="text-sm font-medium leading-snug">
+          {ticket.subject}
+        </div>
+        {/* Footer */}
+        <div className="flex items-center gap-1.5 pt-0.5">
+          <span className="text-xs text-muted-foreground truncate">
+            {customer?.name}
+          </span>
+          <span className="text-muted-foreground/40">·</span>
+          <span className="text-xs text-muted-foreground truncate">
+            {customer?.company}
+          </span>
         </div>
       </CardContent>
     </Card>
@@ -358,12 +464,12 @@ function TicketCard({ ticket, customer, assignee, onSelect }: TicketCardProps) {
 
 function ListView({ tickets, customerById, agentById, onSelect }: ViewProps) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <div className="flex items-center justify-between mb-2 px-1">
-        <span className="text-sm text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           처리 필요 · 우선순위 정렬
         </span>
-        <span className="text-sm text-muted-foreground font-mono tabular-nums">
+        <span className="text-xs text-muted-foreground font-mono tabular-nums">
           {tickets.length} items
         </span>
       </div>
@@ -377,72 +483,72 @@ function ListView({ tickets, customerById, agentById, onSelect }: ViewProps) {
             key={tk.id}
             onClick={() => onSelect(tk.id)}
             className={cn(
-              "p-4 cursor-pointer hover:shadow-md transition-shadow py-0",
+              "cursor-pointer hover:bg-foreground/[0.02] dark:hover:bg-foreground/[0.04] transition-colors py-0 border-border/60",
               stale && "ring-1 ring-destructive/30",
             )}
           >
-            <CardContent className="p-3 flex items-center gap-4">
-              <div className="flex flex-col items-center gap-1 w-16 shrink-0">
-                <span
-                  className={cn(
-                    "w-2 h-2 rounded-full",
-                    toneDotClass(PRIORITY_TONE[tk.priority]),
-                  )}
-                />
-                <span className="text-xs font-medium">{tk.priority}</span>
+            <CardContent className="p-3 flex items-center gap-3">
+              {/* Priority icon */}
+              <div className="flex flex-col items-center gap-0.5 w-10 shrink-0">
+                <PriorityIcon priority={tk.priority} />
+                <span className={cn("text-[9px] font-medium", priorityTextClass(tk.priority))}>{tk.priority}</span>
               </div>
+              {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <code className="text-xs font-mono text-muted-foreground">
+                  <code className="text-[10px] font-mono text-muted-foreground">
                     {tk.id}
                   </code>
                   <span className="text-sm font-medium truncate">
                     {tk.subject}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                   <span>
                     {c?.name} · {c?.company}
                   </span>
-                  <span>·</span>
+                  <span className="text-muted-foreground/40">·</span>
                   <span>{tk.channel}</span>
-                  <span>·</span>
+                  <span className="text-muted-foreground/40">·</span>
                   <span className={cn(stale && "text-destructive font-medium")}>
                     {age}시간 경과
                   </span>
                 </div>
               </div>
+              {/* Status badge with icon */}
               <Badge
                 variant="outline"
-                className={cn("font-medium", toneBadgeClass(STATUS_TONE[tk.status]))}
+                className={cn("font-medium text-xs gap-1", toneBadgeClassDual(STATUS_TONE[tk.status]))}
               >
+                <StatusIcon status={tk.status} className="w-3 h-3" />
                 {tk.status}
               </Badge>
-              <div className="w-24 flex justify-end">
+              {/* Assignee */}
+              <div className="w-20 flex justify-end">
                 {a ? (
-                  <div className="flex items-center gap-2">
-                    <Avatar className="size-7">
-                      <AvatarFallback className="text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <Avatar className="size-6">
+                      <AvatarFallback className="text-[10px] bg-muted">
                         {a.name.slice(-1)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-[10px] text-muted-foreground">
                       {a.team}
                     </span>
                   </div>
                 ) : (
-                  <span className="text-xs text-muted-foreground">미지정</span>
+                  <span className="text-[10px] text-muted-foreground">미지정</span>
                 )}
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                <MoreHorizontal className="w-4 h-4" />
+              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 hover:bg-foreground/5">
+                <MoreHorizontal className="w-4 h-4" strokeWidth={1.5} />
               </Button>
             </CardContent>
           </Card>
         )
       })}
       {tickets.length === 0 && (
-        <div className="text-sm text-muted-foreground py-12 text-center">
+        <div className="text-sm text-muted-foreground py-10 text-center">
           처리할 항목이 없습니다.
         </div>
       )}
@@ -456,49 +562,68 @@ interface SuggestionRailProps {
   onHide: () => void
 }
 
+// Suggestion kind icons
+function SuggestionKindIcon({ kind, className }: { kind: string; className?: string }) {
+  const iconClass = cn("w-3.5 h-3.5", className)
+  switch (kind) {
+    case "구조":
+      return <Zap className={iconClass} strokeWidth={1.5} />
+    case "정리":
+      return <Wand2 className={iconClass} strokeWidth={1.5} />
+    case "관계":
+      return <GitBranch className={iconClass} strokeWidth={1.5} />
+    default:
+      return <Lightbulb className={iconClass} strokeWidth={1.5} />
+  }
+}
+
 function SuggestionRail({
   suggestions,
   onDismiss,
   onHide,
 }: SuggestionRailProps) {
   return (
-    <aside className="w-80 shrink-0 border-l border-border bg-card overflow-y-auto">
-      <div className="flex items-center justify-between p-4 border-b border-border">
+    <aside className="w-72 shrink-0 border-l border-border/60 bg-surface overflow-y-auto">
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/60">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+          <Sparkles className="w-4 h-4 text-primary" strokeWidth={1.5} />
           <span className="font-medium text-sm">자동화 추천</span>
-          <Badge variant="secondary" className="font-mono text-xs">
+          <Badge variant="secondary" className="font-mono text-[10px] h-5 px-1.5">
             {suggestions.length}
           </Badge>
         </div>
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="h-6 w-6 hover:bg-foreground/5"
           aria-label="추천 닫기"
           onClick={onHide}
         >
-          <X className="w-4 h-4" />
+          <X className="w-3.5 h-3.5" strokeWidth={1.5} />
         </Button>
       </div>
-      <div className="p-4 space-y-3">
+      <div className="p-3 space-y-2">
         {suggestions.map((s) => (
-          <Card key={s.id} className="py-0">
-            <CardContent className="p-4 space-y-2">
-              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                {s.kind}
-              </span>
+          <Card key={s.id} className="py-0 border-border/60">
+            <CardContent className="p-3 space-y-2">
+              <div className="flex items-center gap-1.5">
+                <SuggestionKindIcon kind={s.kind} className="text-muted-foreground" />
+                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  {s.kind}
+                </span>
+              </div>
               <div className="text-sm font-medium leading-snug">{s.title}</div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {s.body}
               </p>
               <div className="flex items-center gap-1.5 pt-1">
-                <Button size="sm" onClick={() => onDismiss(s.id)}>
+                <Button size="sm" className="h-7 text-xs" onClick={() => onDismiss(s.id)}>
                   {s.action}
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="h-7 text-xs hover:bg-foreground/5"
                   onClick={() => onDismiss(s.id)}
                 >
                   무시
@@ -507,7 +632,7 @@ function SuggestionRail({
             </CardContent>
           </Card>
         ))}
-        <p className="text-xs text-muted-foreground text-center pt-2">
+        <p className="text-[10px] text-muted-foreground text-center pt-2">
           사람이 확정해야 적용됩니다.
         </p>
       </div>
@@ -544,8 +669,8 @@ function DetailDrawer({
       >
         {ticket && (
           <>
-            <SheetHeader className="px-5 pt-5 pb-3 border-b border-border">
-              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <SheetHeader className="px-4 pt-4 pb-3 border-b border-border/60">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                 티켓 · {ticket.id}
               </span>
               <SheetTitle className="text-base leading-snug">
@@ -556,7 +681,7 @@ function DetailDrawer({
               </SheetDescription>
             </SheetHeader>
 
-            <div className="p-5 space-y-5">
+            <div className="p-4 space-y-4">
               {/* Status */}
               <div>
                 <div className="text-xs text-muted-foreground mb-2">상태</div>
@@ -574,12 +699,12 @@ function DetailDrawer({
                     <ToggleGroupItem
                       key={s}
                       value={s}
-                      className="gap-1.5 flex-1"
+                      className="gap-1.5 flex-1 text-xs"
                     >
                       <span
                         className={cn(
                           "w-1.5 h-1.5 rounded-full",
-                          toneDotClass(STATUS_TONE[s]),
+                          toneDotClassDual(STATUS_TONE[s]),
                         )}
                       />
                       {s}
@@ -591,15 +716,10 @@ function DetailDrawer({
               {/* Priority */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">우선순위</span>
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "font-medium",
-                    toneBadgeClass(PRIORITY_TONE[ticket.priority]),
-                  )}
-                >
-                  {ticket.priority}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <span className={cn("w-2 h-2 rounded-full", priorityDotClass(ticket.priority))} />
+                  <span className="text-sm font-medium">{ticket.priority}</span>
+                </div>
               </div>
 
               {/* Customer */}
@@ -627,14 +747,14 @@ function DetailDrawer({
               <div>
                 <div className="text-xs text-muted-foreground mb-2">담당자</div>
                 {assignee ? (
-                  <Badge variant="outline" className="gap-2 py-1.5 px-2.5">
+                  <Badge variant="outline" className="gap-2 py-1.5 px-2.5 border-border/60">
                     <Avatar className="size-5">
-                      <AvatarFallback className="text-xs">
+                      <AvatarFallback className="text-[10px] bg-muted">
                         {assignee.name.slice(-1)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="font-medium">{assignee.name}</span>
-                    <span className="text-muted-foreground">
+                    <span className="font-medium text-sm">{assignee.name}</span>
+                    <span className="text-muted-foreground text-xs">
                       {assignee.team} · 부하 {assignee.load}
                     </span>
                   </Badge>
@@ -651,10 +771,10 @@ function DetailDrawer({
                           onClick={() =>
                             updateTicket(ticket.id, { assignee_id: ag.id })
                           }
-                          className="inline-flex items-center gap-2 px-2.5 py-1.5 text-xs rounded-md border border-border hover:bg-muted transition-colors"
+                          className="inline-flex items-center gap-2 px-2.5 py-1.5 text-xs rounded-md border border-border/60 hover:bg-foreground/5 transition-colors"
                         >
                           <Avatar className="size-5">
-                            <AvatarFallback className="text-xs">
+                            <AvatarFallback className="text-[10px] bg-muted">
                               {ag.name.slice(-1)}
                             </AvatarFallback>
                           </Avatar>
@@ -678,20 +798,20 @@ function DetailDrawer({
               {/* Opened at */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">접수</span>
-                <span className="text-sm font-mono inline-flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5" />
+                <span className="text-sm font-mono inline-flex items-center gap-1 tabular-nums">
+                  <Calendar className="w-3.5 h-3.5" strokeWidth={1.5} />
                   {ticket.opened_at}
                 </span>
               </div>
 
               {/* Activity */}
               <div>
-                <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-3">
                   활동
                 </div>
-                <div className="border-l border-dashed border-border pl-4 space-y-4 ml-1">
+                <div className="border-l border-dashed border-border/60 pl-4 space-y-3 ml-1">
                   <div className="relative">
-                    <span className="absolute -left-5 top-1.5 w-2 h-2 rounded-full bg-foreground" />
+                    <span className="absolute -left-[17px] top-1.5 w-2 h-2 rounded-full bg-foreground" />
                     <div className="text-sm font-medium">접수됨</div>
                     <div className="text-xs text-muted-foreground">
                       {ticket.opened_at}
@@ -699,7 +819,7 @@ function DetailDrawer({
                   </div>
                   {assignee && (
                     <div className="relative">
-                      <span className="absolute -left-5 top-1.5 w-2 h-2 rounded-full bg-primary" />
+                      <span className="absolute -left-[17px] top-1.5 w-2 h-2 rounded-full bg-primary" />
                       <div className="text-sm font-medium">
                         {assignee.name} 배정
                       </div>
@@ -709,7 +829,7 @@ function DetailDrawer({
                     </div>
                   )}
                   <div className="relative">
-                    <span className="absolute -left-5 top-1.5 w-2 h-2 rounded-full bg-muted-foreground" />
+                    <span className="absolute -left-[17px] top-1.5 w-2 h-2 rounded-full bg-muted-foreground" />
                     <div className="text-sm font-medium">고객 응답 대기</div>
                     <div className="text-xs text-muted-foreground">
                       템플릿 #03 발송
