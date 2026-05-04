@@ -1,3 +1,4 @@
+// visual: Linear-style ER diagram — 1px borders, subtle shadow, 6px rounded nodes
 "use client"
 
 import { useCallback, useMemo, useRef, useState } from "react"
@@ -46,9 +47,9 @@ type Tool = "select" | "move" | "connect"
 type Lens = "schema" | "fields" | "relations"
 
 const CARD_WIDTH = 240
-const CARD_HEADER_HEIGHT = 48
-const FIELD_ROW_HEIGHT = 28
-const CARD_BODY_PADDING = 12
+const CARD_HEADER_HEIGHT = 44
+const FIELD_ROW_HEIGHT = 26
+const CARD_BODY_PADDING = 10
 
 const ZOOM_MIN = 60
 const ZOOM_MAX = 160
@@ -121,8 +122,8 @@ function fieldKindLabel(field: Field): string {
 }
 
 function fieldKindClass(field: Field): string {
-  if (field.pk) return "bg-primary/10 text-primary"
-  if (field.type === "fk") return "bg-accent/10 text-accent-foreground"
+  if (field.pk) return "bg-primary/10 text-primary dark:bg-primary/15"
+  if (field.type === "fk") return "bg-accent/50 text-accent-foreground dark:bg-accent/40"
   return "bg-muted text-muted-foreground"
 }
 
@@ -246,54 +247,58 @@ export function DesignSection() {
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 bg-surface">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold">차트 설계</h2>
-          <span className="text-sm text-muted-foreground">
+          <h2 className="text-base font-semibold">차트 설계</h2>
+          <span className="text-xs text-muted-foreground">
             테이블과 관계를 시각적으로 설계하세요
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-secondary rounded-lg p-1">
+          <div className="flex items-center bg-secondary rounded-md p-0.5 border border-border/60">
             <Button
               variant={activeTool === "select" ? "default" : "ghost"}
               size="icon-sm"
               aria-label="선택"
               onClick={() => setActiveTool("select")}
+              className="h-7 w-7"
             >
-              <MousePointer2 className="w-4 h-4" />
+              <MousePointer2 className="w-3.5 h-3.5" strokeWidth={1.5} />
             </Button>
             <Button
               variant={activeTool === "move" ? "default" : "ghost"}
               size="icon-sm"
               aria-label="이동"
               onClick={() => setActiveTool("move")}
+              className="h-7 w-7"
             >
-              <Move className="w-4 h-4" />
+              <Move className="w-3.5 h-3.5" strokeWidth={1.5} />
             </Button>
             <Button
               variant={activeTool === "connect" ? "default" : "ghost"}
               size="icon-sm"
               aria-label="연결"
               onClick={() => setActiveTool("connect")}
+              className="h-7 w-7"
             >
-              <Link2 className="w-4 h-4" />
+              <Link2 className="w-3.5 h-3.5" strokeWidth={1.5} />
             </Button>
           </div>
 
-          <div className="w-px h-6 bg-border" />
+          <div className="w-px h-5 bg-border/60" />
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <Button
               variant="ghost"
               size="icon-sm"
               aria-label="축소"
               onClick={() => setZoom(Math.max(ZOOM_MIN, zoom - ZOOM_STEP))}
               disabled={zoom <= ZOOM_MIN}
+              className="h-7 w-7 hover:bg-foreground/5"
             >
-              <ZoomOut className="w-4 h-4" />
+              <ZoomOut className="w-3.5 h-3.5" strokeWidth={1.5} />
             </Button>
-            <span className="text-sm w-12 text-center tabular-nums">
+            <span className="text-xs w-10 text-center tabular-nums text-muted-foreground">
               {zoom}%
             </span>
             <Button
@@ -302,68 +307,70 @@ export function DesignSection() {
               aria-label="확대"
               onClick={() => setZoom(Math.min(ZOOM_MAX, zoom + ZOOM_STEP))}
               disabled={zoom >= ZOOM_MAX}
+              className="h-7 w-7 hover:bg-foreground/5"
             >
-              <ZoomIn className="w-4 h-4" />
+              <ZoomIn className="w-3.5 h-3.5" strokeWidth={1.5} />
             </Button>
             <Button
               variant="ghost"
               size="icon-sm"
               aria-label="100% 복원"
               onClick={() => setZoom(100)}
+              className="h-7 w-7 hover:bg-foreground/5"
             >
-              <Maximize2 className="w-4 h-4" />
+              <Maximize2 className="w-3.5 h-3.5" strokeWidth={1.5} />
             </Button>
           </div>
 
-          <div className="w-px h-6 bg-border" />
+          <div className="w-px h-5 bg-border/60" />
 
           <Button
             variant="outline"
             size="sm"
-            className="gap-2"
+            className="gap-1.5 h-8 text-sm border-border/60"
             onClick={() => setSqlOpen(true)}
           >
-            <FileCode className="w-4 h-4" />
+            <FileCode className="w-3.5 h-3.5" strokeWidth={1.5} />
             SQL 생성
           </Button>
-          <Button size="sm" className="gap-2" onClick={() => setAddOpen(true)}>
-            <Plus className="w-4 h-4" />
+          <Button size="sm" className="gap-1.5 h-8 text-sm" onClick={() => setAddOpen(true)}>
+            <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
             테이블 추가
           </Button>
         </div>
       </div>
 
       {/* Lens + Layout */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border/60 bg-surface">
         <Tabs value={lens} onValueChange={(v) => setLens(v as Lens)}>
-          <TabsList>
-            <TabsTrigger value="schema" className="gap-1.5">
-              <Network className="w-4 h-4" />
+          <TabsList className="h-8">
+            <TabsTrigger value="schema" className="gap-1.5 text-xs h-7 px-3">
+              <Network className="w-3.5 h-3.5" strokeWidth={1.5} />
               스키마
             </TabsTrigger>
-            <TabsTrigger value="fields" className="gap-1.5">
-              <Columns3 className="w-4 h-4" />
+            <TabsTrigger value="fields" className="gap-1.5 text-xs h-7 px-3">
+              <Columns3 className="w-3.5 h-3.5" strokeWidth={1.5} />
               필드
             </TabsTrigger>
-            <TabsTrigger value="relations" className="gap-1.5">
-              <Link2 className="w-4 h-4" />
+            <TabsTrigger value="relations" className="gap-1.5 text-xs h-7 px-3">
+              <Link2 className="w-3.5 h-3.5" strokeWidth={1.5} />
               관계
             </TabsTrigger>
           </TabsList>
         </Tabs>
 
         <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">
+          <span className="text-xs text-muted-foreground tabular-nums">
             {tables.length} 테이블 · {relations.length} 관계
           </span>
           {lens === "schema" && (
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5"
+              className="gap-1.5 h-7 text-xs border-border/60"
               onClick={handleAutoLayout}
             >
-              <AlignStartVertical className="w-4 h-4" />
+              <AlignStartVertical className="w-3.5 h-3.5" strokeWidth={1.5} />
               정렬
             </Button>
           )}
@@ -397,22 +404,22 @@ export function DesignSection() {
       <Dialog open={sqlOpen} onOpenChange={setSqlOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>CREATE TABLE 문</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base">CREATE TABLE 문</DialogTitle>
+            <DialogDescription className="text-xs">
               현재 스키마 기준 PostgreSQL 16 호환 SQL입니다.
             </DialogDescription>
           </DialogHeader>
-          <div className="rounded-md border border-border bg-muted/40 max-h-96 overflow-auto">
+          <div className="rounded-md border border-border/60 bg-muted/30 max-h-96 overflow-auto">
             <pre className="p-4 text-xs font-mono text-foreground whitespace-pre">
               {sql}
             </pre>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSqlOpen(false)}>
+            <Button variant="outline" onClick={() => setSqlOpen(false)} className="border-border/60">
               닫기
             </Button>
-            <Button onClick={handleCopySql} className="gap-2">
-              <ClipboardCopy className="w-4 h-4" />
+            <Button onClick={handleCopySql} className="gap-1.5">
+              <ClipboardCopy className="w-3.5 h-3.5" strokeWidth={1.5} />
               {sqlCopied ? "복사됨" : "클립보드에 복사"}
             </Button>
           </DialogFooter>
@@ -423,37 +430,39 @@ export function DesignSection() {
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>새 테이블 추가</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base">새 테이블 추가</DialogTitle>
+            <DialogDescription className="text-xs">
               이름과 색상을 지정하면 id (UUID, PK), name, created_at 필드가 함께 생성됩니다.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-name">한글 라벨</Label>
+              <Label htmlFor="new-name" className="text-xs">한글 라벨</Label>
               <Input
                 id="new-name"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="예: 첨부파일"
+                className="border-border/60"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="new-en">영문 단수형</Label>
+              <Label htmlFor="new-en" className="text-xs">영문 단수형</Label>
               <Input
                 id="new-en"
                 value={newEn}
                 onChange={(e) => setNewEn(e.target.value)}
                 placeholder="예: Attachment"
+                className="border-border/60"
               />
               {newEn && (
-                <p className="text-xs text-muted-foreground font-mono">
+                <p className="text-[10px] text-muted-foreground font-mono">
                   → {newEn.toLowerCase()}s
                 </p>
               )}
             </div>
             <div className="space-y-2">
-              <Label>색상</Label>
+              <Label className="text-xs">색상</Label>
               <div className="flex items-center gap-2">
                 {COLOR_OPTIONS.map((c) => (
                   <button
@@ -463,7 +472,7 @@ export function DesignSection() {
                     aria-pressed={newColor === c}
                     onClick={() => setNewColor(c)}
                     className={cn(
-                      "w-8 h-8 rounded-md border-2 transition-all",
+                      "w-7 h-7 rounded-md border transition-all",
                       colorBgClass(c),
                       newColor === c
                         ? "border-foreground scale-110"
@@ -475,7 +484,7 @@ export function DesignSection() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)}>
+            <Button variant="outline" onClick={() => setAddOpen(false)} className="border-border/60">
               취소
             </Button>
             <Button
@@ -535,12 +544,13 @@ function SchemaLens({
     activeTool === "move" ? "드래그하여 위치 이동" : null
 
   return (
-    <div className="flex-1 bg-muted/30 overflow-auto relative">
+    <div className="flex-1 bg-muted/20 overflow-auto relative">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage: `linear-gradient(to right, var(--border) 1px, transparent 1px), linear-gradient(to bottom, var(--border) 1px, transparent 1px)`,
           backgroundSize: "40px 40px",
+          opacity: 0.4,
         }}
       />
       <div
@@ -564,8 +574,8 @@ function SchemaLens({
               d={d}
               fill="none"
               stroke="currentColor"
-              strokeWidth={1.5}
-              className="text-muted-foreground/60"
+              strokeWidth={1}
+              className="text-muted-foreground/50"
             />
           ))}
         </svg>
@@ -582,7 +592,7 @@ function SchemaLens({
           >
             <Badge
               variant="outline"
-              className="bg-background text-xs shadow-sm"
+              className="bg-background text-[10px] shadow-sm border-border/60"
             >
               {rel.cardinality}
             </Badge>
@@ -593,7 +603,7 @@ function SchemaLens({
           <Card
             key={table.id}
             className={cn(
-              "absolute py-0 gap-0 shadow-md hover:shadow-lg transition-shadow select-none",
+              "absolute py-0 gap-0 shadow-sm hover:shadow-md transition-shadow select-none border-border/60",
               activeTool === "move" ? "cursor-move" : "cursor-pointer",
               activeTableId === table.id && "ring-2 ring-primary",
             )}
@@ -602,20 +612,20 @@ function SchemaLens({
           >
             <div
               className={cn(
-                "px-4 py-2.5 rounded-t-xl text-primary-foreground flex items-center justify-between",
+                "px-3 py-2 rounded-t-md text-primary-foreground flex items-center justify-between",
                 colorBgClass(table.color),
               )}
             >
-              <span className="font-medium">{table.label}</span>
-              <span className="text-xs opacity-80 font-mono">
+              <span className="font-medium text-sm">{table.label}</span>
+              <span className="text-[10px] opacity-80 font-mono">
                 {table.en.toLowerCase()}s
               </span>
             </div>
-            <div className="p-2">
+            <div className="p-1.5">
               {table.fields.map((field) => (
                 <div
                   key={field.name}
-                  className="flex items-center justify-between px-2 py-1 text-sm hover:bg-muted rounded"
+                  className="flex items-center justify-between px-2 py-1 text-sm hover:bg-foreground/[0.02] dark:hover:bg-foreground/[0.04] rounded"
                 >
                   <span
                     className={cn(
@@ -630,7 +640,7 @@ function SchemaLens({
                   </span>
                   <span
                     className={cn(
-                      "text-xs px-1.5 py-0.5 rounded font-mono",
+                      "text-[10px] px-1.5 py-0.5 rounded font-mono",
                       fieldKindClass(field),
                     )}
                   >
@@ -643,18 +653,18 @@ function SchemaLens({
         ))}
       </div>
 
-      <Card className="absolute bottom-4 left-4 p-3 text-sm shadow-md z-10">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-chart-1" />
+      <Card className="absolute bottom-4 left-4 p-2.5 text-xs shadow-sm z-10 border-border/60">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-chart-1" />
             <span>테이블: {tables.length}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-primary" />
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
             <span>관계: {relations.length}</span>
           </div>
           {dragHint && (
-            <span className="text-xs text-muted-foreground border-l border-border pl-3">
+            <span className="text-[10px] text-muted-foreground border-l border-border/60 pl-3">
               {dragHint}
             </span>
           )}
@@ -672,39 +682,39 @@ interface FieldsLensProps {
 
 function FieldsLens({ tables, activeTableId, onSelect }: FieldsLensProps) {
   return (
-    <div className="flex-1 overflow-auto p-6 bg-muted/30">
+    <div className="flex-1 overflow-auto p-5 bg-muted/20">
       <div className="mb-4">
-        <h3 className="text-base font-semibold">전체 필드 인벤토리</h3>
-        <p className="text-sm text-muted-foreground">
+        <h3 className="text-sm font-semibold">전체 필드 인벤토리</h3>
+        <p className="text-xs text-muted-foreground">
           테이블별 컬럼 목록. 카드를 클릭하면 해당 테이블이 활성화됩니다.
         </p>
       </div>
       <div
-        className="grid gap-4"
-        style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}
+        className="grid gap-3"
+        style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}
       >
         {tables.map((table) => (
           <Card
             key={table.id}
             className={cn(
-              "py-0 gap-0 overflow-hidden cursor-pointer transition-shadow hover:shadow-md",
+              "py-0 gap-0 overflow-hidden cursor-pointer transition-shadow hover:shadow-md border-border/60",
               activeTableId === table.id && "ring-2 ring-primary",
             )}
             onClick={() => onSelect(table.id)}
           >
             <div
               className={cn(
-                "px-4 py-3 text-primary-foreground flex items-center justify-between",
+                "px-3 py-2.5 text-primary-foreground flex items-center justify-between",
                 colorBgClass(table.color),
               )}
             >
               <div className="flex items-center gap-2">
-                <span className="font-medium">{table.label}</span>
-                <span className="text-xs opacity-80 font-mono">
+                <span className="font-medium text-sm">{table.label}</span>
+                <span className="text-[10px] opacity-80 font-mono">
                   {table.en.toLowerCase()}
                 </span>
               </div>
-              <span className="text-xs opacity-80 tabular-nums">
+              <span className="text-[10px] opacity-80 tabular-nums">
                 {table.fields.length}
               </span>
             </div>
@@ -712,12 +722,12 @@ function FieldsLens({ tables, activeTableId, onSelect }: FieldsLensProps) {
               {table.fields.map((field) => (
                 <li
                   key={field.name}
-                  className="flex items-center justify-between px-4 py-2 text-sm border-b border-border last:border-0"
+                  className="flex items-center justify-between px-3 py-1.5 text-sm border-b border-border/40 last:border-0"
                 >
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "text-xs px-1.5 py-0.5 rounded font-mono",
+                        "text-[10px] px-1.5 py-0.5 rounded font-mono",
                         fieldKindClass(field),
                       )}
                     >
@@ -730,12 +740,12 @@ function FieldsLens({ tables, activeTableId, onSelect }: FieldsLensProps) {
                       )}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                     {field.ref && (
                       <span className="font-mono">→ {field.ref}</span>
                     )}
                     {field.enum && (
-                      <span className="font-mono truncate max-w-32">
+                      <span className="font-mono truncate max-w-28">
                         {field.enum.join(" · ")}
                       </span>
                     )}
@@ -763,16 +773,16 @@ function RelationsLens({ tables, relations }: RelationsLensProps) {
   }, [tables])
 
   return (
-    <div className="flex-1 overflow-auto p-6 bg-muted/30">
+    <div className="flex-1 overflow-auto p-5 bg-muted/20">
       <div className="mb-4">
-        <h3 className="text-base font-semibold">테이블 간 관계</h3>
-        <p className="text-sm text-muted-foreground">
+        <h3 className="text-sm font-semibold">테이블 간 관계</h3>
+        <p className="text-xs text-muted-foreground">
           외래키로 연결된 관계 목록. 카디널리티와 참조 컬럼을 확인하세요.
         </p>
       </div>
-      <Card className="py-0 overflow-hidden">
+      <Card className="py-0 overflow-hidden border-border/60">
         {relations.length === 0 && (
-          <div className="text-sm text-muted-foreground py-12 text-center">
+          <div className="text-sm text-muted-foreground py-10 text-center">
             관계가 정의되지 않았습니다.
           </div>
         )}
@@ -784,46 +794,46 @@ function RelationsLens({ tables, relations }: RelationsLensProps) {
             <div
               key={rel.id}
               className={cn(
-                "flex items-center justify-between gap-4 px-5 py-4",
-                idx > 0 && "border-t border-border",
+                "flex items-center justify-between gap-4 px-4 py-3",
+                idx > 0 && "border-t border-border/40",
               )}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <Badge
                   variant="outline"
-                  className={cn("gap-1.5", colorTextClass(from.color))}
+                  className={cn("gap-1.5 border-border/60", colorTextClass(from.color))}
                 >
                   <span
                     className={cn(
-                      "w-2 h-2 rounded-full",
+                      "w-1.5 h-1.5 rounded-full",
                       colorBgClass(from.color),
                     )}
                   />
                   {from.label}
-                  <span className="text-muted-foreground font-mono text-xs">
+                  <span className="text-muted-foreground font-mono text-[10px]">
                     {from.en.toLowerCase()}
                   </span>
                 </Badge>
-                <span className="text-muted-foreground">→</span>
+                <span className="text-muted-foreground text-xs">→</span>
                 <Badge
                   variant="outline"
-                  className={cn("gap-1.5", colorTextClass(to.color))}
+                  className={cn("gap-1.5 border-border/60", colorTextClass(to.color))}
                 >
                   <span
                     className={cn(
-                      "w-2 h-2 rounded-full",
+                      "w-1.5 h-1.5 rounded-full",
                       colorBgClass(to.color),
                     )}
                   />
                   {to.label}
-                  <span className="text-muted-foreground font-mono text-xs">
+                  <span className="text-muted-foreground font-mono text-[10px]">
                     {to.en.toLowerCase()}
                   </span>
                 </Badge>
               </div>
-              <div className="flex items-center gap-3 text-sm">
-                <Badge variant="secondary">{rel.cardinality}</Badge>
-                <span className="font-mono text-xs text-muted-foreground">
+              <div className="flex items-center gap-2.5 text-xs">
+                <Badge variant="secondary" className="text-[10px]">{rel.cardinality}</Badge>
+                <span className="font-mono text-[10px] text-muted-foreground">
                   {rel.label}
                 </span>
               </div>

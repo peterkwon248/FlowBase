@@ -1,3 +1,4 @@
+// visual: Linear-style sidebar — 240px, compact header, subtle borders, tight spacing
 "use client"
 
 import { useState } from "react"
@@ -47,54 +48,54 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
   return (
     <aside
       className={cn(
-        "flex flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300",
-        collapsed ? "w-16" : "w-64"
+        "flex flex-col h-screen bg-sidebar border-r border-sidebar-border/60 transition-all duration-200",
+        collapsed ? "w-14" : "w-60"
       )}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
+      {/* Header - compact */}
+      <div className="flex items-center justify-between px-3 py-3 border-b border-sidebar-border/60">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Database className="w-4 h-4 text-primary-foreground" />
+            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
+              <Database className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={1.5} />
             </div>
-            <span className="font-semibold text-sidebar-foreground">FlowDB</span>
+            <span className="font-semibold text-sm text-sidebar-foreground">FlowDB</span>
           </div>
         )}
         {collapsed && (
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center mx-auto">
-            <Database className="w-4 h-4 text-primary-foreground" />
+          <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center mx-auto">
+            <Database className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={1.5} />
           </div>
         )}
         <Button
           variant="ghost"
           size="icon"
-          className={cn("h-8 w-8 text-sidebar-foreground", collapsed && "hidden")}
+          className={cn("h-7 w-7 text-sidebar-foreground hover:bg-foreground/5", collapsed && "hidden")}
           onClick={() => setCollapsed(!collapsed)}
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
         </Button>
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions - tight spacing */}
       {!collapsed && (
-        <div className="p-3 space-y-2">
-          <Button className="w-full justify-start gap-2" size="sm">
-            <Plus className="w-4 h-4" />
+        <div className="px-2 py-2 space-y-1">
+          <Button className="w-full justify-start gap-2 h-8 text-sm font-medium" size="sm">
+            <Plus className="w-4 h-4" strokeWidth={1.5} />
             새 워크스페이스
           </Button>
-          <Button variant="outline" className="w-full justify-start gap-2" size="sm">
-            <Upload className="w-4 h-4" />
+          <Button variant="outline" className="w-full justify-start gap-2 h-8 text-sm font-medium border-border/60" size="sm">
+            <Upload className="w-4 h-4" strokeWidth={1.5} />
             CSV 업로드
           </Button>
         </div>
       )}
 
-      {/* Search */}
+      {/* Search - minimal */}
       {!collapsed && (
-        <div className="px-3 pb-3">
-          <div className="flex items-center gap-2 px-3 py-2 bg-sidebar-accent rounded-md">
-            <Search className="w-4 h-4 text-muted-foreground" />
+        <div className="px-2 pb-2">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 bg-sidebar-accent/50 rounded-md border border-sidebar-border/40">
+            <Search className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
             <input
               type="text"
               placeholder="검색..."
@@ -105,31 +106,31 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
       )}
 
       {/* Main Navigation */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto">
         {!collapsed && (
-          <span className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          <span className="px-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
             메인
           </span>
         )}
-        <div className="mt-2 space-y-1">
+        <div className="mt-1.5 space-y-0.5">
           {mainNavItems.map((item) => (
             <button
               key={item.id}
               onClick={() => onSectionChange(item.id)}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors",
                 activeSection === item.id
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/50",
+                  : "text-sidebar-foreground hover:bg-foreground/5",
                 collapsed && "justify-center px-2"
               )}
             >
-              <item.icon className="w-4 h-4 shrink-0" />
+              <item.icon className="w-4 h-4 shrink-0" strokeWidth={1.5} />
               {!collapsed && (
                 <>
                   <span className="flex-1 text-left">{item.label}</span>
                   {item.badge && (
-                    <span className="px-2 py-0.5 text-xs font-medium bg-primary text-primary-foreground rounded-full">
+                    <span className="px-1.5 py-0.5 text-[10px] font-medium bg-primary text-primary-foreground rounded-full tabular-nums">
                       {item.badge}
                     </span>
                   )}
@@ -142,20 +143,20 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
         {/* Workspaces */}
         {!collapsed && (
           <>
-            <div className="mt-6">
-              <span className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <div className="mt-5 pt-3 border-t border-sidebar-border/40">
+              <span className="px-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                 워크스페이스
               </span>
             </div>
-            <div className="mt-2 space-y-1">
+            <div className="mt-1.5 space-y-0.5">
               {workspaces.map((workspace) => (
                 <button
                   key={workspace.id}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-foreground/5 transition-colors"
                 >
-                  <div className="w-2 h-2 rounded-full bg-accent" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
                   <span className="flex-1 text-left truncate">{workspace.name}</span>
-                  <span className="text-xs text-muted-foreground">{workspace.tables}</span>
+                  <span className="text-[11px] text-muted-foreground tabular-nums">{workspace.tables}</span>
                 </button>
               ))}
             </div>
@@ -163,12 +164,12 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
         )}
       </nav>
 
-      {/* Footer */}
-      <div className="p-3 border-t border-sidebar-border">
+      {/* Footer - compact */}
+      <div className="px-2 py-2 border-t border-sidebar-border/60">
         <div className={cn("flex items-center", collapsed ? "justify-center" : "justify-between")}>
           {!collapsed && (
-            <Button variant="ghost" size="icon" className="h-9 w-9 text-sidebar-foreground">
-              <Settings className="w-4 h-4" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-sidebar-foreground hover:bg-foreground/5">
+              <Settings className="w-4 h-4" strokeWidth={1.5} />
             </Button>
           )}
           <ThemeToggle />
@@ -176,10 +177,10 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 text-sidebar-foreground"
+              className="h-8 w-8 text-sidebar-foreground hover:bg-foreground/5"
               onClick={() => setCollapsed(false)}
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
             </Button>
           )}
         </div>

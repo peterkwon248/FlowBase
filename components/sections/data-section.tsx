@@ -1,3 +1,4 @@
+// visual: Linear-style data table — subtle row hover, sticky header, tight cell padding, 12px sort arrows
 "use client"
 
 import { useMemo, useState } from "react"
@@ -46,8 +47,8 @@ import {
   colorBgClass,
   getAgentName,
   getCustomerName,
-  toneBadgeClass,
 } from "@/lib/mock-data"
+import { toneBadgeClassDual } from "@/lib/tokens"
 
 type AnyRow = Customer | Ticket | Agent | Note
 type SortDir = "asc" | "desc"
@@ -114,7 +115,7 @@ function Cell({ field, value }: CellProps) {
         </code>
       )
     case "string":
-      return <span>{String(value)}</span>
+      return <span className="text-sm">{String(value)}</span>
     case "email":
       return (
         <span className="font-mono text-xs text-muted-foreground">
@@ -129,7 +130,7 @@ function Cell({ field, value }: CellProps) {
       )
     case "datetime":
       return (
-        <span className="font-mono text-xs text-muted-foreground">
+        <span className="font-mono text-xs text-muted-foreground tabular-nums">
           {String(value)}
         </span>
       )
@@ -140,7 +141,7 @@ function Cell({ field, value }: CellProps) {
     case "text": {
       const s = String(value)
       return (
-        <span className="text-muted-foreground">
+        <span className="text-muted-foreground text-sm">
           {s.length > 60 ? s.slice(0, 60) + "…" : s}
         </span>
       )
@@ -148,7 +149,7 @@ function Cell({ field, value }: CellProps) {
     case "status": {
       const tone: Tone = STATUS_TONE[value as TicketStatus] ?? "muted"
       return (
-        <Badge variant="outline" className={cn("font-medium", toneBadgeClass(tone))}>
+        <Badge variant="outline" className={cn("font-medium text-xs", toneBadgeClassDual(tone))}>
           {String(value)}
         </Badge>
       )
@@ -161,7 +162,7 @@ function Cell({ field, value }: CellProps) {
         tone = TIER_TONE[value as CustomerTier] ?? "muted"
       }
       return (
-        <Badge variant="outline" className={toneBadgeClass(tone)}>
+        <Badge variant="outline" className={cn("text-xs", toneBadgeClassDual(tone))}>
           {String(value)}
         </Badge>
       )
@@ -172,9 +173,9 @@ function Cell({ field, value }: CellProps) {
       if (field.ref === "customers") label = getCustomerName(id)
       else if (field.ref === "agents") label = getAgentName(id)
       return (
-        <span className="inline-flex items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 text-sm">
           <span>{label}</span>
-          <code className="text-xs font-mono text-muted-foreground">
+          <code className="text-[10px] font-mono text-muted-foreground">
             {id}
           </code>
         </span>
@@ -199,16 +200,16 @@ function Th({ field, sort, onSort }: ThProps) {
   return (
     <th
       className={cn(
-        "px-4 py-3 text-left text-sm font-medium",
+        "px-3 py-2 text-left text-xs font-medium",
         active ? "text-foreground" : "text-muted-foreground",
       )}
     >
       <button
         onClick={() => onSort(field.name)}
-        className="inline-flex items-center gap-1 hover:text-foreground"
+        className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
       >
         {field.name}
-        <ArrowIcon className="w-3 h-3" />
+        <ArrowIcon className="w-3 h-3" strokeWidth={1.5} />
       </button>
     </th>
   )
@@ -279,14 +280,14 @@ export function DataSection() {
   return (
     <div className="flex h-full">
       {/* Table List Sidebar */}
-      <div className="w-56 border-r border-border bg-card p-4 space-y-4">
+      <div className="w-52 border-r border-border/60 bg-surface p-3 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="font-medium text-sm">테이블</h3>
-          <Button variant="ghost" size="icon" className="h-7 w-7">
-            <Plus className="w-4 h-4" />
+          <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-foreground/5">
+            <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
           </Button>
         </div>
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {SCHEMA.map((t) => {
             const count = (TABLE_DATA[t.id] ?? []).length
             const selected = activeTable === t.id
@@ -295,10 +296,10 @@ export function DataSection() {
                 key={t.id}
                 onClick={() => handleSetActiveTable(t.id)}
                 className={cn(
-                  "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
+                  "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm transition-colors",
                   selected
                     ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted",
+                    : "hover:bg-foreground/5",
                 )}
               >
                 <span
@@ -307,10 +308,10 @@ export function DataSection() {
                     colorBgClass(t.color),
                   )}
                 />
-                <span className="flex-1 text-left">{t.label}</span>
+                <span className="flex-1 text-left font-medium">{t.label}</span>
                 <span
                   className={cn(
-                    "text-xs",
+                    "text-[11px] tabular-nums",
                     selected
                       ? "text-primary-foreground/70"
                       : "text-muted-foreground",
@@ -327,34 +328,34 @@ export function DataSection() {
       {/* Data Table */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Toolbar */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 bg-surface">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold">{table?.label}</h2>
-            <span className="text-sm text-muted-foreground">
+            <h2 className="text-base font-semibold">{table?.label}</h2>
+            <span className="text-xs text-muted-foreground tabular-nums">
               {rows.length}개 / 전체 {data.length}개
             </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
               <input
                 type="text"
                 placeholder="검색..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-4 py-2 text-sm bg-secondary border-none rounded-md outline-none focus:ring-2 focus:ring-ring w-64"
+                className="pl-8 pr-3 py-1.5 text-sm bg-secondary border border-border/60 rounded-md outline-none focus:ring-1 focus:ring-ring w-56"
               />
             </div>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Filter className="w-4 h-4" />
+            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-sm border-border/60">
+              <Filter className="w-3.5 h-3.5" strokeWidth={1.5} />
               필터
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Download className="w-4 h-4" />
+            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-sm border-border/60">
+              <Download className="w-3.5 h-3.5" strokeWidth={1.5} />
               내보내기
             </Button>
-            <Button size="sm" className="gap-2">
-              <Plus className="w-4 h-4" />
+            <Button size="sm" className="gap-1.5 h-8 text-sm">
+              <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
               레코드 추가
             </Button>
           </div>
@@ -364,9 +365,9 @@ export function DataSection() {
         <div className="flex-1 overflow-auto">
           {table && (
             <table className="w-full">
-              <thead className="bg-muted/50 sticky top-0 z-10">
+              <thead className="bg-muted/40 sticky top-0 z-10 border-b border-border/60">
                 <tr>
-                  <th className="w-12 px-4 py-3 text-left">
+                  <th className="w-10 px-3 py-2 text-left">
                     <input
                       type="checkbox"
                       aria-label="전체 선택"
@@ -385,7 +386,7 @@ export function DataSection() {
                       onSort={handleSort}
                     />
                   ))}
-                  <th className="w-12 px-4 py-3" />
+                  <th className="w-10 px-3 py-2" />
                 </tr>
               </thead>
               <tbody>
@@ -396,11 +397,11 @@ export function DataSection() {
                     <tr
                       key={id}
                       className={cn(
-                        "border-b border-border hover:bg-muted/30 transition-colors",
+                        "border-b border-border/40 hover:bg-foreground/[0.02] dark:hover:bg-foreground/[0.04] transition-colors",
                         isSelected && "bg-primary/5",
                       )}
                     >
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         <input
                           type="checkbox"
                           aria-label={`${id} 선택`}
@@ -412,30 +413,30 @@ export function DataSection() {
                       {table.fields.map((field) => (
                         <td
                           key={field.name}
-                          className="px-4 py-3 text-sm align-middle"
+                          className="px-3 py-2 text-sm align-middle"
                         >
                           <Cell field={field} value={rowValue(row, field.name)} />
                         </td>
                       ))}
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="w-4 h-4" />
+                            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-foreground/5">
+                              <MoreHorizontal className="w-4 h-4" strokeWidth={1.5} />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem>
-                              <Pencil className="w-4 h-4 mr-2" />
+                              <Pencil className="w-4 h-4 mr-2" strokeWidth={1.5} />
                               편집
                             </DropdownMenuItem>
                             <DropdownMenuItem>
-                              <Copy className="w-4 h-4 mr-2" />
+                              <Copy className="w-4 h-4 mr-2" strokeWidth={1.5} />
                               복제
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem variant="destructive">
-                              <Trash2 className="w-4 h-4 mr-2" />
+                              <Trash2 className="w-4 h-4 mr-2" strokeWidth={1.5} />
                               삭제
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -448,7 +449,7 @@ export function DataSection() {
                   <tr>
                     <td
                       colSpan={(table?.fields.length ?? 0) + 2}
-                      className="px-4 py-12 text-center text-sm text-muted-foreground"
+                      className="px-4 py-10 text-center text-sm text-muted-foreground"
                     >
                       검색 결과가 없습니다.
                     </td>
@@ -460,18 +461,18 @@ export function DataSection() {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-card">
-          <span className="text-sm text-muted-foreground">
+        <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/60 bg-surface">
+          <span className="text-xs text-muted-foreground">
             {selectedRows.length > 0
               ? `${selectedRows.length}개 선택됨`
               : `${rows.length}개 레코드`}
           </span>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" disabled>
+            <Button variant="outline" size="sm" disabled className="h-7 text-xs border-border/60">
               이전
             </Button>
-            <span className="text-sm">1 / 1</span>
-            <Button variant="outline" size="sm" disabled>
+            <span className="text-xs text-muted-foreground tabular-nums">1 / 1</span>
+            <Button variant="outline" size="sm" disabled className="h-7 text-xs border-border/60">
               다음
             </Button>
           </div>
