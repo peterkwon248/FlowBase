@@ -72,19 +72,35 @@ export const WORKSPACES: Workspace[] = [
 
 export const ACTIVE_WORKSPACE_ID = "1"
 
-// Helper to get color dot class
+// Helper to get color dot class - light mode uses darker shades for better contrast
 export function workspaceColorDotClass(color: WorkspaceColor): string {
   switch (color) {
     case "blue":
-      return "bg-blue-500 dark:bg-blue-400"
+      return "bg-blue-600 dark:bg-blue-400"
     case "emerald":
-      return "bg-emerald-500 dark:bg-emerald-400"
+      return "bg-emerald-600 dark:bg-emerald-400"
     case "violet":
-      return "bg-violet-500 dark:bg-violet-400"
+      return "bg-violet-600 dark:bg-violet-400"
     case "amber":
-      return "bg-amber-500 dark:bg-amber-400"
+      return "bg-amber-600 dark:bg-amber-400"
     case "rose":
-      return "bg-rose-500 dark:bg-rose-400"
+      return "bg-rose-600 dark:bg-rose-400"
+  }
+}
+
+// Helper to get text color class for workspace colors
+export function workspaceColorTextClass(color: WorkspaceColor): string {
+  switch (color) {
+    case "blue":
+      return "text-blue-600 dark:text-blue-400"
+    case "emerald":
+      return "text-emerald-600 dark:text-emerald-400"
+    case "violet":
+      return "text-violet-600 dark:text-violet-400"
+    case "amber":
+      return "text-amber-600 dark:text-amber-400"
+    case "rose":
+      return "text-rose-600 dark:text-rose-400"
   }
 }
 

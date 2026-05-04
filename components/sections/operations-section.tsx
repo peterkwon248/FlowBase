@@ -71,7 +71,7 @@ import {
   type TicketStatus,
   ageInHours,
 } from "@/lib/mock-data"
-import { toneBadgeClassDual, toneDotClassDual, priorityDotClass, statusColorClass } from "@/lib/tokens"
+import { toneBadgeClassDual, toneDotClassDual, priorityDotClass, priorityTextClass, statusColorClass, statusBgClass } from "@/lib/tokens"
 
 type ViewMode = "kanban" | "list"
 
@@ -97,9 +97,9 @@ function StatusIcon({ status, className }: { status: TicketStatus; className?: s
   }
 }
 
-// Priority icons - signal bars style
+// Priority icons - signal bars style with proper light/dark mode colors
 function PriorityIcon({ priority, className }: { priority: TicketPriority; className?: string }) {
-  const iconClass = cn("w-3.5 h-3.5", className)
+  const iconClass = cn("w-3.5 h-3.5", priorityTextClass(priority), className)
   switch (priority) {
     case "Urgent":
       return <Flame className={iconClass} strokeWidth={1.5} />
@@ -299,7 +299,7 @@ export function OperationsSection() {
               <span className={cn(
                 "min-w-[20px] h-5 px-1.5 rounded-full text-xs font-medium flex items-center justify-center tabular-nums",
                 count > 0 
-                  ? cn("bg-foreground/10", statusColorClass(status))
+                  ? cn(statusBgClass(status), statusColorClass(status))
                   : "bg-muted text-muted-foreground"
               )}>
                 {count}
@@ -426,7 +426,7 @@ function TicketCard({ ticket, customer, assignee, onSelect }: TicketCardProps) {
         {/* Priority icon + ID */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <PriorityIcon priority={ticket.priority} className={priorityDotClass(ticket.priority).replace("bg-", "text-")} />
+            <PriorityIcon priority={ticket.priority} />
             <code className="text-[10px] font-mono text-muted-foreground">
               {ticket.id}
             </code>
@@ -490,11 +490,8 @@ function ListView({ tickets, customerById, agentById, onSelect }: ViewProps) {
             <CardContent className="p-3 flex items-center gap-3">
               {/* Priority icon */}
               <div className="flex flex-col items-center gap-0.5 w-10 shrink-0">
-                <PriorityIcon 
-                  priority={tk.priority} 
-                  className={priorityDotClass(tk.priority).replace("bg-", "text-")} 
-                />
-                <span className="text-[9px] font-medium text-muted-foreground">{tk.priority}</span>
+                <PriorityIcon priority={tk.priority} />
+                <span className={cn("text-[9px] font-medium", priorityTextClass(tk.priority))}>{tk.priority}</span>
               </div>
               {/* Content */}
               <div className="flex-1 min-w-0">

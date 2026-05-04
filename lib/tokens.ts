@@ -100,33 +100,76 @@ export function colorTextClassDual(c: ChartColor): string {
 /**
  * Priority indicator — left dot style (Linear-style minimal priority indicator).
  * Returns classes for a small dot on the left side of a card/row.
+ * Light mode uses darker/saturated colors, dark mode uses brighter variants.
  */
 export function priorityDotClass(priority: "Urgent" | "High" | "Med" | "Low"): string {
   switch (priority) {
     case "Urgent":
-      return "bg-destructive"
+      // Light: deeper red, Dark: bright red
+      return "bg-red-600 dark:bg-red-500"
     case "High":
-      return "bg-warning"
+      // Light: deeper orange, Dark: bright orange
+      return "bg-orange-600 dark:bg-orange-400"
     case "Med":
-      return "bg-primary"
+      // Light: deeper blue, Dark: bright blue
+      return "bg-blue-600 dark:bg-blue-400"
     case "Low":
-      return "bg-muted-foreground"
+      // Light: medium gray, Dark: lighter gray
+      return "bg-slate-500 dark:bg-slate-400"
+  }
+}
+
+/**
+ * Priority text color — for icons and text labels.
+ * Light mode uses darker shades, dark mode uses brighter shades.
+ */
+export function priorityTextClass(priority: "Urgent" | "High" | "Med" | "Low"): string {
+  switch (priority) {
+    case "Urgent":
+      return "text-red-600 dark:text-red-400"
+    case "High":
+      return "text-orange-600 dark:text-orange-400"
+    case "Med":
+      return "text-blue-600 dark:text-blue-400"
+    case "Low":
+      return "text-slate-500 dark:text-slate-400"
   }
 }
 
 /**
  * Status indicator — for kanban columns and badges.
+ * Light mode uses darker/saturated colors, dark mode uses brighter variants.
  */
 export function statusColorClass(status: "미처리" | "진행중" | "대기" | "완료"): string {
   switch (status) {
     case "미처리":
-      return "text-destructive"
+      // Light: deeper slate, Dark: lighter slate
+      return "text-slate-600 dark:text-slate-400"
     case "진행중":
-      return "text-primary"
+      // Light: deeper yellow/amber, Dark: bright yellow
+      return "text-amber-600 dark:text-yellow-400"
     case "대기":
-      return "text-warning-fg"
+      // Light: deeper purple, Dark: bright purple
+      return "text-violet-600 dark:text-violet-400"
     case "완료":
-      return "text-success-fg"
+      // Light: deeper green, Dark: bright green
+      return "text-emerald-600 dark:text-emerald-400"
+  }
+}
+
+/**
+ * Status badge background — subtle background with proper contrast.
+ */
+export function statusBgClass(status: "미처리" | "진행중" | "대기" | "완료"): string {
+  switch (status) {
+    case "미처리":
+      return "bg-slate-100 dark:bg-slate-800/50"
+    case "진행중":
+      return "bg-amber-100 dark:bg-yellow-900/30"
+    case "대기":
+      return "bg-violet-100 dark:bg-violet-900/30"
+    case "완료":
+      return "bg-emerald-100 dark:bg-emerald-900/30"
   }
 }
 
