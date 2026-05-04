@@ -1,9 +1,9 @@
-// visual: Linear-style sidebar — 240px, compact header, subtle borders, tight spacing
+// visual mockup: workspace-ux (logic-free)
+// Linear-style sidebar — 240px, compact header with workspace switcher, active workspace highlight
 "use client"
 
 import { useState } from "react"
 import {
-  Database,
   LayoutGrid,
   Table2,
   ClipboardList,
@@ -13,11 +13,18 @@ import {
   Plus,
   Upload,
   Trash2,
+  BarChart3,
 } from "lucide-react"
 import { TRASH_ITEMS } from "@/lib/mock-trash"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { WorkspaceSwitcher } from "@/components/workspace-switcher"
+import {
+  WORKSPACES,
+  ACTIVE_WORKSPACE_ID,
+  workspaceColorDotClass,
+} from "@/lib/mock-workspaces"
 
 interface NavItem {
   id: string
@@ -32,12 +39,6 @@ const mainNavItems: NavItem[] = [
   { id: "operations", label: "운영", icon: ClipboardList, badge: 12 },
 ]
 
-const workspaces = [
-  { id: "1", name: "고객 상담 DB", tables: 5 },
-  { id: "2", name: "재고 관리", tables: 3 },
-  { id: "3", name: "프로젝트 추적", tables: 8 },
-]
-
 interface AppSidebarProps {
   activeSection: string
   onSectionChange: (section: string) => void
@@ -46,6 +47,9 @@ interface AppSidebarProps {
 export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
 
+  // Get active workspaces (non-archived)
+  const activeWorkspaces = WORKSPACES.filter((w) => !w.archived)
+
   return (
     <aside
       className={cn(
@@ -53,29 +57,19 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
         collapsed ? "w-14" : "w-60"
       )}
     >
-      {/* Header - compact */}
-      <div className="flex items-center justify-between px-3 py-3 border-b border-sidebar-border/60">
+      {/* Header - Workspace Switcher */}
+      <div className="flex items-center justify-between px-2 py-2 border-b border-sidebar-border/60">
+        <WorkspaceSwitcher collapsed={collapsed} />
         {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
-              <Database className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={1.5} />
-            </div>
-            <span className="font-semibold text-sm text-sidebar-foreground">FlowDB</span>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-sidebar-foreground hover:bg-foreground/5 shrink-0"
+            onClick={() => setCollapsed(!collapsed)}
+          >
+            <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
+          </Button>
         )}
-        {collapsed && (
-          <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center mx-auto">
-            <Database className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={1.5} />
-          </div>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn("h-7 w-7 text-sidebar-foreground hover:bg-foreground/5", collapsed && "hidden")}
-          onClick={() => setCollapsed(!collapsed)}
-        >
-          <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
-        </Button>
       </div>
 
       {/* Quick Actions - tight spacing */}
@@ -127,7 +121,27 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
           ))}
         </div>
 
-        {/* Workspaces */}
+        {/* Dashboard - separate group */}
+        {!collapsed && (
+          <>
+            <div className="mt-5 pt-3 border-t border-sidebar-border/40">
+              <span className="px-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                전체 보기
+              </span>
+            </div>
+            <div className="mt-1.5 space-y-0.5">
+              <button
+                onClick={() => console.log("navigate /dashboard")}
+                className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-foreground/5 transition-colors"
+              >
+                <BarChart3 className="w-4 h-4 shrink-0" strokeWidth={1.5} />
+                <span className="flex-1 text-left">대시보드</span>
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* Workspaces with active highlight */}
         {!collapsed && (
           <>
             <div className="mt-5 pt-3 border-t border-sidebar-border/40">
@@ -136,16 +150,36 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
               </span>
             </div>
             <div className="mt-1.5 space-y-0.5">
-              {workspaces.map((workspace) => (
-                <button
-                  key={workspace.id}
-                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-foreground/5 transition-colors"
-                >
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-                  <span className="flex-1 text-left truncate">{workspace.name}</span>
-                  <span className="text-[11px] text-muted-foreground tabular-nums">{workspace.tables}</span>
-                </button>
-              ))}
+              {activeWorkspaces.map((workspace) => {
+                const isActive = workspace.id === ACTIVE_WORKSPACE_ID
+                return (
+                  <button
+                    key={workspace.id}
+                    onClick={() => console.log("switch to workspace:", workspace.id)}
+                    className={cn(
+                      "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm transition-colors relative",
+                      isActive
+                        ? "bg-foreground/[0.03] font-semibold text-sidebar-foreground"
+                        : "text-sidebar-foreground hover:bg-foreground/5"
+                    )}
+                  >
+                    {/* Active indicator bar */}
+                    {isActive && (
+                      <div className="absolute left-0 top-1 bottom-1 w-0.5 bg-primary rounded-full" />
+                    )}
+                    <div
+                      className={cn(
+                        "w-2 h-2 rounded-full shrink-0",
+                        workspaceColorDotClass(workspace.color)
+                      )}
+                    />
+                    <span className="flex-1 text-left truncate">{workspace.name}</span>
+                    <span className="text-[11px] text-muted-foreground tabular-nums">
+                      {workspace.tables}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           </>
         )}
