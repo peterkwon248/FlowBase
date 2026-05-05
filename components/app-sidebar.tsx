@@ -85,7 +85,7 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
           </Button>
           <Button variant="outline" className="w-full justify-start gap-2 h-8 text-sm font-medium border-border/60" size="sm">
             <Upload className="w-4 h-4" strokeWidth={1.5} />
-            CSV 업로드
+            데이터 업로드
           </Button>
         </div>
       )}

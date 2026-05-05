@@ -163,13 +163,13 @@ export function statusColorClass(status: "미처리" | "진행중" | "대기" | 
 export function statusBgClass(status: "미처리" | "진행중" | "대기" | "완료"): string {
   switch (status) {
     case "미처리":
-      return "bg-slate-100 dark:bg-slate-800/50"
+      return "bg-slate-200 dark:bg-slate-800/50"
     case "진행중":
-      return "bg-amber-100 dark:bg-yellow-900/30"
+      return "bg-amber-200 dark:bg-yellow-900/30"
     case "대기":
-      return "bg-violet-100 dark:bg-violet-900/30"
+      return "bg-violet-200 dark:bg-violet-900/30"
     case "완료":
-      return "bg-emerald-100 dark:bg-emerald-900/30"
+      return "bg-emerald-200 dark:bg-emerald-900/30"
   }
 }
 

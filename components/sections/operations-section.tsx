@@ -281,7 +281,7 @@ export function OperationsSection() {
       </div>
 
       {/* Stats - Status tabs with icons */}
-      <div className="flex items-center gap-1 px-4 py-2 bg-surface border-b border-border/60">
+      <div className="flex items-center gap-1.5 px-4 py-2 bg-surface border-b border-border/60">
         {STATUSES.map((status) => {
           const count = counts[status]
           const isActive = count > 0
@@ -289,21 +289,16 @@ export function OperationsSection() {
             <button
               key={status}
               className={cn(
-                "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
-                "hover:bg-foreground/5",
-                isActive ? "text-foreground" : "text-muted-foreground"
-              )}
-            >
-              <StatusIcon status={status} className={statusColorClass(status)} />
-              <span className="font-medium">{status}</span>
-              <span className={cn(
-                "min-w-[20px] h-5 px-1.5 rounded-full text-xs font-medium flex items-center justify-center tabular-nums",
-                count > 0 
+                "inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-sm font-medium transition-opacity",
+                "hover:opacity-80",
+                isActive
                   ? cn(statusBgClass(status), statusColorClass(status))
                   : "bg-muted text-muted-foreground"
-              )}>
-                {count}
-              </span>
+              )}
+            >
+              <StatusIcon status={status} className="w-4 h-4" />
+              <span>{status}</span>
+              <span className="tabular-nums opacity-70">{count}</span>
             </button>
           )
         })}
@@ -371,12 +366,14 @@ function KanbanView({ tickets, customerById, agentById, onSelect }: ViewProps) {
         return (
           <div key={status} className="flex flex-col min-h-0">
             <div className="flex items-center justify-between mb-2.5">
-              <div className="flex items-center gap-2">
-                <StatusIcon status={status} className={statusColorClass(status)} />
-                <span className="font-medium text-sm">{status}</span>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {items.length}
-                </span>
+              <div className={cn(
+                "inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-sm font-medium",
+                statusBgClass(status),
+                statusColorClass(status)
+              )}>
+                <StatusIcon status={status} className="w-4 h-4" />
+                <span>{status}</span>
+                <span className="tabular-nums opacity-70">{items.length}</span>
               </div>
               <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-foreground/5">
                 <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />

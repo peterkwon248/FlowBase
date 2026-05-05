@@ -8,7 +8,7 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'FlowDB - 업무 데이터베이스',
+  title: 'FlowBase - 업무 데이터베이스',
   description: '눈으로 설계하고, 자동으로 정리해서 바로 업무에 쓰는 DB',
   generator: 'v0.app',
   icons: {

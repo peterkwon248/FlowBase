@@ -3,12 +3,12 @@
 
 import { useState } from "react"
 import {
-  Database,
-  ChevronDown,
-  Search,
-  Check,
-  Plus,
   ArrowRight,
+  Check,
+  ChevronDown,
+  Plus,
+  Search,
+  Workflow,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -50,7 +50,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
             className="h-8 w-8 mx-auto"
           >
             <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
-              <Database className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={1.5} />
+              <Workflow className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={1.5} />
             </div>
           </Button>
         </PopoverTrigger>
@@ -81,11 +81,11 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
           )}
         >
           <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center shrink-0">
-            <Database className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={1.5} />
+            <Workflow className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={1.5} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1">
-              <span className="font-semibold text-sm text-sidebar-foreground">FlowDB</span>
+              <span className="font-semibold text-sm text-sidebar-foreground">FlowBase</span>
               <ChevronDown className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
             </div>
             {activeWorkspace && (
