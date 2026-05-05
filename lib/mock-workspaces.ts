@@ -11,6 +11,7 @@ export interface Workspace {
   members: number
   lastActivityAt: string  // ISO format
   archived: boolean
+  description?: string
 }
 
 export const WORKSPACES: Workspace[] = [
