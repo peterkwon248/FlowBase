@@ -15,6 +15,8 @@
 
 ## Current Direction (다음 우선순위)
 
+**최근 작업 (2026-05-05)**: PR #3(visual-design-update) 머지 후 빌드 fix + **FlowBase 리브랜드** + 운영 status pill UI 개선 (3 commits, PR 진행 중).
+
 다음 라운드 3 후보 중 결정 대기 (추천 우선순위 A ≫ B ≫ C):
 
 1. **🥇 시트 뷰 (편집용 표)** — `components/sections/data-section.tsx`에 `viewMode` 토글 추가. 디스플레이 자동 추천 원칙도 같이 박기.
@@ -30,6 +32,8 @@
 | # | 제목 | 머지 | 핵심 |
 |---|---|---|---|
 | #1 | feat: txt 블록 자동 분류 PoC | `fac55e1` (2026-05-04) | `lib/parsers/txt-block-parser.ts` + `app/txt-poc/page.tsx`. 머레이 응대 템플릿 231 블록 검증 |
+| #3 | visual-design-update | `aa4f353` (2026-05-05) | UI 폴리시 — 채널 아이콘+텍스트, Phosphor status/priority 아이콘, 워크스페이스 셀렉터, 라이트/다크 컬러 최적화 |
+| (TBD) | session: FlowBase rebrand + pill polish | 진행 중 (2026-05-05) | TS fixes(`cc90196`) + FlowDB→FlowBase 리브랜드 + Workflow 아이콘 + 운영 status pill 통합 디자인(`8f597b0`) + 미처리 blue(`e3f8208`) |
 
 ---
 
@@ -50,6 +54,19 @@
    | 숫자 컬럼 ≥ 2 | + 차트(별도 대시보드) |
 
 6. **chartdb.io는 보완 도구** — 적대적 비교 아님. FlowDB의 출력(스키마)을 chartdb로 시각화 가능.
+
+7. **사용자 노출 명칭 = "FlowBase"** (2026-05-05) — 제품명 FlowDB → FlowBase로 리브랜드. 사이드바/page title/CSV→데이터 업로드. 내부 docs/spec의 "FlowDB" 표기는 점진적으로 정리 (긴급 ❌). 깃 리모트도 `peterkwon248/flowdb` → `peterkwon248/FlowBase`로 교체.
+
+8. **Status 색 매핑** (2026-05-05 합의) — 미처리 = **blue** (NOT red). 빨강은 priority `Urgent`와 의미 충돌. 컨벤션:
+
+   | 상태 | Light bg | 의미 |
+   |---|---|---|
+   | 미처리 | blue-200 | 신규/주목 필요 (cool tone) |
+   | 진행중 | amber-200 | 작업 중 |
+   | 대기 | violet-200 | blocked/waiting |
+   | 완료 | emerald-200 | done |
+
+   Status indicator는 *아이콘 + 이름 + 카운트*를 **하나의 pill**로 통합 ([components/sections/operations-section.tsx](../components/sections/operations-section.tsx)). 분리된 count 배지는 -100 shade에서 안 보임.
 
 ---
 

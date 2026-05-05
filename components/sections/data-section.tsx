@@ -79,6 +79,7 @@ import {
   type Customer,
   type CustomerTier,
   type Field,
+  type FieldType,
   type Note,
   type TableNode,
   type Ticket,
