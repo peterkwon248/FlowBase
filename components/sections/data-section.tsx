@@ -1,7 +1,7 @@
 // visual: Linear-style data table — subtle row hover, sticky header, tight cell padding, 12px sort arrows
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import {
   ArrowDown,
   ArrowUp,
@@ -92,6 +92,7 @@ import {
 } from "@/lib/mock-data"
 import { toneBadgeClassDual, statusColorClass, statusBgClass, priorityTextClass } from "@/lib/tokens"
 import { SheetCell, isEditableField } from "./sheet/SheetCell"
+import { useSheetKeyboardNav } from "./sheet/useSheetKeyboardNav"
 
 type AnyRow = Customer | Ticket | Agent | Note
 type SortDir = "asc" | "desc"
@@ -392,6 +393,9 @@ export function DataSection() {
   const [viewMode, setViewMode] = useState<"table" | "sheet">("table")
   // M2: 시트 모드 인라인 편집 상태
   const [editingCell, setEditingCell] = useState<{ rowId: string; fieldName: string } | null>(null)
+  // M4: 비편집 모드 키보드 네비 focus
+  const [focusedCell, setFocusedCell] = useState<{ rowId: string; fieldName: string } | null>(null)
+  const sheetContainerRef = useRef<HTMLDivElement | null>(null)
   // mock 데이터를 useState로 승격 — 세션 내 편집 결과 보존 (refresh 시 lost, design.md §11 Watch Out)
   const [tableData, setTableData] = useState(TABLE_DATA)
 
@@ -429,6 +433,19 @@ export function DataSection() {
     return r
   }, [data, table, searchQuery, sort])
 
+  // M4: 비편집 모드 키보드 네비 (편집 모드는 입력기가 자체 처리). rows useMemo 이후에 호출.
+  useSheetKeyboardNav({
+    enabled: viewMode === "sheet",
+    fields: table?.fields ?? [],
+    rows: rows as Array<{ id: string }>,
+    editingCell,
+    focusedCell,
+    setEditingCell,
+    setFocusedCell,
+    onCellCommit: handleCellCommit,
+    containerRef: sheetContainerRef,
+  })
+
   const handleSort = (key: string) => {
     setSortByTable((prev) => {
       const current = prev[activeTable]
@@ -459,6 +476,8 @@ export function DataSection() {
     setActiveTable(id)
     setSelectedRows([])
     setSearchQuery("")
+    setFocusedCell(null)
+    setEditingCell(null)
   }
 
   return (
@@ -617,7 +636,11 @@ export function DataSection() {
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-auto">
+        <div
+          ref={sheetContainerRef}
+          tabIndex={viewMode === "sheet" ? 0 : -1}
+          className="flex-1 overflow-auto outline-none"
+        >
           {table && (
             <table className="w-full">
               <thead className="bg-muted/40 sticky top-0 z-10 border-b border-border/60">
@@ -679,10 +702,16 @@ export function DataSection() {
                                 editingCell?.rowId === id &&
                                 editingCell?.fieldName === field.name
                               }
-                              onStartEdit={() =>
-                                isEditableField(field) &&
-                                setEditingCell({ rowId: id, fieldName: field.name })
+                              isFocused={
+                                focusedCell?.rowId === id &&
+                                focusedCell?.fieldName === field.name
                               }
+                              onStartEdit={() => {
+                                setFocusedCell({ rowId: id, fieldName: field.name })
+                                if (isEditableField(field)) {
+                                  setEditingCell({ rowId: id, fieldName: field.name })
+                                }
+                              }}
                               onCommit={(newValue) =>
                                 handleCellCommit(id, field.name, newValue)
                               }

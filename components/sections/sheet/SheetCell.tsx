@@ -20,6 +20,7 @@ interface SheetCellProps {
   value: unknown
   rowId: string
   isEditing: boolean
+  isFocused?: boolean
   onStartEdit: () => void
   onCommit: (newValue: unknown) => void
   onCancel: () => void
@@ -55,13 +56,23 @@ export function SheetCell({
   value,
   rowId: _rowId,
   isEditing,
+  isFocused = false,
   onStartEdit,
   onCommit,
   onCancel,
 }: SheetCellProps) {
-  // 미지원 type (uuid/pk/fk/select/status): 비편집 Cell 그대로
+  // 미지원 type (uuid/pk/fk): 비편집 Cell + focus ring (편집은 ❌, 키보드 네비로 통과만 가능)
   if (!supportsInlineEdit(field)) {
-    return <Cell field={field} value={value} />
+    return (
+      <div
+        className={cn(
+          "rounded-sm -mx-1 px-1 py-0.5",
+          isFocused && "ring-1 ring-ring",
+        )}
+      >
+        <Cell field={field} value={value} />
+      </div>
+    )
   }
 
   if (isEditing) {
@@ -97,10 +108,12 @@ export function SheetCell({
     <button
       type="button"
       onClick={onStartEdit}
+      tabIndex={-1}
       className={cn(
         "w-full text-left rounded-sm -mx-1 px-1 py-0.5 cursor-pointer",
         "transition-colors hover:bg-foreground/[0.05] dark:hover:bg-foreground/[0.07]",
-        "focus:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+        "focus:outline-none",
+        isFocused && "ring-1 ring-ring",
       )}
       aria-label={`${field.name} 편집`}
     >
