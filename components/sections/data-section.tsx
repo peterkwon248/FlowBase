@@ -91,6 +91,7 @@ import {
   getCustomerName,
 } from "@/lib/mock-data"
 import { toneBadgeClassDual, statusColorClass, statusBgClass, priorityTextClass } from "@/lib/tokens"
+import { SheetCell, isEditableField } from "./sheet/SheetCell"
 
 type AnyRow = Customer | Ticket | Agent | Note
 type SortDir = "asc" | "desc"
@@ -231,7 +232,7 @@ interface CellProps {
   value: unknown
 }
 
-function Cell({ field, value }: CellProps) {
+export function Cell({ field, value }: CellProps) {
   if (value == null) {
     return <span className="text-muted-foreground">—</span>
   }
@@ -389,13 +390,29 @@ export function DataSection() {
     Record<string, { key: string; dir: SortDir } | null>
   >({})
   const [viewMode, setViewMode] = useState<"table" | "sheet">("table")
+  // M2: 시트 모드 인라인 편집 상태
+  const [editingCell, setEditingCell] = useState<{ rowId: string; fieldName: string } | null>(null)
+  // mock 데이터를 useState로 승격 — 세션 내 편집 결과 보존 (refresh 시 lost, design.md §11 Watch Out)
+  const [tableData, setTableData] = useState(TABLE_DATA)
 
   const table: TableNode | undefined = useMemo(
     () => SCHEMA.find((t) => t.id === activeTable),
     [activeTable],
   )
 
-  const data = TABLE_DATA[activeTable] ?? []
+  const data = tableData[activeTable] ?? []
+
+  const handleCellCommit = (rowId: string, fieldName: string, newValue: unknown) => {
+    setTableData((prev) => ({
+      ...prev,
+      [activeTable]: (prev[activeTable] ?? []).map((row: AnyRow) =>
+        (row as { id: string }).id === rowId
+          ? ({ ...row, [fieldName]: newValue } as AnyRow)
+          : row,
+      ),
+    }))
+    setEditingCell(null)
+  }
 
   const sort =
     sortByTable[activeTable] ??
@@ -651,17 +668,29 @@ export function DataSection() {
                       {table.fields.map((field) => (
                         <td
                           key={field.name}
-                          className={cn(
-                            "px-3 py-2 text-sm align-middle",
-                            // M1: 시트 모드 시각 차이 (편집은 M2부터). uuid/pk/fk는 read-only이므로 cursor 변경 ❌
-                            viewMode === "sheet" &&
-                              !field.pk &&
-                              field.type !== "uuid" &&
-                              field.type !== "fk" &&
-                              "cursor-pointer hover:bg-foreground/[0.05] dark:hover:bg-foreground/[0.07]",
-                          )}
+                          className="px-3 py-2 text-sm align-middle"
                         >
-                          <Cell field={field} value={rowValue(row, field.name)} />
+                          {viewMode === "sheet" ? (
+                            <SheetCell
+                              field={field}
+                              value={rowValue(row, field.name)}
+                              rowId={id}
+                              isEditing={
+                                editingCell?.rowId === id &&
+                                editingCell?.fieldName === field.name
+                              }
+                              onStartEdit={() =>
+                                isEditableField(field) &&
+                                setEditingCell({ rowId: id, fieldName: field.name })
+                              }
+                              onCommit={(newValue) =>
+                                handleCellCommit(id, field.name, newValue)
+                              }
+                              onCancel={() => setEditingCell(null)}
+                            />
+                          ) : (
+                            <Cell field={field} value={rowValue(row, field.name)} />
+                          )}
                         </td>
                       ))}
                       <td className="px-3 py-2">
