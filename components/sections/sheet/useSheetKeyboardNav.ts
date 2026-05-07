@@ -16,7 +16,7 @@ import { useEffect, type RefObject } from "react"
 import type { Field } from "@/lib/mock-data"
 import { isEditableField } from "./SheetCell"
 
-export type CellCoord = { rowId: string; fieldName: string }
+export type CellCoord = { rowId: string; fieldName: string; initialDraft?: string }
 
 interface UseSheetKeyboardNavOptions {
   enabled: boolean
@@ -49,7 +49,9 @@ export function useSheetKeyboardNav(opts: UseSheetKeyboardNavOptions): void {
     if (!el) return
 
     const handleKey = (e: KeyboardEvent) => {
-      // 편집 모드는 입력기가 자체 처리 (M4b에서 Tab/Enter commit+이동 통합 예정)
+      // IME (한글 등 조합 중) 무시 — 편집 진입을 막아야 첫 키가 한글 자모로 들어감
+      if (e.isComposing) return
+      // 편집 모드는 입력기가 자체 처리 (편집 모드 Tab/Enter는 SheetCell M4b에서 처리)
       if (editingCell) return
       if (rows.length === 0 || fields.length === 0) return
 
@@ -140,9 +142,23 @@ export function useSheetKeyboardNav(opts: UseSheetKeyboardNavOptions): void {
             onCellCommit(focusedCell.rowId, focusedCell.fieldName, null)
           }
           break
-        default:
-          // 일반 문자 키 → 편집 시작 + initialDraft (M4b)
+        default: {
+          // M4b: 일반 문자 키 → 편집 시작 + initialDraft (Excel 패턴)
+          // text-based type만 (select/status는 Enter/F2/Space로만 — ChipSelect는 텍스트 입력 ❌)
+          const isTextBased = TEXT_BASED_TYPES.has(currentField.type)
+          if (
+            e.key.length === 1 &&
+            !e.ctrlKey &&
+            !e.metaKey &&
+            !e.altKey &&
+            isEditableField(currentField) &&
+            isTextBased
+          ) {
+            e.preventDefault()
+            setEditingCell({ ...focusedCell, initialDraft: e.key })
+          }
           break
+        }
       }
     }
 
@@ -161,12 +177,23 @@ export function useSheetKeyboardNav(opts: UseSheetKeyboardNavOptions): void {
   ])
 }
 
+// M4b 일반 문자키 편집 시작 — text-based 타입만
+const TEXT_BASED_TYPES = new Set([
+  "string",
+  "email",
+  "phone",
+  "number",
+  "text",
+  "datetime",
+])
+
 function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n))
 }
 
 // Tab/Shift+Tab으로 다음/이전 *편집 가능* 셀 찾기 (uuid/pk/fk 건너뜀, 행 끝이면 다음 행 첫 컬럼)
-function nextEditableField(
+// M4b: data-section.tsx의 handleCellCommitAndAdvance에서 재사용
+export function nextEditableField(
   fields: Field[],
   fieldIdx: number,
   rowIdx: number,

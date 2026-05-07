@@ -92,7 +92,11 @@ import {
 } from "@/lib/mock-data"
 import { toneBadgeClassDual, statusColorClass, statusBgClass, priorityTextClass } from "@/lib/tokens"
 import { SheetCell, isEditableField } from "./sheet/SheetCell"
-import { useSheetKeyboardNav } from "./sheet/useSheetKeyboardNav"
+import {
+  useSheetKeyboardNav,
+  nextEditableField,
+  type CellCoord,
+} from "./sheet/useSheetKeyboardNav"
 
 type AnyRow = Customer | Ticket | Agent | Note
 type SortDir = "asc" | "desc"
@@ -391,10 +395,10 @@ export function DataSection() {
     Record<string, { key: string; dir: SortDir } | null>
   >({})
   const [viewMode, setViewMode] = useState<"table" | "sheet">("table")
-  // M2: 시트 모드 인라인 편집 상태
-  const [editingCell, setEditingCell] = useState<{ rowId: string; fieldName: string } | null>(null)
+  // M2: 시트 모드 인라인 편집 상태 (M4b: initialDraft 추가 — 문자키로 시작 시)
+  const [editingCell, setEditingCell] = useState<CellCoord | null>(null)
   // M4: 비편집 모드 키보드 네비 focus
-  const [focusedCell, setFocusedCell] = useState<{ rowId: string; fieldName: string } | null>(null)
+  const [focusedCell, setFocusedCell] = useState<CellCoord | null>(null)
   const sheetContainerRef = useRef<HTMLDivElement | null>(null)
   // mock 데이터를 useState로 승격 — 세션 내 편집 결과 보존 (refresh 시 lost, design.md §11 Watch Out)
   const [tableData, setTableData] = useState(TABLE_DATA)
@@ -420,7 +424,7 @@ export function DataSection() {
 
   const data = tableData[activeTable] ?? []
 
-  const handleCellCommit = (rowId: string, fieldName: string, newValue: unknown) => {
+  const commitValue = (rowId: string, fieldName: string, newValue: unknown) => {
     setTableData((prev) => ({
       ...prev,
       [activeTable]: (prev[activeTable] ?? []).map((row: AnyRow) =>
@@ -429,7 +433,50 @@ export function DataSection() {
           : row,
       ),
     }))
+  }
+
+  const handleCellCommit = (rowId: string, fieldName: string, newValue: unknown) => {
+    commitValue(rowId, fieldName, newValue)
     setEditingCell(null)
+  }
+
+  // M4b: 편집 모드 Tab/Enter — commit 후 다음 셀로 focus 이동
+  const handleCellCommitAndAdvance = (
+    rowId: string,
+    fieldName: string,
+    newValue: unknown,
+    direction: "next" | "prev" | "down",
+  ) => {
+    commitValue(rowId, fieldName, newValue)
+    setEditingCell(null)
+    if (!table) return
+    const fields = table.fields
+    const rowIdx = rows.findIndex((r) => (r as { id: string }).id === rowId)
+    const fieldIdx = fields.findIndex((f) => f.name === fieldName)
+    if (rowIdx < 0 || fieldIdx < 0) return
+
+    if (direction === "down") {
+      if (rowIdx + 1 < rows.length) {
+        setFocusedCell({
+          rowId: (rows[rowIdx + 1] as { id: string }).id,
+          fieldName,
+        })
+      }
+      return
+    }
+    const next = nextEditableField(
+      fields,
+      fieldIdx,
+      rowIdx,
+      rows.length,
+      direction === "prev",
+    )
+    if (next) {
+      setFocusedCell({
+        rowId: (rows[next.rowIdx] as { id: string }).id,
+        fieldName: fields[next.fieldIdx].name,
+      })
+    }
   }
 
   const sort =
@@ -720,6 +767,12 @@ export function DataSection() {
                                 focusedCell?.rowId === id &&
                                 focusedCell?.fieldName === field.name
                               }
+                              initialDraft={
+                                editingCell?.rowId === id &&
+                                editingCell?.fieldName === field.name
+                                  ? editingCell.initialDraft
+                                  : undefined
+                              }
                               customOptions={getCustomOptions(field.name)}
                               onAddOption={(opt) => handleAddOption(field.name, opt)}
                               onStartEdit={() => {
@@ -730,6 +783,14 @@ export function DataSection() {
                               }}
                               onCommit={(newValue) =>
                                 handleCellCommit(id, field.name, newValue)
+                              }
+                              onCommitAndAdvance={(newValue, direction) =>
+                                handleCellCommitAndAdvance(
+                                  id,
+                                  field.name,
+                                  newValue,
+                                  direction,
+                                )
                               }
                               onCancel={() => setEditingCell(null)}
                             />

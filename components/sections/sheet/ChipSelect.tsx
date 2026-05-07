@@ -20,11 +20,14 @@ import { statusBgClass, statusColorClass } from "@/lib/tokens"
 import type { Field, TicketStatus } from "@/lib/mock-data"
 import { StatusIcon, PriorityIcon, ChannelIcon } from "../data-section"
 
+type AdvanceDirection = "next" | "prev" | "down"
+
 interface ChipSelectProps {
   field: Field
   value: unknown
   options: string[] // merged: field.enum + custom additions
   onCommit: (newValue: unknown) => void
+  onCommitAndAdvance?: (newValue: unknown, direction: AdvanceDirection) => void
   onAddOption?: (newOpt: string) => void // undefined → 추가 비활성
   onCancel: () => void
 }
@@ -34,6 +37,7 @@ export function ChipSelect({
   value,
   options,
   onCommit,
+  onCommitAndAdvance,
   onAddOption,
   onCancel,
 }: ChipSelectProps) {
@@ -56,6 +60,13 @@ export function ChipSelect({
   const select = (opt: string) => {
     committedRef.current = true
     onCommit(opt)
+    setOpen(false)
+  }
+
+  const selectAndAdvance = (opt: string, direction: AdvanceDirection) => {
+    committedRef.current = true
+    if (onCommitAndAdvance) onCommitAndAdvance(opt, direction)
+    else onCommit(opt)
     setOpen(false)
   }
 
@@ -107,7 +118,12 @@ export function ChipSelect({
             setHighlightIdx((i) => Math.max(0, i - 1))
           } else if (e.key === "Enter") {
             e.preventDefault()
-            if (options[highlightIdx]) select(options[highlightIdx])
+            const opt = options[highlightIdx]
+            if (opt) selectAndAdvance(opt, "down")
+          } else if (e.key === "Tab") {
+            e.preventDefault()
+            const opt = options[highlightIdx]
+            if (opt) selectAndAdvance(opt, e.shiftKey ? "prev" : "next")
           } else if (e.key === "Escape") {
             e.preventDefault()
             committedRef.current = false

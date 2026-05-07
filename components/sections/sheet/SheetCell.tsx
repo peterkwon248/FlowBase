@@ -16,17 +16,23 @@ import { ChipSelect } from "./ChipSelect"
 
 export type CellId = { rowId: string; fieldName: string }
 
+export type AdvanceDirection = "next" | "prev" | "down"
+
 interface SheetCellProps {
   field: Field
   value: unknown
   rowId: string
   isEditing: boolean
   isFocused?: boolean
+  // M4b: 문자키로 편집 시작 시 initialDraft (없으면 현재 value)
+  initialDraft?: string
   // select/status — 사용자가 추가한 enum 옵션 (field.enum + customOptions = merged)
   customOptions?: string[]
   onAddOption?: (opt: string) => void
   onStartEdit: () => void
   onCommit: (newValue: unknown) => void
+  // M4b: 편집 모드 Tab/Enter — commit + 다음 셀 자동 이동
+  onCommitAndAdvance?: (newValue: unknown, direction: AdvanceDirection) => void
   onCancel: () => void
 }
 
@@ -61,10 +67,12 @@ export function SheetCell({
   rowId: _rowId,
   isEditing,
   isFocused = false,
+  initialDraft,
   customOptions,
   onAddOption,
   onStartEdit,
   onCommit,
+  onCommitAndAdvance,
   onCancel,
 }: SheetCellProps) {
   // 미지원 type (uuid/pk/fk): 비편집 Cell + focus ring (편집은 ❌, 키보드 네비로 통과만 가능)
@@ -84,7 +92,13 @@ export function SheetCell({
   if (isEditing) {
     if (field.type === "text") {
       return (
-        <InlineTextarea value={value} onCommit={onCommit} onCancel={onCancel} />
+        <InlineTextarea
+          value={value}
+          initialDraft={initialDraft}
+          onCommit={onCommit}
+          onCommitAndAdvance={onCommitAndAdvance}
+          onCancel={onCancel}
+        />
       )
     }
     // M3 → ChipSelect: pill 모양 dropdown + 새 옵션 추가
@@ -96,6 +110,7 @@ export function SheetCell({
           value={value}
           options={merged}
           onCommit={onCommit}
+          onCommitAndAdvance={onCommitAndAdvance}
           onAddOption={onAddOption}
           onCancel={onCancel}
         />
@@ -106,7 +121,9 @@ export function SheetCell({
         type={inputTypeFor(field.type)}
         rawType={field.type}
         value={value}
+        initialDraft={initialDraft}
         onCommit={onCommit}
+        onCommitAndAdvance={onCommitAndAdvance}
         onCancel={onCancel}
       />
     )
@@ -139,27 +156,45 @@ interface InlineInputProps {
   type: string // HTML input type
   rawType: string // FieldType — coerce 시 사용
   value: unknown
+  initialDraft?: string // M4b: 문자키로 편집 시작 시
   onCommit: (newValue: unknown) => void
+  onCommitAndAdvance?: (newValue: unknown, direction: AdvanceDirection) => void
   onCancel: () => void
 }
 
-function InlineInput({ type, rawType, value, onCommit, onCancel }: InlineInputProps) {
-  const [draft, setDraft] = useState<string>(toEditableString(value, rawType))
+function InlineInput({
+  type,
+  rawType,
+  value,
+  initialDraft,
+  onCommit,
+  onCommitAndAdvance,
+  onCancel,
+}: InlineInputProps) {
+  const [draft, setDraft] = useState<string>(
+    initialDraft !== undefined ? initialDraft : toEditableString(value, rawType),
+  )
   const [isComposing, setIsComposing] = useState(false)
   const ref = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     ref.current?.focus()
-    ref.current?.select()
-  }, [])
+    // initialDraft (문자키 편집 시작) — 커서를 끝에 두기, select ❌
+    // 일반 진입 — 전체 select (사용자가 즉시 덮어쓰기 쉽게)
+    if (initialDraft === undefined) ref.current?.select()
+  }, [initialDraft])
 
-  const commit = () => {
+  const commitOrCancel = (advanceDirection?: AdvanceDirection) => {
     const coerced = coerceValue(draft, rawType)
     if (coerced === COERCE_FAILED) {
       onCancel()
       return
     }
-    onCommit(coerced)
+    if (advanceDirection && onCommitAndAdvance) {
+      onCommitAndAdvance(coerced, advanceDirection)
+    } else {
+      onCommit(coerced)
+    }
   }
 
   return (
@@ -170,17 +205,19 @@ function InlineInput({ type, rawType, value, onCommit, onCancel }: InlineInputPr
       onChange={(e) => setDraft(e.target.value)}
       onCompositionStart={() => setIsComposing(true)}
       onCompositionEnd={() => setIsComposing(false)}
-      onBlur={commit}
+      onBlur={() => commitOrCancel()}
       onKeyDown={(e) => {
-        if (isComposing) return // IME (한글 자모 입력 중 Enter 무시)
+        if (isComposing) return
         if (e.key === "Enter") {
           e.preventDefault()
-          commit()
+          commitOrCancel("down")
+        } else if (e.key === "Tab") {
+          e.preventDefault()
+          commitOrCancel(e.shiftKey ? "prev" : "next")
         } else if (e.key === "Escape") {
           e.preventDefault()
           onCancel()
         }
-        // Tab은 useSheetKeyboardNav가 처리 (M4) — 여기서는 default 동작 유지
       }}
       className={cn(
         "w-full bg-background border border-input rounded-sm",
@@ -200,12 +237,22 @@ function InlineInput({ type, rawType, value, onCommit, onCancel }: InlineInputPr
 
 interface InlineTextareaProps {
   value: unknown
+  initialDraft?: string
   onCommit: (newValue: unknown) => void
+  onCommitAndAdvance?: (newValue: unknown, direction: AdvanceDirection) => void
   onCancel: () => void
 }
 
-function InlineTextarea({ value, onCommit, onCancel }: InlineTextareaProps) {
-  const [draft, setDraft] = useState<string>(String(value ?? ""))
+function InlineTextarea({
+  value,
+  initialDraft,
+  onCommit,
+  onCommitAndAdvance,
+  onCancel,
+}: InlineTextareaProps) {
+  const [draft, setDraft] = useState<string>(
+    initialDraft !== undefined ? initialDraft : String(value ?? ""),
+  )
   const [isComposing, setIsComposing] = useState(false)
   const ref = useRef<HTMLTextAreaElement>(null)
 
@@ -213,9 +260,14 @@ function InlineTextarea({ value, onCommit, onCancel }: InlineTextareaProps) {
     const el = ref.current
     if (!el) return
     el.focus()
-    el.select()
+    if (initialDraft === undefined) el.select()
     autoResize(el)
-  }, [])
+  }, [initialDraft])
+
+  const advance = (direction: AdvanceDirection) => {
+    if (onCommitAndAdvance) onCommitAndAdvance(draft, direction)
+    else onCommit(draft)
+  }
 
   return (
     <textarea
@@ -230,10 +282,13 @@ function InlineTextarea({ value, onCommit, onCancel }: InlineTextareaProps) {
       onBlur={() => onCommit(draft)}
       onKeyDown={(e) => {
         if (isComposing) return
-        // text 타입: Ctrl/Cmd+Enter 또는 blur로 commit. 단독 Enter는 줄바꿈
+        // text 타입: 단독 Enter는 줄바꿈, Ctrl/Cmd+Enter는 commit + 아래 셀 이동
         if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
           e.preventDefault()
-          onCommit(draft)
+          advance("down")
+        } else if (e.key === "Tab") {
+          e.preventDefault()
+          advance(e.shiftKey ? "prev" : "next")
         } else if (e.key === "Escape") {
           e.preventDefault()
           onCancel()
