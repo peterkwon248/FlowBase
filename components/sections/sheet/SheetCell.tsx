@@ -1,5 +1,4 @@
-// design.md §3.3 SheetCell — M2: string/number/email/phone/text/datetime 인라인 편집
-// select/status는 M3에서 처리 (M2에서는 read-only로 표시).
+// design.md §3.3 SheetCell — M2: string/number/email/phone/text/datetime, M3: select/status 인라인 편집
 // uuid/pk/fk는 영구 read-only.
 //
 // 가드 (CLAUDE.md minimalist-skill):
@@ -33,12 +32,22 @@ export function isEditableField(field: Field): boolean {
   return true
 }
 
-// M2 지원 type — select/status는 M3에서
-const M2_EDITABLE_TYPES = new Set(["string", "email", "phone", "number", "text", "datetime"])
+// 시트 뷰에서 인라인 편집 가능한 type
+// M2: string/email/phone/number/text/datetime, M3: select/status 추가
+const EDITABLE_TYPES = new Set([
+  "string",
+  "email",
+  "phone",
+  "number",
+  "text",
+  "datetime",
+  "select",
+  "status",
+])
 
 function supportsInlineEdit(field: Field): boolean {
   if (!isEditableField(field)) return false
-  return M2_EDITABLE_TYPES.has(field.type)
+  return EDITABLE_TYPES.has(field.type)
 }
 
 export function SheetCell({
@@ -59,6 +68,17 @@ export function SheetCell({
     if (field.type === "text") {
       return (
         <InlineTextarea value={value} onCommit={onCommit} onCancel={onCancel} />
+      )
+    }
+    // M3: select/status — native <select> + Field.enum
+    if (field.type === "select" || field.type === "status") {
+      return (
+        <InlineSelect
+          options={field.enum ?? []}
+          value={value}
+          onCommit={onCommit}
+          onCancel={onCancel}
+        />
       )
     }
     return (
@@ -211,6 +231,60 @@ function InlineTextarea({ value, onCommit, onCancel }: InlineTextareaProps) {
 function autoResize(el: HTMLTextAreaElement) {
   el.style.height = "auto"
   el.style.height = `${el.scrollHeight}px`
+}
+
+// ─────────────────────────────────────────────────────────────────
+// InlineSelect — select / status (Field.enum)
+// design.md §4: change → 즉시 commit. native <select>로 단순화 + 키보드 친화적
+// ─────────────────────────────────────────────────────────────────
+
+interface InlineSelectProps {
+  options: string[]
+  value: unknown
+  onCommit: (newValue: unknown) => void
+  onCancel: () => void
+}
+
+function InlineSelect({ options, value, onCommit, onCancel }: InlineSelectProps) {
+  const ref = useRef<HTMLSelectElement>(null)
+  const committedRef = useRef(false)
+
+  useEffect(() => {
+    ref.current?.focus()
+  }, [])
+
+  return (
+    <select
+      ref={ref}
+      defaultValue={value == null ? "" : String(value)}
+      onChange={(e) => {
+        committedRef.current = true
+        onCommit(e.target.value)
+      }}
+      onBlur={() => {
+        // 값 변경 없이 떠나면 cancel. onCommit 후 unmount되므로 race 위험 시 onChange 우선
+        if (!committedRef.current) onCancel()
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          e.preventDefault()
+          onCancel()
+        }
+      }}
+      className={cn(
+        "w-full bg-background border border-input rounded-sm",
+        "px-1.5 py-0.5 text-sm font-[inherit]",
+        "outline-none focus:ring-1 focus:ring-ring",
+      )}
+    >
+      {value == null && <option value="">—</option>}
+      {options.map((opt) => (
+        <option key={opt} value={opt}>
+          {opt}
+        </option>
+      ))}
+    </select>
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────
