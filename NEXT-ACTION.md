@@ -7,7 +7,7 @@
 
 ## 한 줄 요약
 
-**Phase 0 완료 + PoC(PR #1) + 디자인/워크스페이스 UX overhaul(PR #3·#4) + FlowBase 리브랜드 완료. 다음 갈림길: 시트 뷰 / 사람 확정 UI / LLM 하이브리드 — 셋 중 하나.**
+**taste-skill 도입 검토 완료 (옵션 2: minimalist-skill 단일) + Geist 폰트 fix + 프로젝트 가드 룰 박음. 다음: 옵션 A 시트 뷰 트라이얼 (`feat/sheet-view` 브랜치, minimalist-skill 적용).**
 
 ---
 
@@ -49,9 +49,38 @@
 
 ---
 
-## 다음 행동 — 3 갈래 (택 1)
+## 다음 행동 (2026-05-07 결정 후)
 
-### 🥇 옵션 A. 시트 뷰 (편집용 표) — 가장 실효 큼
+### 🎯 옵션 A 시트 뷰 트라이얼 (minimalist-skill 적용) — 1차
+
+**`feat/sheet-view` 브랜치 이미 생성됨 (origin 미push).**
+
+1. `git checkout feat/sheet-view` (이미 main에서 분기 완료)
+2. PDCA design 작성: `docs/02-design/features/sheet-view.design.md`
+   - viewMode = "table" | "sheet" 토글
+   - 셀 인라인 편집 (input/select/checkbox 분기)
+   - 키보드 네비게이션 (Tab/Enter/Arrow/Esc)
+   - 복붙 지원 (clipboard 다중 셀)
+   - **minimalist-skill 적용 룰** (CLAUDE.md 가드 매트릭스 따름)
+   - **디스플레이 자동 추천 원칙** spec 박기 ([MEMORY.md #5](docs/MEMORY.md#key-design-decisions))
+3. 구현: `components/sections/data-section.tsx` 위주
+4. 1주 평가 후 minimalist-skill 본격 도입 또는 후퇴 결정
+5. PR → main 머지
+
+### 후순위 옵션 (옵션 A 머지 후 재검토)
+
+**옵션 B. 카테고리 인라인 편집 UI** — `app/txt-poc/page.tsx` 셀 클릭 → 드롭다운. spec §0 *AI 추천 + 사람 확정* 적용.
+**옵션 C. LLM 하이브리드 분류** — "기타" 블록만 LLM 보강 (옵션 B 선결).
+
+---
+
+## 폐기된 행동 (참고용)
+
+### ~~🥇 옵션 A. 시트 뷰 (편집용 표) — 가장 실효 큼~~
+
+> 2026-05-07: 옵션 A 단독 진입 직전 사용자가 taste-skill 도입을 제기. 검토 후 옵션 2(minimalist-skill 단일) 채택. 옵션 A는 minimalist-skill 적용 트라이얼 형태로 진행.
+
+
 **왜**: 솔로 창업자/PM 페르소나의 *5분 안에 정리* 약속과 직결. 현재 데이터 섹션 표는 *읽기용* (정렬·검색만, 편집 ❌). 응대 멘트 200→300으로 키울 때 시트 없으면 거짓말.
 
 **행동**:

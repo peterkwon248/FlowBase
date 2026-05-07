@@ -4,6 +4,46 @@
 
 ---
 
+## 2026-05-07 오후 (집) — taste-skill 도입 검토 + Geist fix
+
+### 완료
+- **taste-skill 도입 검토** ([docs/01-plan/features/taste-skill-adoption.plan.md](01-plan/features/taste-skill-adoption.plan.md))
+  - 13개 스킬 매트릭스 분석, FlowBase 정렬도 70% 확인 (Phosphor ✅, Geist ✅, shadcn, Linear)
+  - 4개 도입 옵션 평가 → **옵션 2 (minimalist-skill 단일)** 채택
+- **minimalist-skill SKILL.md 다운로드**: `docs/design-skills/minimalist-skill/SKILL.md` (git tracked, 85 lines, MIT 라이선스)
+- **프로젝트 가드 룰 작성**: [CLAUDE.md](../CLAUDE.md) (project root)
+  - 디자인 우선순위 1·2·3 (MEMORY → tokens → minimalist-skill)
+  - LOCK 상수: Status 색 매핑, Phosphor, Geist, FlowBase 명칭
+  - FlowBase 가드 매트릭스 (minimalist-skill 권장 vs FlowBase 현실)
+  - 트라이얼 결정: `feat/sheet-view`에서 적용 → 1주 평가
+- **Geist 폰트 fix** (별건):
+  - `app/layout.tsx`: `Geist({ variable: "--font-geist-sans" })` + `<html className={geistSans.variable}>`
+  - `app/globals.css`: `--font-sans: var(--font-geist-sans), 'Geist Fallback', system-ui, sans-serif`
+  - 이전: variable 연결 없이 `'Geist'` string만, 실제 적용 ❌
+- **MEMORY.md Key Design Decision #9, #10 추가** (taste-skill 도입, Geist fix)
+- **NEXT-ACTION.md 갱신**: 다음 행동을 옵션 A 시트 뷰 트라이얼(minimalist-skill 적용)로 단일화
+
+### 큰 결정
+- **옵션 2 (minimalist-skill 단일)** 채택 — 옵션 3(다이얼 조합)은 복잡도 비대 회피, 옵션 4(redesign-skill만)는 신규 컴포넌트 폴리시 부족
+- **세리프 헤딩 도입 ❌** — 앱(데이터 보드)은 산스 톤이 적합. minimalist-skill 권장 Lyon Text/Newsreader/Playfair는 미적용
+- **framer-motion 자동 설치 ❌** — MOTION_INTENSITY 1-3만 (정적 ~ 미세 hover/fade). 데이터 보드에 화려한 모션 ❌
+- **Status 색 매핑 보존** — 어떤 도입에도 절대 override ❌ (LOCK)
+- **`.claude/`는 통째로 gitignored** — SKILL.md를 docs/design-skills/에 git tracked로 둠 (cross-machine sync). install은 명시 reference 패턴
+
+### 다음
+1. **옵션 A 시트 뷰 트라이얼 (다음 세션)** — `feat/sheet-view` 브랜치에서 PDCA design 작성 → 구현
+2. minimalist-skill 1주 평가 후 본격 도입 또는 후퇴 결정
+
+### Watch Out
+- **`feat/sheet-view` 브랜치는 origin 미push** — 다음 세션에서 push 후 PR 작업
+- **NEXT-ACTION.md 하단 "폐기된 행동" 섹션** — 원본 옵션 A·B·C 내용 참고용 보존. 시간 지나면 정리
+- **CLAUDE.md (project)는 신규** — `before-work` 시 4번째로 읽도록 권장 (Source of Truth는 docs/MEMORY.md, CLAUDE.md는 가드/lock 룰)
+
+### 머신
+집
+
+---
+
 ## 2026-05-07 오전 (집) — before-work 동기화
 
 ### 완료

@@ -15,13 +15,10 @@
 
 ## Current Direction (다음 우선순위)
 
-**최근 작업 (2026-05-05)**: PR #3(visual-design-update) 머지 후 빌드 fix + **FlowBase 리브랜드** + 운영 status pill UI 개선 (3 commits, PR 진행 중).
+**2026-05-07 결정**: taste-skill 도입 검토 → **옵션 2 (minimalist-skill 단일)** 채택. Geist 폰트 fix 완료. 프로젝트 가드 룰 박음([CLAUDE.md](../CLAUDE.md)).
 
-다음 라운드 3 후보 중 결정 대기 (추천 우선순위 A ≫ B ≫ C):
-
-1. **🥇 시트 뷰 (편집용 표)** — `components/sections/data-section.tsx`에 `viewMode` 토글 추가. 디스플레이 자동 추천 원칙도 같이 박기.
-2. **🥈 카테고리 인라인 편집 UI** — `app/txt-poc/page.tsx` 셀 클릭 → 드롭다운. spec §0 *AI 추천 + 사람 확정* 적용.
-3. **🥉 LLM 하이브리드 카테고리 분류** — "기타" 블록만 LLM 보강. chartdb.io의 정적+LLM 분기 패턴.
+**1차 다음 행동**: 옵션 A 시트 뷰 트라이얼 (`feat/sheet-view` 브랜치, minimalist-skill 적용).
+- 후순위: 옵션 B (카테고리 인라인 편집 UI), 옵션 C (LLM 하이브리드 분류)
 
 상세는 [../NEXT-ACTION.md](../NEXT-ACTION.md) "다음 행동" 섹션 참조.
 
@@ -67,6 +64,10 @@
    | 완료 | emerald-200 | done |
 
    Status indicator는 *아이콘 + 이름 + 카운트*를 **하나의 pill**로 통합 ([components/sections/operations-section.tsx](../components/sections/operations-section.tsx)). 분리된 count 배지는 -100 shade에서 안 보임.
+
+9. **taste-skill 도입 — 옵션 2 (minimalist-skill 단일)** (2026-05-07 결정) — `docs/design-skills/minimalist-skill/SKILL.md` (git tracked source of truth). 우선순위: ① docs/MEMORY.md 결정 → ② lib/tokens.ts → ③ minimalist-skill SKILL.md. **세리프 헤딩 도입 ❌, framer-motion 자동 설치 ❌, Status 색 매핑 보존**. 가드 매트릭스 [CLAUDE.md](../CLAUDE.md) 참조. 트라이얼: `feat/sheet-view` 브랜치에서 옵션 A 시트 뷰 작업 시 적용 → 1주 평가. 검토 plan: [docs/01-plan/features/taste-skill-adoption.plan.md](01-plan/features/taste-skill-adoption.plan.md).
+
+10. **Geist 폰트 적용 fix** (2026-05-07) — `app/layout.tsx`에서 `Geist({ variable: "--font-geist-sans" })` + `<html className={geistSans.variable}>` 적용. `app/globals.css` `@theme inline`의 `--font-sans: var(--font-geist-sans)`로 매핑. 이전에는 import만 되고 적용 안 됨 (`<body className="font-sans">`만, Geist variable 미연결).
 
 ---
 
