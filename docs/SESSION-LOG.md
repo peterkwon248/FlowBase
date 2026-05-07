@@ -4,6 +4,65 @@
 
 ---
 
+## 2026-05-07 오전 (집) — before-work 동기화
+
+### 완료
+- **GitHub 레포 rename 확인**: `peterkwon248/flowdb` → `peterkwon248/FlowBase` (GitHub에서 이미 rename 됨, 로컬 origin도 `set-url`로 갱신)
+- **18 commits pull (fast-forward)**: PR #3·PR #4 + 2026-05-05 직접 커밋 4건
+- **docs 정합성 갱신**: `NEXT-ACTION.md` (날짜/경로/PR 완료), `CONTEXT.md` (Current Features), `TODO.md` (완료 항목), `SESSION-LOG.md` (이 entry), `docs/MEMORY.md` (이미 직전 세션에서 갱신됨 — 그대로)
+- **Local memory rehydrate**: `~/.claude/projects/.../memory/project_flowdb_status.md` → 2026-05-07 상태로 갱신
+
+### 직전 세션과의 변경
+- 폴더 이름 `Desktop/FlowDB/` → `Desktop/FlowBase/`로 변경됨 (사용자 직접 변경 또는 다른 머신)
+
+### 다음
+**다음 라운드 결정 — 옵션 A·B·C 중 사용자 선택 대기 (추천 A).**
+
+### Watch Out
+- **NEXT-ACTION.md "환경 정보"의 *모든 경로* 갱신 완료** — 다음 머신/세션 시작 시 stale 안 되도록 주의
+
+### 머신
+집
+
+---
+
+## 2026-05-05 ~ 2026-05-07 (mixed: v0.dev / claude.ai / 직접 커밋)
+
+> 직접 작성된 SESSION-LOG entry 없음. PR/commit 메타데이터에서 재구성.
+
+### 완료
+- **PR #3 머지** (`aa4f353`, 2026-05-05) — `visual-design-update` (v0[bot] 작업)
+  - Phosphor status/priority 아이콘 (`95a1558`)
+  - light/dark 컬러 최적화 (`28fc0681`)
+  - "Add Ticket" → "Add Task" + 아이콘 추가 (`9e12305`)
+  - 워크스페이스 셀렉터 드롭다운 (`ec738d4`)
+  - 채널 = 아이콘+텍스트 결합 (`897439f`)
+- **2026-05-05 직접 커밋 4건** (committer: `ludimast`, claude.ai 추정)
+  - `cc90196` fix: TS errors + lockfile drift (PR #3 후처리)
+  - `8f597b0` feat: **FlowBase 리브랜드** + status pill 통합 디자인
+  - `e3f8208` style: 미처리 status color slate → **blue**
+  - `ced9799` docs: MEMORY.md 갱신 (rebrand session)
+- **PR #4 머지** (`2e99933`, 2026-05-07) — `claude/awesome-almeida-b95309` (claude.ai 추정)
+  - Linear+shadcn 디자인 overhaul (`be6ae15`)
+  - Trash 페이지/섹션, sidebar entry (`8feecf4`, `ac3a...`, mock 포함)
+  - Workspaces UX (페이지 + 섹션 + switcher)
+  - Quick switcher, Breadcrumb bar, Settings section
+  - Design tokens 시스템 (`DESIGN-TOKENS.md`, `lib/tokens.ts`)
+
+### 큰 결정 (커밋/MEMORY에서 추출)
+- **제품명: FlowDB → FlowBase** (사용자 노출). 내부 docs/spec의 "FlowDB" 표기는 점진 정리 (긴급 ❌)
+- **Status 색 매핑 합의**: 미처리=blue (red ❌, priority Urgent 충돌), 진행중=amber, 대기=violet, 완료=emerald
+- **Status indicator는 단일 pill** (아이콘+이름+카운트 통합. 분리된 count 배지는 -100 shade에서 안 보임)
+
+### Watch Out
+- **이 entry는 재구성**: 실 작업 흐름의 디테일/브레인스토밍 내용은 누락. PR description/commit message만으로 복원 가능한 부분만 기록
+- **3개 환경 mixed**: v0.dev (PR #3 빌드) + claude.ai (PR #4, 일부 직접 커밋) + 로컬 (머지) — 다음 작업은 어느 환경이든 *origin/main 기준*으로 시작
+
+### 머신
+mixed (v0.dev / claude.ai / 집 로컬)
+
+---
+
 ## 2026-05-04 오후 (집)
 
 ### 완료

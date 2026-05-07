@@ -1,26 +1,41 @@
 # NEXT-ACTION
 
 > 다음 세션 시작 시 이 파일부터 읽으세요.
-> 마지막 갱신: 2026-05-04 (집)
+> 마지막 갱신: 2026-05-07 (집)
 
 ---
 
 ## 한 줄 요약
 
-**Phase 0 완료 + txt 블록 PoC 머지 (PR #1). 다음 갈림길: 시트 뷰 / 사람 확정 UI / LLM 하이브리드 — 셋 중 하나.**
+**Phase 0 완료 + PoC(PR #1) + 디자인/워크스페이스 UX overhaul(PR #3·#4) + FlowBase 리브랜드 완료. 다음 갈림길: 시트 뷰 / 사람 확정 UI / LLM 하이브리드 — 셋 중 하나.**
 
 ---
 
 ## 현재 상태
 
-### ✅ 완료 (2026-04-28 이후 추가)
-- **PR #1 머지** — `feat: txt 블록 자동 분류 PoC` (`fac55e1`)
+### ✅ 완료 (2026-05-05 이후 추가)
+- **PR #3 머지** — `visual-design-update` (`aa4f353`, 2026-05-05)
+  - 채널 아이콘+텍스트 결합, Phosphor status/priority 아이콘
+  - 워크스페이스 셀렉터, 라이트/다크 컬러 최적화
+- **빌드 fix** — TS 에러 + lockfile drift (`cc90196`, 2026-05-05)
+- **FlowBase 리브랜드** (`8f597b0`, 2026-05-05) — 사용자 노출 명칭 FlowDB → **FlowBase**. 사이드바/page title/CSV→데이터 업로드. GitHub 레포도 `peterkwon248/flowdb` → `peterkwon248/FlowBase` rename 완료
+- **운영 status pill 통합** (`8f597b0` + `e3f8208`, 2026-05-05) — 미처리=blue (red ❌, priority Urgent와 충돌 회피). 아이콘+이름+카운트 단일 pill
+- **PR #4 머지** — `claude/awesome-almeida-b95309` (`2e99933`, 2026-05-07)
+  - Linear+shadcn 디자인 overhaul (`be6ae15`)
+  - **Trash** 페이지/섹션 (`app/trash/page.tsx`, `components/sections/trash-section.tsx`)
+  - **Workspaces** UX (`app/workspaces/page.tsx`, `components/sections/workspaces-section.tsx`, `workspace-switcher.tsx`)
+  - **Quick switcher**, **Breadcrumb bar**, **Settings section**
+  - **Design tokens** (`DESIGN-TOKENS.md`, `lib/tokens.ts`)
+  - mock 데이터 (`lib/mock-trash.ts`, `lib/mock-workspaces.ts`)
+
+### ✅ 완료 (2026-04-28 ~ 2026-05-04)
+- **PR #1 머지** — `feat: txt 블록 자동 분류 PoC` (`fac55e1`, 2026-05-04)
   - `lib/parsers/txt-block-parser.ts` (60줄, `***` 구분 + `<헤더>` + 키워드 카테고리 추론)
   - `app/txt-poc/page.tsx` (검증 페이지, 사이드바 진입점 없음, `/txt-poc` 직접 접근)
 - 검증 데이터: `머레이 상황별 템플릿.txt` 231 블록 → 8 카테고리
   - 가격 59 / 기타 53 / 사용법 38 / 연락처 23 / 제품 스펙 20 / CS/응대 18 / 계정/인증 14 / 품질/검수 6
 - 사용자 평가: *"지금도 나쁘지 않다"* (정적 키워드 분류 만족)
-- 글로벌 명령어 강화: `~/.claude/commands/{after-work,before-work}.md` 크로스-머신 동기화 의도 명확화 (Bootstrap 단계, docs staging 검증, Merge 단계 보호)
+- 글로벌 명령어 강화: `~/.claude/commands/{after-work,before-work}.md` 크로스-머신 동기화 의도 명확화
 
 ### ✅ 완료 (이전)
 - Claude Design 앱 기능을 FlowDB 3 섹션(설계·데이터·운영)에 이식
@@ -83,19 +98,21 @@
 
 | | |
 |---|---|
-| 코드 위치 | `C:\Users\kwonkyunghun\Desktop\FlowDB\flowdb-port` |
-| GitHub 레포 | https://github.com/peterkwon248/flowdb (private) |
+| 코드 위치 | `C:\Users\kwonkyunghun\Desktop\FlowBase\flowdb-port` |
+| GitHub 레포 | https://github.com/peterkwon248/FlowBase (private) |
 | 미리보기 URL | http://localhost:3000 (`npm run dev`) |
 | `/txt-poc` 라우트 | http://localhost:3000/txt-poc (PoC 검증 페이지) |
-| Reference (gitignore 외부) | `C:\Users\kwonkyunghun\Desktop\FlowDB\claude_design_ref` |
-| 다른 프로젝트 워크트리 (혼동 금지) | `C:\Users\kwonkyunghun\Desktop\FlowDB\.claude\worktrees\` — Plot 노트앱용, FlowDB 무관 |
+| `/workspaces` 라우트 | http://localhost:3000/workspaces (PR #4) |
+| `/trash` 라우트 | http://localhost:3000/trash (PR #4) |
+| Reference (gitignore 외부) | `C:\Users\kwonkyunghun\Desktop\FlowBase\claude_design_ref` |
+| 다른 프로젝트 워크트리 (혼동 금지) | `C:\Users\kwonkyunghun\Desktop\FlowBase\.claude\worktrees\` — Plot 노트앱용, FlowBase 무관 |
 
 ---
 
 ## 작업 흐름
 
 ```bash
-cd C:\Users\kwonkyunghun\Desktop\FlowDB\flowdb-port
+cd C:\Users\kwonkyunghun\Desktop\FlowBase\flowdb-port
 git checkout main && git pull
 git checkout -b feat/<작업명>
 

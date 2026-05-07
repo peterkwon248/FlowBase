@@ -35,8 +35,9 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## P3 (Phase 2+)
 
-- [ ] **워크스페이스 W11**: 진짜 분리, 개인 워크스페이스 자동 생성 ([02-v01-backlog.md:99](02-v01-backlog.md))
+- [ ] **워크스페이스 W11 — 진짜 분리** (mock UX는 PR #4로 추가됨, 백엔드 분리/개인 워크스페이스 자동 생성 미구현, [02-v01-backlog.md:99](02-v01-backlog.md))
 - [ ] **멤버 초대 + 권한 모델** (Owner/Admin/Viewer)
+- [ ] **Trash 백엔드** (mock UX는 PR #4로 추가됨, 30일 rollback 백스톱 미구현)
 - [ ] **타임라인/캘린더 디스플레이** (일정 컬럼 있는 테이블)
 - [ ] **갤러리 디스플레이** (첨부 컬럼 도입 후)
 - [ ] **Realtime collab on import preview** ([spec §367](specs/flowdb-import-flow-spec.md))
@@ -45,11 +46,14 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## 완료
 
+- [x] **PR #4** (2026-05-07): Linear+shadcn overhaul, Trash, Workspaces UX, Quick switcher, Breadcrumb, Settings, design tokens
+- [x] **FlowBase 리브랜드** (2026-05-05): FlowDB → FlowBase, GitHub repo rename (peterkwon248/FlowBase), Status pill 통합 + 미처리=blue
+- [x] **PR #3** (2026-05-05): visual-design-update — Phosphor 아이콘, 채널 아이콘+텍스트, 워크스페이스 셀렉터, light/dark 컬러 최적화
 - [x] **PR #1** (2026-05-04): txt 블록 자동 분류 PoC + 머지
 - [x] 글로벌 명령어 강화 (after-work / before-work)
 - [x] Docs bootstrap (`docs/{SESSION-LOG,MEMORY,CONTEXT,TODO}.md`)
 - [x] Claude Design 앱 → FlowDB 3 섹션 이식
 - [x] shadcn/ui 디자인 시스템
 - [x] v0.1 코드 감사 + 백로그 분류 (🟢 24 / 🟡 13 / 🔴 1)
-- [x] GitHub repo 분리 + 첫 푸시 (peterkwon248/flowdb)
+- [x] GitHub repo 분리 + 첫 푸시 (peterkwon248/flowdb → FlowBase)
 - [x] 4개 기획 문서 작성 (docs/00~02 + spec)
