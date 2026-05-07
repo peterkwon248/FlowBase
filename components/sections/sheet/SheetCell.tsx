@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import type { Field } from "@/lib/mock-data"
 import { Cell } from "../data-section"
+import { ChipSelect } from "./ChipSelect"
 
 export type CellId = { rowId: string; fieldName: string }
 
@@ -21,6 +22,9 @@ interface SheetCellProps {
   rowId: string
   isEditing: boolean
   isFocused?: boolean
+  // select/status — 사용자가 추가한 enum 옵션 (field.enum + customOptions = merged)
+  customOptions?: string[]
+  onAddOption?: (opt: string) => void
   onStartEdit: () => void
   onCommit: (newValue: unknown) => void
   onCancel: () => void
@@ -57,6 +61,8 @@ export function SheetCell({
   rowId: _rowId,
   isEditing,
   isFocused = false,
+  customOptions,
+  onAddOption,
   onStartEdit,
   onCommit,
   onCancel,
@@ -81,13 +87,16 @@ export function SheetCell({
         <InlineTextarea value={value} onCommit={onCommit} onCancel={onCancel} />
       )
     }
-    // M3: select/status — native <select> + Field.enum
+    // M3 → ChipSelect: pill 모양 dropdown + 새 옵션 추가
     if (field.type === "select" || field.type === "status") {
+      const merged = [...(field.enum ?? []), ...(customOptions ?? [])]
       return (
-        <InlineSelect
-          options={field.enum ?? []}
+        <ChipSelect
+          field={field}
           value={value}
+          options={merged}
           onCommit={onCommit}
+          onAddOption={onAddOption}
           onCancel={onCancel}
         />
       )
@@ -244,60 +253,6 @@ function InlineTextarea({ value, onCommit, onCancel }: InlineTextareaProps) {
 function autoResize(el: HTMLTextAreaElement) {
   el.style.height = "auto"
   el.style.height = `${el.scrollHeight}px`
-}
-
-// ─────────────────────────────────────────────────────────────────
-// InlineSelect — select / status (Field.enum)
-// design.md §4: change → 즉시 commit. native <select>로 단순화 + 키보드 친화적
-// ─────────────────────────────────────────────────────────────────
-
-interface InlineSelectProps {
-  options: string[]
-  value: unknown
-  onCommit: (newValue: unknown) => void
-  onCancel: () => void
-}
-
-function InlineSelect({ options, value, onCommit, onCancel }: InlineSelectProps) {
-  const ref = useRef<HTMLSelectElement>(null)
-  const committedRef = useRef(false)
-
-  useEffect(() => {
-    ref.current?.focus()
-  }, [])
-
-  return (
-    <select
-      ref={ref}
-      defaultValue={value == null ? "" : String(value)}
-      onChange={(e) => {
-        committedRef.current = true
-        onCommit(e.target.value)
-      }}
-      onBlur={() => {
-        // 값 변경 없이 떠나면 cancel. onCommit 후 unmount되므로 race 위험 시 onChange 우선
-        if (!committedRef.current) onCancel()
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") {
-          e.preventDefault()
-          onCancel()
-        }
-      }}
-      className={cn(
-        "w-full bg-background border border-input rounded-sm",
-        "px-1.5 py-0.5 text-sm font-[inherit]",
-        "outline-none focus:ring-1 focus:ring-ring",
-      )}
-    >
-      {value == null && <option value="">—</option>}
-      {options.map((opt) => (
-        <option key={opt} value={opt}>
-          {opt}
-        </option>
-      ))}
-    </select>
-  )
 }
 
 // ─────────────────────────────────────────────────────────────────

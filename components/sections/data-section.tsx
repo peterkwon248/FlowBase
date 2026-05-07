@@ -98,7 +98,7 @@ type AnyRow = Customer | Ticket | Agent | Note
 type SortDir = "asc" | "desc"
 
 // Status icons - Linear style using Phosphor
-function StatusIcon({ status, className }: { status: TicketStatus; className?: string }) {
+export function StatusIcon({ status, className }: { status: TicketStatus; className?: string }) {
   const iconClass = cn("w-4 h-4", statusColorClass(status), className)
   switch (status) {
     case "미처리":
@@ -113,7 +113,7 @@ function StatusIcon({ status, className }: { status: TicketStatus; className?: s
 }
 
 // Priority icons - signal bars style
-function PriorityIcon({ priority, className }: { priority: TicketPriority; className?: string }) {
+export function PriorityIcon({ priority, className }: { priority: TicketPriority; className?: string }) {
   const iconClass = cn("w-4 h-4", priorityTextClass(priority), className)
   switch (priority) {
     case "Urgent":
@@ -134,7 +134,7 @@ const CHANNEL_ICONS: Record<string, React.ComponentType<{ className?: string; st
   Chat: MessageCircle,
 }
 
-function ChannelIcon({ channel, className }: { channel: string; className?: string }) {
+export function ChannelIcon({ channel, className }: { channel: string; className?: string }) {
   const IconComponent = CHANNEL_ICONS[channel]
   const iconClass = cn("w-4 h-4 text-muted-foreground", className)
   
@@ -398,6 +398,20 @@ export function DataSection() {
   const sheetContainerRef = useRef<HTMLDivElement | null>(null)
   // mock 데이터를 useState로 승격 — 세션 내 편집 결과 보존 (refresh 시 lost, design.md §11 Watch Out)
   const [tableData, setTableData] = useState(TABLE_DATA)
+  // ChipSelect: 사용자가 추가한 enum 옵션. key = `${tableId}.${fieldName}`
+  const [customEnums, setCustomEnums] = useState<Record<string, string[]>>({})
+
+  const getCustomOptions = (fieldName: string) =>
+    customEnums[`${activeTable}.${fieldName}`] ?? []
+
+  const handleAddOption = (fieldName: string, newOpt: string) => {
+    const key = `${activeTable}.${fieldName}`
+    setCustomEnums((prev) => {
+      const existing = prev[key] ?? []
+      if (existing.includes(newOpt)) return prev
+      return { ...prev, [key]: [...existing, newOpt] }
+    })
+  }
 
   const table: TableNode | undefined = useMemo(
     () => SCHEMA.find((t) => t.id === activeTable),
@@ -706,6 +720,8 @@ export function DataSection() {
                                 focusedCell?.rowId === id &&
                                 focusedCell?.fieldName === field.name
                               }
+                              customOptions={getCustomOptions(field.name)}
+                              onAddOption={(opt) => handleAddOption(field.name, opt)}
                               onStartEdit={() => {
                                 setFocusedCell({ rowId: id, fieldName: field.name })
                                 if (isEditableField(field)) {
