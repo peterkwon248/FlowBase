@@ -97,6 +97,7 @@ import {
   nextEditableField,
   type CellCoord,
 } from "./sheet/useSheetKeyboardNav"
+import { useSheetClipboard } from "./sheet/useSheetClipboard"
 
 type AnyRow = Customer | Ticket | Agent | Note
 type SortDir = "asc" | "desc"
@@ -505,6 +506,18 @@ export function DataSection() {
     setFocusedCell,
     onCellCommit: handleCellCommit,
     containerRef: sheetContainerRef,
+  })
+
+  // M5: 클립보드 (Ctrl+C/V) — 단일 셀. 다중 셀 범위는 후속 PR
+  useSheetClipboard({
+    enabled: viewMode === "sheet",
+    fields: table?.fields ?? [],
+    rows: rows as Array<AnyRow & { id: string }>,
+    focusedCell,
+    editingCell,
+    containerRef: sheetContainerRef,
+    rowValue,
+    onCellCommit: handleCellCommit,
   })
 
   const handleSort = (key: string) => {
