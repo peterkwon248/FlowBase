@@ -388,6 +388,7 @@ export function DataSection() {
   const [sortByTable, setSortByTable] = useState<
     Record<string, { key: string; dir: SortDir } | null>
   >({})
+  const [viewMode, setViewMode] = useState<"table" | "sheet">("table")
 
   const table: TableNode | undefined = useMemo(
     () => SCHEMA.find((t) => t.id === activeTable),
@@ -541,6 +542,38 @@ export function DataSection() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {/* viewMode 토글 — design.md §2.1, getAvailableViews는 lib/view-utils.ts 참조 */}
+            <div className="inline-flex items-center rounded-md border border-border/60 bg-secondary/40 p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode("table")}
+                aria-pressed={viewMode === "table"}
+                className={cn(
+                  "px-2.5 py-1 text-xs rounded-sm flex items-center gap-1.5 transition-colors",
+                  viewMode === "table"
+                    ? "bg-background shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <List className="w-3.5 h-3.5" strokeWidth={1.5} />
+                표
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("sheet")}
+                aria-pressed={viewMode === "sheet"}
+                className={cn(
+                  "px-2.5 py-1 text-xs rounded-sm flex items-center gap-1.5 transition-colors",
+                  viewMode === "sheet"
+                    ? "bg-background shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
+                시트
+              </button>
+            </div>
+            <div className="h-5 w-px bg-border/60" aria-hidden />
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
               <input
@@ -618,7 +651,15 @@ export function DataSection() {
                       {table.fields.map((field) => (
                         <td
                           key={field.name}
-                          className="px-3 py-2 text-sm align-middle"
+                          className={cn(
+                            "px-3 py-2 text-sm align-middle",
+                            // M1: 시트 모드 시각 차이 (편집은 M2부터). uuid/pk/fk는 read-only이므로 cursor 변경 ❌
+                            viewMode === "sheet" &&
+                              !field.pk &&
+                              field.type !== "uuid" &&
+                              field.type !== "fk" &&
+                              "cursor-pointer hover:bg-foreground/[0.05] dark:hover:bg-foreground/[0.07]",
+                          )}
                         >
                           <Cell field={field} value={rowValue(row, field.name)} />
                         </td>
