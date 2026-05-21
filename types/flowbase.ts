@@ -81,8 +81,14 @@ export interface Board {
   updatedAt: string
 }
 
-// 프로토타입 view 집합. "schema"는 뷰가 아닌 workspace 모드 — 제외.
-export type ViewMode = "sheet" | "kanban" | "chart" | "grid" | "timeline"
+// 뷰 집합. "schema"는 Phase 6에서 4번째 탭으로 추가 (워크스페이스 레벨 — 전 보드 렌더).
+export type ViewMode =
+  | "sheet"
+  | "kanban"
+  | "chart"
+  | "schema"
+  | "grid"
+  | "timeline"
 
 export type SortDir = "asc" | "desc"
 

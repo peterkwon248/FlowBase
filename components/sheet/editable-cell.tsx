@@ -222,7 +222,8 @@ function AvatarCell({
 }
 
 // ── status ────────────────────────────────────────────────────────
-function statusIcon(status: TicketStatus) {
+// Kanban 칸 헤더 등에서 재사용 — status별 Phosphor 아이콘 + LOCK 색.
+export function statusIcon(status: TicketStatus) {
   const cls = cn("size-3.5", statusColorClass(status))
   switch (status) {
     case "미처리":

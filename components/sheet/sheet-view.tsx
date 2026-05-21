@@ -126,9 +126,10 @@ export function SheetView() {
 
         <thead>
           <tr>
-            <th className="sticky top-0 z-10 border-b border-border bg-surface px-2.5 py-2">
+            <th className="sticky top-0 z-10 border-b border-border bg-surface px-2.5 py-2 text-center">
               <input
                 type="checkbox"
+                className="block mx-auto size-3.5"
                 checked={allSelected}
                 onChange={(e) =>
                   setSelected(e.target.checked ? rows.map((r) => r.id) : [])
@@ -165,11 +166,12 @@ export function SheetView() {
             return (
               <tr
                 key={row.id}
-                className={cn(isSelected && "bg-primary/[0.07]")}
+                className={cn("h-12", isSelected && "bg-primary/[0.07]")}
               >
-                <td className="border-b border-border-subtle px-2.5 py-2">
+                <td className="border-b border-border-subtle px-2.5 py-2 text-center">
                   <input
                     type="checkbox"
+                    className="block mx-auto size-3.5"
                     checked={isSelected}
                     onChange={() =>
                       setSelected(

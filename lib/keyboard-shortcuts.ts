@@ -1,8 +1,9 @@
 "use client"
 
-// FlowBase V2 — 글로벌 키보드 단축키 (⌘Z / ⌘⇧Z / Delete)
-// 설계: docs/02-design/features/flowbase-v2-phase1.design.md §7
-// 패널 단축키(⌘⇧A / ⌘⇧F / ⌘B / ⌘N)는 Phase 5에서 확장.
+// FlowBase V2 — 글로벌 키보드 단축키
+//   ⌘Z / ⌘⇧Z / Delete — undo·redo·행 삭제 (Phase 1A)
+//   ⌘⇧A / ⌘⇧F / ⌘B — 패널 토글, ⌘N — 새 행 (Phase 5, design §8)
+// 설계: docs/02-design/features/flowbase-v2-phase{1,5}.design.md
 // 셀 단위 네비(Tab/Enter/Arrow)는 useSheetKeyboardNav(Phase 1B)가 별도 담당.
 
 import { useEffect } from "react"
@@ -34,6 +35,30 @@ export function useKeyboardShortcuts(): void {
         const s = useFlowBase.getState()
         if (e.shiftKey) s.redo()
         else s.undo()
+        return
+      }
+
+      // 패널 토글 — ⌘⇧A / ⌘⇧F / ⌘B (편집 중에도 동작 — 셸 단축키)
+      if (mod && e.shiftKey && e.key.toLowerCase() === "a") {
+        e.preventDefault()
+        useFlowBase.getState().togglePanel("activityBar")
+        return
+      }
+      if (mod && e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault()
+        useFlowBase.getState().togglePanel("sidebar")
+        return
+      }
+      if (mod && !e.shiftKey && e.key.toLowerCase() === "b") {
+        e.preventDefault()
+        useFlowBase.getState().togglePanel("aiPanel")
+        return
+      }
+
+      // ⌘N — active board에 새 행
+      if (mod && !e.shiftKey && e.key.toLowerCase() === "n") {
+        e.preventDefault()
+        useFlowBase.getState().addRow()
         return
       }
 

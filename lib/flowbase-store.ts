@@ -50,6 +50,7 @@ export interface FlowBaseActions {
     rows?: TableRow[],
   ) => string
   deleteBoard: (boardId: string) => void
+  renameBoard: (boardId: string, label: string) => void
 
   // Rows — active board 대상. 변경 전 undo 스냅샷 push.
   addRow: (row?: Partial<TableRow>) => string
@@ -183,6 +184,19 @@ export const useFlowBase = create<FlowBaseStore>()(
               boards: rest,
               activeBoardId:
                 s.activeBoardId === boardId ? ids[0] : s.activeBoardId,
+            }
+          })
+        },
+
+        renameBoard: (boardId, label) => {
+          set((s) => {
+            const b = s.boards[boardId]
+            if (!b || !label.trim()) return s
+            return {
+              boards: {
+                ...s.boards,
+                [boardId]: { ...b, label: label.trim(), updatedAt: nowIso() },
+              },
             }
           })
         },
