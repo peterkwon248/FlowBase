@@ -7,7 +7,7 @@
 ## Phase Status
 
 - **Phase 0 (Plan)**: ✅ 완료
-- **Phase 1 (Beta)**: 🟡 진입 직전 — txt 블록 PoC로 import flow 일부 검증 (PR #1)
+- **Phase 1 (Beta)**: 🟡 진행 중 — FlowBase V2 재구축 (7단계 중 Phase 1A 기반 완료)
 - **Phase 2 (Team)**: ⬜ — 멤버 초대, 권한 모델, 워크스페이스 분리 (W11)
 - **Phase 3+**: ⬜ — Realtime collab, scaling
 
@@ -15,12 +15,11 @@
 
 ## Current Direction (다음 우선순위)
 
-**2026-05-07 결정**: taste-skill 도입 검토 → **옵션 2 (minimalist-skill 단일)** 채택. Geist 폰트 fix 완료. 프로젝트 가드 룰 박음([CLAUDE.md](../CLAUDE.md)).
+**2026-05-21 결정**: **FlowBase V2 재구축 착수.** `design-ref/`의 V2 핸드오프 + 프로토타입을 정본으로, 기존 3섹션 UI(설계·데이터·운영)를 V2 데이터 보드로 클린 재구축. 7단계 계획 ([01-plan/features/flowbase-v2.plan.md](01-plan/features/flowbase-v2.plan.md)).
 
-**1차 다음 행동**: 옵션 A 시트 뷰 트라이얼 (`feat/sheet-view` 브랜치, minimalist-skill 적용).
-- 후순위: 옵션 B (카테고리 인라인 편집 UI), 옵션 C (LLM 하이브리드 분류)
+**진행**: Phase 1A(기반 — 제네릭 데이터 모델·zustand 스토어·undo·parsers·키보드) 완료. **다음 = Phase 1B(시트 뷰).**
 
-상세는 [../NEXT-ACTION.md](../NEXT-ACTION.md) "다음 행동" 섹션 참조.
+상세는 [../NEXT-ACTION.md](../NEXT-ACTION.md) 참조.
 
 ---
 
@@ -31,6 +30,7 @@
 | #1 | feat: txt 블록 자동 분류 PoC | `fac55e1` (2026-05-04) | `lib/parsers/txt-block-parser.ts` + `app/txt-poc/page.tsx`. 머레이 응대 템플릿 231 블록 검증 |
 | #3 | visual-design-update | `aa4f353` (2026-05-05) | UI 폴리시 — 채널 아이콘+텍스트, Phosphor status/priority 아이콘, 워크스페이스 셀렉터, 라이트/다크 컬러 최적화 |
 | (TBD) | session: FlowBase rebrand + pill polish | 진행 중 (2026-05-05) | TS fixes(`cc90196`) + FlowDB→FlowBase 리브랜드 + Workflow 아이콘 + 운영 status pill 통합 디자인(`8f597b0`) + 미처리 blue(`e3f8208`) |
+| — | FlowBase V2 재구축 Phase 1A (기반) | `feat/flowbase-v2` → main squash (2026-05-21) | V2 제네릭 데이터 모델·zustand 스토어·시드·undo·parsers·키보드. `design-ref/` V2 핸드오프 도입, 7단계 계획·Phase 1 design 작성 |
 
 ---
 
@@ -68,6 +68,8 @@
 9. **taste-skill 도입 — 옵션 2 (minimalist-skill 단일)** (2026-05-07 결정) — `docs/design-skills/minimalist-skill/SKILL.md` (git tracked source of truth). 우선순위: ① docs/MEMORY.md 결정 → ② lib/tokens.ts → ③ minimalist-skill SKILL.md. **세리프 헤딩 도입 ❌, framer-motion 자동 설치 ❌, Status 색 매핑 보존**. 가드 매트릭스 [CLAUDE.md](../CLAUDE.md) 참조. 트라이얼: `feat/sheet-view` 브랜치에서 옵션 A 시트 뷰 작업 시 적용 → 1주 평가. 검토 plan: [docs/01-plan/features/taste-skill-adoption.plan.md](01-plan/features/taste-skill-adoption.plan.md).
 
 10. **Geist 폰트 적용 fix** (2026-05-07) — `app/layout.tsx`에서 `Geist({ variable: "--font-geist-sans" })` + `<html className={geistSans.variable}>` 적용. `app/globals.css` `@theme inline`의 `--font-sans: var(--font-geist-sans)`로 매핑. 이전에는 import만 되고 적용 안 됨 (`<body className="font-sans">`만, Geist variable 미연결).
+
+11. **FlowBase V2 재구축 — 프로토타입 제네릭 모델** (2026-05-21) — `design-ref/`의 V2 핸드오프 + 프로토타입이 디자인 정본. 기존 3섹션 UI를 V2 데이터 보드로 클린 재구축 (7단계, [01-plan/features/flowbase-v2.plan.md](01-plan/features/flowbase-v2.plan.md)). 데이터 모델은 **제네릭 컬럼 구동** (`Board`/`TableRow`/`ColumnDef`, 10 cell type) — 핸드오프 STATE-SHAPES의 단순화 고정 `TableRow`는 폐기 ([types/flowbase.ts](../types/flowbase.ts)). `dismissAiCell`=값 유지. `feat/sheet-view`의 M1~M5(옛 모델 시트 트라이얼)는 패턴 이식만, 머지 ❌. **레퍼런스(프로토타입)는 구현 전 끝까지 정독할 것.**
 
 ---
 

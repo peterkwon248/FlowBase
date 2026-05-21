@@ -6,19 +6,13 @@
 
 ## Current Features (Completed — 최근 우선)
 
-1. **Linear+shadcn 디자인 overhaul** (PR #4, `2e99933`, 2026-05-07) — 전체 UI 톤 통합.
-2. **Trash 시스템** (PR #4) — `app/trash/page.tsx`, `components/sections/trash-section.tsx`, `lib/mock-trash.ts`. 사이드바 entry 추가 (`8feecf4`).
-3. **Workspaces UX** (PR #4) — `app/workspaces/page.tsx`, `components/sections/workspaces-section.tsx`, `workspace-switcher.tsx`, `lib/mock-workspaces.ts`. (Phase 2 W11의 일부 진행 — 진짜 분리/멤버 권한은 아직 mock)
-4. **Quick switcher + Breadcrumb bar + Settings section** (PR #4) — `components/quick-switcher.tsx`, `components/breadcrumb-bar.tsx`, `components/sections/settings-section.tsx`.
-5. **Design tokens 시스템** (PR #4) — `DESIGN-TOKENS.md` + `lib/tokens.ts`.
-6. **Status pill 통합 + 미처리=blue** (`8f597b0` + `e3f8208`, 2026-05-05) — 아이콘+이름+카운트 단일 pill. Status 색 매핑 컨벤션 ([MEMORY.md "Key Design Decisions" #8](MEMORY.md#key-design-decisions)).
-7. **FlowBase 리브랜드** (`8f597b0`, 2026-05-05) — 사용자 노출 명칭 FlowDB → FlowBase. GitHub 레포도 rename.
-8. **visual-design-update** (PR #3, `aa4f353`, 2026-05-05) — Phosphor status/priority 아이콘, 채널 아이콘+텍스트, light/dark 컬러 최적화.
-9. **txt 블록 자동 분류 PoC** (PR #1, 2026-05-04) — `***` 구분 + `<헤더>` 추출 + 키워드 카테고리. 검증 페이지 `/txt-poc`.
-10. **3 섹션 UI** (설계 / 데이터 / 운영) — Claude Design 이식. shadcn/ui 기반.
-11. **운영 섹션 디스플레이**: kanban + list 토글 (`components/sections/operations-section.tsx`).
-12. **데이터 섹션 표**: 정렬·검색 가능, 편집 ❌ (read-only).
-13. **설계 섹션 ER 캔버스**: SVG, 드래그·정렬·SQL 모달.
+1. **FlowBase V2 재구축 — Phase 1A 기반** (2026-05-21) — V2 제네릭 데이터 모델(`types/flowbase.ts`) · zustand 스토어(`lib/flowbase-store.ts`) · Customer Interviews 시드 보드 · undo · parsers · 키보드. 기존 3섹션 UI를 V2 데이터 보드로 전환 중 (다음: Phase 1B 시트 뷰).
+2. **Linear+shadcn 디자인 overhaul** (PR #4, 2026-05-07) — 전체 UI 톤 통합. Trash·Workspaces·Quick switcher·Breadcrumb·Settings·design tokens(`lib/tokens.ts`).
+3. **Status pill 통합 + 미처리=blue** (2026-05-05) — 아이콘+이름+카운트 단일 pill.
+4. **FlowBase 리브랜드** (2026-05-05) — FlowDB → FlowBase, GitHub repo rename.
+5. **txt 블록 자동 분류 PoC** (PR #1, 2026-05-04) — `***` 구분 + 키워드 카테고리. 검증 페이지 `/txt-poc`.
+
+> 옛 3섹션 UI(설계/데이터/운영, ER 캔버스, 운영 칸반, 데이터 read-only 표)는 V2 재구축으로 단계적 대체 예정.
 
 ---
 

@@ -4,6 +4,38 @@
 
 ---
 
+## 2026-05-21 (집) — FlowBase V2 재구축 착수: 계획·설계·Phase 1A
+
+### 완료
+- **design-ref/ V2 핸드오프 분석** — 핸드오프 6문서 + 프로토타입(`prototype-app.jsx` 등 40여 jsx) 정독
+- **V2 7단계 재구축 계획** — `docs/01-plan/features/flowbase-v2.plan.md`
+- **Phase 1 design** — `docs/02-design/features/flowbase-v2-phase1.design.md`
+- **`feat/flowbase-v2` 브랜치** — `feat/sheet-view` 기반 분기
+- **Phase 1A 기반 구현** (커밋 `360de73`) — `types/flowbase.ts`, `lib/flowbase-store.ts`, `flowbase-seed.ts`, `undo-stack.ts`, `parsers.ts`, `keyboard-shortcuts.ts`
+- **Phase 1A 재작업** (커밋 `bc8f263`) — 프로토타입 정독 후 제네릭 컬럼 구동 모델로 전면 수정
+- `components/sheet/ai-pending-mark.tsx` (Phase 1B 첫 컴포넌트)
+- after-work로 `feat/flowbase-v2` → main squash 머지
+
+### 브레인스토밍 & 큰 결정
+- **V2 클린 재구축** — 기존 3섹션 UI를 V2 보드 UI로 대체. `feat/sheet-view`의 M1~M5(옛 모델 시트 트라이얼)는 머지 안 하고 *패턴만 이식*
+- **핸드오프 ≠ 프로토타입** — 핸드오프 STATE-SHAPES는 프로토타입의 단순화판. 실제 V2는 제네릭 컬럼 구동(10 cell type, 다중 테이블). 일부만 읽고 Phase 1A를 핸드오프 기준으로 지었다가, 사용자 지적 후 프로토타입 정독 → 제네릭 모델로 재작업
+- **`dismissAiCell` = 값 유지** + confirmed=true (프로토타입 `onDismissAi`)
+- **theme은 next-themes 소유** — V2 스토어 제외
+- 진행 방식: design-first (계획 → 설계 문서 → 검토 게이트 → 코드)
+
+### 다음
+- Phase 1B (시트 뷰) — `components/sheet/*` + 보드 페이지. NEXT-ACTION.md 참조
+
+### Watch Out
+- **after-work로 미완성 Phase 1이 main에 머지됨** — Phase 1A 기반만 있고 동작하는 V2 화면 없음(app/page.tsx는 아직 옛 3섹션). M1~M5 + design-ref(23k줄)도 main에. Phase 1B는 main 위에서 이어감
+- **레퍼런스(프로토타입)는 구현 전 끝까지 정독** — 이번 세션 교훈
+- 범위: 프로토타입엔 Library/Wiki/Inbox/Automations 등 핸드오프 7단계 밖 서브시스템 — MVP(7단계) 후 재논의
+
+### 머신
+집
+
+---
+
 ## 2026-05-07 오후 (집) — taste-skill 도입 검토 + Geist fix
 
 ### 완료
