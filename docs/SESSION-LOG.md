@@ -4,6 +4,46 @@
 
 ---
 
+## 2026-05-21 (kkh94 머신, 이어서) — Phase 1B·2·3 구현 (시트 뷰 · AI 패널 · Import)
+
+### 🚨 핵심 — 미커밋 상태
+- 이 세션 작업물 **전부 `feat/sheet-view-v2` 브랜치에 미커밋 + origin 미push**.
+- git `user.name`/`user.email` 미설정 → 커밋 불가. 다른 머신 이어가기 전 **반드시 커밋 + 푸시** (안 하면 Phase 1B/2/3 + 설계 문서 3개 전부 유실).
+
+### 완료
+- **before-work** — `peterkwon248/FlowBase` clone, `npm install`
+- **Phase 1B (시트 뷰)** — `components/sheet/*` (cell-popover·editable-cell·header-cell·new-row-stub·sheet-view) + `use-sheet-keyboard`/`use-sheet-clipboard`(M4/M5 이식). `app/page.tsx` V2 보드 페이지. 버그 수정: tailwind-merge가 `outline` 스타일 클래스 제거 → 포커스 표시를 `ring`으로 교체.
+- **Phase 2 (AI 패널 + Claude)** — 설계 문서 + 구현. `app/api/ai/{_anthropic,infer-batch,ask}` · `lib/flowbase-ai.ts` · 스토어 `acceptAllAi`/`dismissAllAi`/`pushAi` · `components/ai/*` · page 우측 패널 슬롯 + `Toaster`. vitest 도입(infer-batch 5 테스트).
+- **Phase 3 (Import 모달)** — 설계 문서 + 구현. `app/api/ai/analyze-import` · `components/import/*` (3-step 위저드) · `createBoard(label,columns?,rows?)` 확장 · 헤더 Import 버튼 · `app/txt-poc` + `lib/parsers/txt-block-parser.ts` 제거. parsers 8 테스트. 버그 수정: import 시 `id` 컬럼명 충돌 → dedup.
+- 설계 문서 3개: `docs/02-design/features/flowbase-v2-phase{1,2,3}.design.md` (Phase 1은 기존, 2·3은 신규).
+
+### 큰 결정
+- **Phase 2 모델 = `claude-sonnet-4-6`** — claude-api 스킬 기본값은 `claude-opus-4-7`이나, 핸드오프 AI-CONTRACTS + 설계 D2가 Sonnet 지정 + 대량 분류 작업이라 채택. `_anthropic.ts`의 `AI_MODEL` 단일 상수.
+- **"Apply all" = Claude infer-batch 호출 + `confirmed:true` 적용**, ⌘Z가 검토 백스톱 (Phase 2 D1).
+- **Import = 새 제네릭 보드 생성** — 프로토타입/IMPORT-SPEC §3의 고정필드 휴리스틱 매퍼 폐기 (Phase 3 D1, Phase 1 D4 일관).
+- vitest 최소 도입 (Phase 2 Q2).
+
+### 검증
+- `tsc --noEmit` green · `npm run build` green (5 라우트) · vitest **13/13** (parsers 8 + infer-batch 5) · 브라우저 동작 확인 (시트 편집·키보드 네비·AI 패널 pending/error toast·Import 3-step 흐름·새 보드 생성). AI 실호출은 키 미설정이라 graceful 에러 경로까지만 검증.
+
+### 다음
+1. **🚨 커밋 + 푸시** (git 식별자 설정 후) — 다른 머신 이어가기 전 필수.
+2. `.env.local`에 `ANTHROPIC_API_KEY` → AI 실호출 검증.
+3. Phase 4 (Kanban + Dashboard). `NEXT-ACTION.md` 참조.
+
+### Watch Out
+- **미커밋 + origin에 `feat/sheet-view-v2` 브랜치 없음** — 다른 머신엔 `main`(de9acdf, Phase 1A)까지만 존재. 커밋+푸시 안 하면 이 세션 전체 유실.
+- `ANTHROPIC_API_KEY` 미설정 — 사용자가 마지막에 설정 예정. AI 실호출(infer-batch/ask/analyze-import) 미검증.
+- 커밋 시 `next-env.d.ts`(빌드 생성물)·`package-lock.json`(npm install) 변경이 incidental하게 섞여 있음 — 포함 여부 판단.
+- Phase 3 Q1: `infer-batch`가 `row.quote` 하드코딩 — 임포트 보드에 `quote` 컬럼 없으면 AI 추론 입력 빈약 (소스 컬럼 일반화는 후속).
+- Phase 3 Q2: import 후 새 보드 전환 시 Phase 6(멀티보드 사이드바) 전까지 시드 보드 복귀 UI 없음.
+- 프로젝트 eslint는 flat config 부재로 `npm run lint` 동작 안 함 (기존 이슈, 빌드는 무관).
+
+### 머신
+kkh94 (`C:\Users\kkh94\OneDrive\Desktop\FlowBase`) — CLAUDE.md 기재 경로(`kwonkyunghun/.../flowdb-port`)와 다른 머신. 다음 작업은 또 다른 머신 예정.
+
+---
+
 ## 2026-05-21 (집) — FlowBase V2 재구축 착수: 계획·설계·Phase 1A
 
 ### 완료

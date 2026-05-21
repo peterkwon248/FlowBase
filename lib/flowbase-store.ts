@@ -8,6 +8,7 @@
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
 import type {
+  AIHistoryEntry,
   Board,
   ColumnDef,
   FlowBaseState,
@@ -42,7 +43,12 @@ function nextRowId(board: Board): string {
 // ── 액션 인터페이스 (STATE-SHAPES §5 + prototype-app.jsx) ──
 export interface FlowBaseActions {
   switchBoard: (boardId: string) => void
-  createBoard: (label: string, columns?: ColumnDef[]) => string
+  // rows 인자 — Import(Phase 3)가 행과 함께 보드를 1회 생성 (per-row undo ❌)
+  createBoard: (
+    label: string,
+    columns?: ColumnDef[],
+    rows?: TableRow[],
+  ) => string
   deleteBoard: (boardId: string) => void
 
   // Rows — active board 대상. 변경 전 undo 스냅샷 push.
@@ -51,6 +57,13 @@ export interface FlowBaseActions {
   deleteRows: (rowIds: string[]) => void
   commitAiCell: (rowId: string, col: "theme" | "sentiment", value: string) => void
   dismissAiCell: (rowId: string, col: "theme" | "sentiment") => void
+  // AI 배치 — Phase 2 (Claude infer-batch 결과 일괄 반영)
+  acceptAllAi: (
+    col: "theme" | "sentiment",
+    results: { id: string; value: string }[],
+  ) => void
+  dismissAllAi: (col: "theme" | "sentiment") => void
+  pushAi: (entry: Omit<AIHistoryEntry, "id" | "time">) => void
 
   undo: () => void
   redo: () => void
@@ -135,16 +148,17 @@ export const useFlowBase = create<FlowBaseStore>()(
           })
         },
 
-        createBoard: (label, columns) => {
+        createBoard: (label, columns, rows) => {
           const id = `board-${Date.now().toString(36)}`
           const ts = nowIso()
           const board: Board = {
             id,
             label,
+            idPrefix: "ROW-", // 생성 보드의 새 행 id 접두 (import 행 id와 일치)
             columns: columns ?? [
               { name: "id", label: "ID", type: "text", width: 86, mono: true },
             ],
-            rows: [],
+            rows: rows ?? [],
             aiHistory: [],
             createdAt: ts,
             updatedAt: ts,
@@ -241,6 +255,69 @@ export const useFlowBase = create<FlowBaseStore>()(
               r.id === rowId ? { ...r, [confirmKey]: true, updatedAt: nowIso() } : r,
             ),
           )
+        },
+
+        // AI 배치 적용 — Claude 분류 결과를 active board에 일괄 반영 (1 undo 단위)
+        acceptAllAi: (col, results) => {
+          const b = activeBoard()
+          if (!b || results.length === 0) return
+          pushUndo()
+          const confirmKey =
+            col === "theme" ? "themeConfirmed" : "sentimentConfirmed"
+          const byId = new Map(results.map((r) => [r.id, r.value]))
+          setRows(
+            b.rows.map((r) =>
+              byId.has(r.id)
+                ? {
+                    ...r,
+                    [col]: byId.get(r.id),
+                    [confirmKey]: true,
+                    updatedAt: nowIso(),
+                  }
+                : r,
+            ),
+          )
+        },
+
+        // AI 추천 일괄 거부 — pending 행 모두 confirmed=true, 값 유지
+        dismissAllAi: (col) => {
+          const b = activeBoard()
+          if (!b) return
+          const confirmKey =
+            col === "theme" ? "themeConfirmed" : "sentimentConfirmed"
+          if (!b.rows.some((r) => r[confirmKey] === false)) return
+          pushUndo()
+          setRows(
+            b.rows.map((r) =>
+              r[confirmKey] === false
+                ? { ...r, [confirmKey]: true, updatedAt: nowIso() }
+                : r,
+            ),
+          )
+        },
+
+        // aiHistory append — active board 대상 (append-only 로그, undo 비대상)
+        pushAi: (entry) => {
+          const s = get()
+          const b = s.boards[s.activeBoardId]
+          if (!b) return
+          const full: AIHistoryEntry = {
+            ...entry,
+            id: `ai-${Date.now().toString(36)}-${Math.random()
+              .toString(36)
+              .slice(2, 7)}`,
+            time: nowIso(),
+          }
+          set({
+            boards: {
+              ...s.boards,
+              [b.id]: {
+                ...b,
+                aiHistory: [...b.aiHistory, full],
+                updatedAt: nowIso(),
+              },
+            },
+          })
         },
 
         undo: () => {

@@ -7,7 +7,7 @@
 ## Phase Status
 
 - **Phase 0 (Plan)**: ✅ 완료
-- **Phase 1 (Beta)**: 🟡 진행 중 — FlowBase V2 재구축 (7단계 중 Phase 1A 기반 완료)
+- **Phase 1 (Beta)**: 🟡 진행 중 — FlowBase V2 재구축 (7단계 중 1A·1B·2·3 구현 완료 — ⚠️ 미커밋, `feat/sheet-view-v2`)
 - **Phase 2 (Team)**: ⬜ — 멤버 초대, 권한 모델, 워크스페이스 분리 (W11)
 - **Phase 3+**: ⬜ — Realtime collab, scaling
 
@@ -17,7 +17,7 @@
 
 **2026-05-21 결정**: **FlowBase V2 재구축 착수.** `design-ref/`의 V2 핸드오프 + 프로토타입을 정본으로, 기존 3섹션 UI(설계·데이터·운영)를 V2 데이터 보드로 클린 재구축. 7단계 계획 ([01-plan/features/flowbase-v2.plan.md](01-plan/features/flowbase-v2.plan.md)).
 
-**진행**: Phase 1A(기반 — 제네릭 데이터 모델·zustand 스토어·undo·parsers·키보드) 완료. **다음 = Phase 1B(시트 뷰).**
+**진행**: Phase 1A~3 구현 완료 (1B 시트 뷰 · 2 AI 패널+Claude · 3 Import 모달) — ⚠️ `feat/sheet-view-v2` 브랜치에 **미커밋·origin 미push**. **다음 = 커밋·푸시 후 Phase 4(Kanban + Dashboard).**
 
 상세는 [../NEXT-ACTION.md](../NEXT-ACTION.md) 참조.
 
@@ -31,6 +31,7 @@
 | #3 | visual-design-update | `aa4f353` (2026-05-05) | UI 폴리시 — 채널 아이콘+텍스트, Phosphor status/priority 아이콘, 워크스페이스 셀렉터, 라이트/다크 컬러 최적화 |
 | (TBD) | session: FlowBase rebrand + pill polish | 진행 중 (2026-05-05) | TS fixes(`cc90196`) + FlowDB→FlowBase 리브랜드 + Workflow 아이콘 + 운영 status pill 통합 디자인(`8f597b0`) + 미처리 blue(`e3f8208`) |
 | — | FlowBase V2 재구축 Phase 1A (기반) | `feat/flowbase-v2` → main squash (2026-05-21) | V2 제네릭 데이터 모델·zustand 스토어·시드·undo·parsers·키보드. `design-ref/` V2 핸드오프 도입, 7단계 계획·Phase 1 design 작성 |
+| — | FlowBase V2 Phase 1B·2·3 (시트·AI·Import) | ⚠️ **미커밋** — `feat/sheet-view-v2` (2026-05-21) | 시트 뷰 · AI 패널+Claude(`claude-sonnet-4-6`) · Import 3-step 위저드. 설계 문서 phase{1,2,3}. tsc·build·vitest(13) green. `app/txt-poc` 제거. **커밋·푸시 필요** |
 
 ---
 
@@ -70,6 +71,8 @@
 10. **Geist 폰트 적용 fix** (2026-05-07) — `app/layout.tsx`에서 `Geist({ variable: "--font-geist-sans" })` + `<html className={geistSans.variable}>` 적용. `app/globals.css` `@theme inline`의 `--font-sans: var(--font-geist-sans)`로 매핑. 이전에는 import만 되고 적용 안 됨 (`<body className="font-sans">`만, Geist variable 미연결).
 
 11. **FlowBase V2 재구축 — 프로토타입 제네릭 모델** (2026-05-21) — `design-ref/`의 V2 핸드오프 + 프로토타입이 디자인 정본. 기존 3섹션 UI를 V2 데이터 보드로 클린 재구축 (7단계, [01-plan/features/flowbase-v2.plan.md](01-plan/features/flowbase-v2.plan.md)). 데이터 모델은 **제네릭 컬럼 구동** (`Board`/`TableRow`/`ColumnDef`, 10 cell type) — 핸드오프 STATE-SHAPES의 단순화 고정 `TableRow`는 폐기 ([types/flowbase.ts](../types/flowbase.ts)). `dismissAiCell`=값 유지. `feat/sheet-view`의 M1~M5(옛 모델 시트 트라이얼)는 패턴 이식만, 머지 ❌. **레퍼런스(프로토타입)는 구현 전 끝까지 정독할 것.**
+
+12. **Phase 1B·2·3 구현 결정** (2026-05-21) — (1) 시트 포커스 셀 표시는 `ring`으로 (tailwind-merge가 `outline` 스타일 클래스를 `outline-2`와 충돌로 제거 → 외곽선 안 보임). (2) **AI 모델 = `claude-sonnet-4-6`** — `claude-api` 스킬 기본값은 `claude-opus-4-7`이나, 핸드오프 AI-CONTRACTS + Phase 2 설계 D2가 Sonnet 지정 + theme/sentiment 대량 분류라 채택. `app/api/ai/_anthropic.ts`의 `AI_MODEL` 단일 상수. (3) AI 패널 **"Apply all" = Claude `infer-batch` 호출 + `confirmed:true` 적용**, ⌘Z가 검토 백스톱 — 버튼 클릭이 곧 사람의 확정이라 "자동 적용 ❌" 위반 아님. (4) **Import = 새 제네릭 보드 생성** — 프로토타입/IMPORT-SPEC §3의 고정필드 휴리스틱 매퍼 폐기 (#11 일관). (5) vitest 최소 도입 (`npm test`). 키 미설정 시 AI 라우트는 graceful 500.
 
 ---
 
