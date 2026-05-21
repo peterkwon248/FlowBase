@@ -2,17 +2,16 @@
 
 // FlowBase V2 — zustand 스토어 (보드·행·시트 UI 상태 + localStorage persist)
 // 설계: docs/02-design/features/flowbase-v2-phase1.design.md §4
-// 출처: design-ref/handoff/STATE-SHAPES.md §2·§5·§7
-// theme(light/dark)은 next-themes 소유 — 본 스토어 비포함.
+// 출처: design-ref/prototype/prototype-app.jsx
+// 데이터 모델: 제네릭 컬럼 구동 (types/flowbase.ts). theme은 next-themes 소유.
 
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
-import { nanoid } from "nanoid"
 import type {
   Board,
   ColumnDef,
   FlowBaseState,
-  Sentiment,
+  SortDir,
   TableRow,
   TicketStatus,
   ViewMode,
@@ -20,20 +19,28 @@ import type {
 import { createSeedBoard } from "@/lib/flowbase-seed"
 import { undoStack } from "@/lib/undo-stack"
 
-const STORE_KEY = "flowbase-state-v3"
-const STORE_VERSION = 3
+const STORE_KEY = "flowbase-state-v4"
+const STORE_VERSION = 4
 
 function nowIso(): string {
   return new Date().toISOString()
 }
 
-function todayIso(): string {
-  return nowIso().slice(0, 10)
+// 보드별 새 행 id — idPrefix + (기존 최대 번호 + 1). 프로토타입 INT-NNN 방식.
+function nextRowId(board: Board): string {
+  const prefix = board.idPrefix ?? "ROW-"
+  let max = 0
+  for (const r of board.rows) {
+    if (r.id.startsWith(prefix)) {
+      const n = parseInt(r.id.slice(prefix.length), 10)
+      if (!Number.isNaN(n) && n > max) max = n
+    }
+  }
+  return `${prefix}${String(max > 0 ? max + 1 : 100).padStart(3, "0")}`
 }
 
-// ── 액션 인터페이스 (STATE-SHAPES §5) ─────────────────────
+// ── 액션 인터페이스 (STATE-SHAPES §5 + prototype-app.jsx) ──
 export interface FlowBaseActions {
-  // Board
   switchBoard: (boardId: string) => void
   createBoard: (label: string, columns?: ColumnDef[]) => string
   deleteBoard: (boardId: string) => void
@@ -45,11 +52,9 @@ export interface FlowBaseActions {
   commitAiCell: (rowId: string, col: "theme" | "sentiment", value: string) => void
   dismissAiCell: (rowId: string, col: "theme" | "sentiment") => void
 
-  // Undo / Redo
   undo: () => void
   redo: () => void
 
-  // UI
   setView: (v: ViewMode) => void
   setSearch: (s: string) => void
   setFilter: (f: TicketStatus[]) => void
@@ -63,7 +68,6 @@ export interface FlowBaseActions {
 
 export type FlowBaseStore = FlowBaseState & FlowBaseActions
 
-// ── 초기 상태 ─────────────────────────────────────────────
 function createInitialState(): FlowBaseState {
   const seed = createSeedBoard()
   return {
@@ -73,13 +77,12 @@ function createInitialState(): FlowBaseState {
     viewByBoardId: { [seed.id]: "sheet" },
     search: "",
     filter: [],
-    sort: null,
+    sort: { key: "date", dir: "desc" },
     selectedRowIds: [],
     focusedCell: null,
   }
 }
 
-// ── 스토어 ────────────────────────────────────────────────
 export const useFlowBase = create<FlowBaseStore>()(
   persist(
     (set, get) => {
@@ -88,7 +91,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         return s.boards[s.activeBoardId]
       }
 
-      // 변경 직전 active board rows 스냅샷을 undo 스택에 적재
+      // 변경 직전 active board rows 스냅샷을 undo 스택에
       const pushUndo = (): void => {
         const b = activeBoard()
         if (b) undoStack.push({ boardId: b.id, rows: [...b.rows] })
@@ -104,7 +107,6 @@ export const useFlowBase = create<FlowBaseStore>()(
         })
       }
 
-      // 스냅샷의 보드 rows 복원 (undo/redo 공통)
       const restoreRows = (boardId: string, rows: TableRow[]): void => {
         const s = get()
         const target = s.boards[boardId]
@@ -127,19 +129,21 @@ export const useFlowBase = create<FlowBaseStore>()(
             activeBoardId: boardId,
             search: "",
             filter: [],
-            sort: null,
+            sort: { key: "date", dir: "desc" },
             selectedRowIds: [],
             focusedCell: null,
           })
         },
 
         createBoard: (label, columns) => {
-          const id = `board-${nanoid(8)}`
+          const id = `board-${Date.now().toString(36)}`
           const ts = nowIso()
           const board: Board = {
             id,
             label,
-            columns: columns ?? [],
+            columns: columns ?? [
+              { name: "id", label: "ID", type: "text", width: 86, mono: true },
+            ],
             rows: [],
             aiHistory: [],
             createdAt: ts,
@@ -171,20 +175,12 @@ export const useFlowBase = create<FlowBaseStore>()(
 
         addRow: (row) => {
           const b = activeBoard()
-          const id = row?.id ?? nanoid(10)
-          if (!b) return id
+          if (!b) return row?.id ?? "ROW-100"
           pushUndo()
           const ts = nowIso()
+          const id = row?.id ?? nextRowId(b)
           const newRow: TableRow = {
             id,
-            name: "",
-            company: "",
-            date: todayIso(),
-            theme: "Other",
-            sentiment: "Mixed",
-            status: "미처리",
-            priority: "Med",
-            quote: "",
             themeConfirmed: true,
             sentimentConfirmed: true,
             createdAt: ts,
@@ -217,44 +213,33 @@ export const useFlowBase = create<FlowBaseStore>()(
           }))
         },
 
+        // AI 추천 수용 — 값 설정 + confirmed=true
         commitAiCell: (rowId, col, value) => {
           const b = activeBoard()
           if (!b) return
           pushUndo()
+          const confirmKey =
+            col === "theme" ? "themeConfirmed" : "sentimentConfirmed"
           setRows(
-            b.rows.map((r) => {
-              if (r.id !== rowId) return r
-              const ts = nowIso()
-              return col === "theme"
-                ? { ...r, theme: value, themeConfirmed: true, updatedAt: ts }
-                : {
-                    ...r,
-                    sentiment: value as Sentiment,
-                    sentimentConfirmed: true,
-                    updatedAt: ts,
-                  }
-            }),
+            b.rows.map((r) =>
+              r.id === rowId
+                ? { ...r, [col]: value, [confirmKey]: true, updatedAt: nowIso() }
+                : r,
+            ),
           )
         },
 
-        // AI 추천 거부 → 기본값 리셋 (design §15 Q1)
+        // AI 추천 거부 — 값은 그대로 두고 confirmed만 true (프로토타입 onDismissAi)
         dismissAiCell: (rowId, col) => {
           const b = activeBoard()
           if (!b) return
           pushUndo()
+          const confirmKey =
+            col === "theme" ? "themeConfirmed" : "sentimentConfirmed"
           setRows(
-            b.rows.map((r) => {
-              if (r.id !== rowId) return r
-              const ts = nowIso()
-              return col === "theme"
-                ? { ...r, theme: "Other", themeConfirmed: true, updatedAt: ts }
-                : {
-                    ...r,
-                    sentiment: "Mixed",
-                    sentimentConfirmed: true,
-                    updatedAt: ts,
-                  }
-            }),
+            b.rows.map((r) =>
+              r.id === rowId ? { ...r, [confirmKey]: true, updatedAt: nowIso() } : r,
+            ),
           )
         },
 
@@ -305,12 +290,47 @@ export const useFlowBase = create<FlowBaseStore>()(
 
 // ── 셀렉터 (STATE-SHAPES §7) ──────────────────────────────
 
+const STATUS_RANK: Record<string, number> = {
+  미처리: 0,
+  진행중: 1,
+  대기: 2,
+  완료: 3,
+}
+const PRIORITY_RANK: Record<string, number> = {
+  Urgent: 0,
+  High: 1,
+  Med: 2,
+  Low: 3,
+}
+
 export function selectActiveBoard(state: FlowBaseState): Board | undefined {
   return state.boards[state.activeBoardId]
 }
 
 export function selectActiveView(state: FlowBaseState): ViewMode {
   return state.viewByBoardId[state.activeBoardId] ?? "sheet"
+}
+
+// status/priority는 의미 순서로, 그 외는 값 비교로 정렬.
+function compareRows(a: TableRow, b: TableRow, key: string, dir: SortDir): number {
+  let av: unknown = a[key]
+  let bv: unknown = b[key]
+  if (key === "status") {
+    av = STATUS_RANK[String(av)] ?? 99
+    bv = STATUS_RANK[String(bv)] ?? 99
+  } else if (key === "priority") {
+    av = PRIORITY_RANK[String(av)] ?? 99
+    bv = PRIORITY_RANK[String(bv)] ?? 99
+  }
+  let cmp: number
+  if (typeof av === "number" && typeof bv === "number") {
+    cmp = av - bv
+  } else {
+    const as = String(av ?? "")
+    const bs = String(bv ?? "")
+    cmp = as < bs ? -1 : as > bs ? 1 : 0
+  }
+  return dir === "asc" ? cmp : -cmp
 }
 
 // 검색/필터/정렬을 적용한 가시 행 목록 (derived — 저장 ❌)
@@ -320,29 +340,23 @@ export function selectVisibleRows(state: FlowBaseState): TableRow[] {
   let rows = board.rows
 
   if (state.filter.length > 0) {
-    const allowed = new Set(state.filter)
-    rows = rows.filter((r) => allowed.has(r.status))
+    const allowed = new Set<string>(state.filter)
+    rows = rows.filter((r) => allowed.has(String(r.status ?? "")))
   }
 
   const q = state.search.trim().toLowerCase()
   if (q) {
     rows = rows.filter((r) =>
-      `${r.id}${r.name}${r.company}${r.theme}${r.quote}`
-        .toLowerCase()
-        .includes(q),
+      board.columns.some((c) => {
+        const v = r[c.name]
+        return v != null && String(v).toLowerCase().includes(q)
+      }),
     )
   }
 
   if (state.sort) {
     const { key, dir } = state.sort
-    rows = [...rows].sort((a, b) => {
-      const av = (a as unknown as Record<string, unknown>)[key]
-      const bv = (b as unknown as Record<string, unknown>)[key]
-      const as = av == null ? "" : String(av)
-      const bs = bv == null ? "" : String(bv)
-      const cmp = as < bs ? -1 : as > bs ? 1 : 0
-      return dir === "asc" ? cmp : -cmp
-    })
+    rows = [...rows].sort((a, b) => compareRows(a, b, key, dir))
   }
 
   return rows
