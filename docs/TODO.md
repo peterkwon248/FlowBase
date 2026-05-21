@@ -6,7 +6,9 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## P0 (즉시)
 
-- [ ] **다음 라운드 결정** — 시트 뷰 / 사람 확정 UI / LLM 하이브리드 ([NEXT-ACTION.md](../NEXT-ACTION.md) "다음 행동" 참조)
+- [ ] **FlowBase V2 Phase 1B — 시트 뷰** — `components/sheet/*` (cell-popover·editable-cell·header-cell·new-row-stub·sheet-view) + M1~M5 hook 이식 + 보드 페이지 ([NEXT-ACTION.md](../NEXT-ACTION.md))
+
+> P1~P3의 import/BaaS/시트 등은 V2 7단계 계획([01-plan/features/flowbase-v2.plan.md](01-plan/features/flowbase-v2.plan.md))으로 재편됨 — Import=V2 Phase 3, Kanban/Dashboard=Phase 4, BaaS=Phase 7.
 
 ---
 
@@ -46,6 +48,7 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## 완료
 
+- [x] **FlowBase V2 Phase 1A — 기반** (2026-05-21): 제네릭 데이터 모델·zustand 스토어·시드·undo·parsers·키보드. design-ref V2 핸드오프 도입, 7단계 계획·Phase 1 design 작성
 - [x] **PR #4** (2026-05-07): Linear+shadcn overhaul, Trash, Workspaces UX, Quick switcher, Breadcrumb, Settings, design tokens
 - [x] **FlowBase 리브랜드** (2026-05-05): FlowDB → FlowBase, GitHub repo rename (peterkwon248/FlowBase), Status pill 통합 + 미처리=blue
 - [x] **PR #3** (2026-05-05): visual-design-update — Phosphor 아이콘, 채널 아이콘+텍스트, 워크스페이스 셀렉터, light/dark 컬러 최적화

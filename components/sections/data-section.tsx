@@ -1,7 +1,7 @@
 // visual: Linear-style data table — subtle row hover, sticky header, tight cell padding, 12px sort arrows
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import {
   ArrowDown,
   ArrowUp,
@@ -91,12 +91,19 @@ import {
   getCustomerName,
 } from "@/lib/mock-data"
 import { toneBadgeClassDual, statusColorClass, statusBgClass, priorityTextClass } from "@/lib/tokens"
+import { SheetCell, isEditableField } from "./sheet/SheetCell"
+import {
+  useSheetKeyboardNav,
+  nextEditableField,
+  type CellCoord,
+} from "./sheet/useSheetKeyboardNav"
+import { useSheetClipboard } from "./sheet/useSheetClipboard"
 
 type AnyRow = Customer | Ticket | Agent | Note
 type SortDir = "asc" | "desc"
 
 // Status icons - Linear style using Phosphor
-function StatusIcon({ status, className }: { status: TicketStatus; className?: string }) {
+export function StatusIcon({ status, className }: { status: TicketStatus; className?: string }) {
   const iconClass = cn("w-4 h-4", statusColorClass(status), className)
   switch (status) {
     case "미처리":
@@ -111,7 +118,7 @@ function StatusIcon({ status, className }: { status: TicketStatus; className?: s
 }
 
 // Priority icons - signal bars style
-function PriorityIcon({ priority, className }: { priority: TicketPriority; className?: string }) {
+export function PriorityIcon({ priority, className }: { priority: TicketPriority; className?: string }) {
   const iconClass = cn("w-4 h-4", priorityTextClass(priority), className)
   switch (priority) {
     case "Urgent":
@@ -132,7 +139,7 @@ const CHANNEL_ICONS: Record<string, React.ComponentType<{ className?: string; st
   Chat: MessageCircle,
 }
 
-function ChannelIcon({ channel, className }: { channel: string; className?: string }) {
+export function ChannelIcon({ channel, className }: { channel: string; className?: string }) {
   const IconComponent = CHANNEL_ICONS[channel]
   const iconClass = cn("w-4 h-4 text-muted-foreground", className)
   
@@ -231,7 +238,7 @@ interface CellProps {
   value: unknown
 }
 
-function Cell({ field, value }: CellProps) {
+export function Cell({ field, value }: CellProps) {
   if (value == null) {
     return <span className="text-muted-foreground">—</span>
   }
@@ -388,13 +395,90 @@ export function DataSection() {
   const [sortByTable, setSortByTable] = useState<
     Record<string, { key: string; dir: SortDir } | null>
   >({})
+  const [viewMode, setViewMode] = useState<"table" | "sheet">("table")
+  // M2: 시트 모드 인라인 편집 상태 (M4b: initialDraft 추가 — 문자키로 시작 시)
+  const [editingCell, setEditingCell] = useState<CellCoord | null>(null)
+  // M4: 비편집 모드 키보드 네비 focus
+  const [focusedCell, setFocusedCell] = useState<CellCoord | null>(null)
+  const sheetContainerRef = useRef<HTMLDivElement | null>(null)
+  // mock 데이터를 useState로 승격 — 세션 내 편집 결과 보존 (refresh 시 lost, design.md §11 Watch Out)
+  const [tableData, setTableData] = useState(TABLE_DATA)
+  // ChipSelect: 사용자가 추가한 enum 옵션. key = `${tableId}.${fieldName}`
+  const [customEnums, setCustomEnums] = useState<Record<string, string[]>>({})
+
+  const getCustomOptions = (fieldName: string) =>
+    customEnums[`${activeTable}.${fieldName}`] ?? []
+
+  const handleAddOption = (fieldName: string, newOpt: string) => {
+    const key = `${activeTable}.${fieldName}`
+    setCustomEnums((prev) => {
+      const existing = prev[key] ?? []
+      if (existing.includes(newOpt)) return prev
+      return { ...prev, [key]: [...existing, newOpt] }
+    })
+  }
 
   const table: TableNode | undefined = useMemo(
     () => SCHEMA.find((t) => t.id === activeTable),
     [activeTable],
   )
 
-  const data = TABLE_DATA[activeTable] ?? []
+  const data = tableData[activeTable] ?? []
+
+  const commitValue = (rowId: string, fieldName: string, newValue: unknown) => {
+    setTableData((prev) => ({
+      ...prev,
+      [activeTable]: (prev[activeTable] ?? []).map((row: AnyRow) =>
+        (row as { id: string }).id === rowId
+          ? ({ ...row, [fieldName]: newValue } as AnyRow)
+          : row,
+      ),
+    }))
+  }
+
+  const handleCellCommit = (rowId: string, fieldName: string, newValue: unknown) => {
+    commitValue(rowId, fieldName, newValue)
+    setEditingCell(null)
+  }
+
+  // M4b: 편집 모드 Tab/Enter — commit 후 다음 셀로 focus 이동
+  const handleCellCommitAndAdvance = (
+    rowId: string,
+    fieldName: string,
+    newValue: unknown,
+    direction: "next" | "prev" | "down",
+  ) => {
+    commitValue(rowId, fieldName, newValue)
+    setEditingCell(null)
+    if (!table) return
+    const fields = table.fields
+    const rowIdx = rows.findIndex((r) => (r as { id: string }).id === rowId)
+    const fieldIdx = fields.findIndex((f) => f.name === fieldName)
+    if (rowIdx < 0 || fieldIdx < 0) return
+
+    if (direction === "down") {
+      if (rowIdx + 1 < rows.length) {
+        setFocusedCell({
+          rowId: (rows[rowIdx + 1] as { id: string }).id,
+          fieldName,
+        })
+      }
+      return
+    }
+    const next = nextEditableField(
+      fields,
+      fieldIdx,
+      rowIdx,
+      rows.length,
+      direction === "prev",
+    )
+    if (next) {
+      setFocusedCell({
+        rowId: (rows[next.rowIdx] as { id: string }).id,
+        fieldName: fields[next.fieldIdx].name,
+      })
+    }
+  }
 
   const sort =
     sortByTable[activeTable] ??
@@ -410,6 +494,31 @@ export function DataSection() {
     })
     return r
   }, [data, table, searchQuery, sort])
+
+  // M4: 비편집 모드 키보드 네비 (편집 모드는 입력기가 자체 처리). rows useMemo 이후에 호출.
+  useSheetKeyboardNav({
+    enabled: viewMode === "sheet",
+    fields: table?.fields ?? [],
+    rows: rows as Array<{ id: string }>,
+    editingCell,
+    focusedCell,
+    setEditingCell,
+    setFocusedCell,
+    onCellCommit: handleCellCommit,
+    containerRef: sheetContainerRef,
+  })
+
+  // M5: 클립보드 (Ctrl+C/V) — 단일 셀. 다중 셀 범위는 후속 PR
+  useSheetClipboard({
+    enabled: viewMode === "sheet",
+    fields: table?.fields ?? [],
+    rows: rows as Array<AnyRow & { id: string }>,
+    focusedCell,
+    editingCell,
+    containerRef: sheetContainerRef,
+    rowValue,
+    onCellCommit: handleCellCommit,
+  })
 
   const handleSort = (key: string) => {
     setSortByTable((prev) => {
@@ -441,6 +550,8 @@ export function DataSection() {
     setActiveTable(id)
     setSelectedRows([])
     setSearchQuery("")
+    setFocusedCell(null)
+    setEditingCell(null)
   }
 
   return (
@@ -541,6 +652,38 @@ export function DataSection() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {/* viewMode 토글 — design.md §2.1, getAvailableViews는 lib/view-utils.ts 참조 */}
+            <div className="inline-flex items-center rounded-md border border-border/60 bg-secondary/40 p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode("table")}
+                aria-pressed={viewMode === "table"}
+                className={cn(
+                  "px-2.5 py-1 text-xs rounded-sm flex items-center gap-1.5 transition-colors",
+                  viewMode === "table"
+                    ? "bg-background shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <List className="w-3.5 h-3.5" strokeWidth={1.5} />
+                표
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("sheet")}
+                aria-pressed={viewMode === "sheet"}
+                className={cn(
+                  "px-2.5 py-1 text-xs rounded-sm flex items-center gap-1.5 transition-colors",
+                  viewMode === "sheet"
+                    ? "bg-background shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
+                시트
+              </button>
+            </div>
+            <div className="h-5 w-px bg-border/60" aria-hidden />
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
               <input
@@ -567,7 +710,11 @@ export function DataSection() {
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-auto">
+        <div
+          ref={sheetContainerRef}
+          tabIndex={viewMode === "sheet" ? 0 : -1}
+          className="flex-1 overflow-auto outline-none"
+        >
           {table && (
             <table className="w-full">
               <thead className="bg-muted/40 sticky top-0 z-10 border-b border-border/60">
@@ -620,7 +767,49 @@ export function DataSection() {
                           key={field.name}
                           className="px-3 py-2 text-sm align-middle"
                         >
-                          <Cell field={field} value={rowValue(row, field.name)} />
+                          {viewMode === "sheet" ? (
+                            <SheetCell
+                              field={field}
+                              value={rowValue(row, field.name)}
+                              rowId={id}
+                              isEditing={
+                                editingCell?.rowId === id &&
+                                editingCell?.fieldName === field.name
+                              }
+                              isFocused={
+                                focusedCell?.rowId === id &&
+                                focusedCell?.fieldName === field.name
+                              }
+                              initialDraft={
+                                editingCell?.rowId === id &&
+                                editingCell?.fieldName === field.name
+                                  ? editingCell.initialDraft
+                                  : undefined
+                              }
+                              customOptions={getCustomOptions(field.name)}
+                              onAddOption={(opt) => handleAddOption(field.name, opt)}
+                              onStartEdit={() => {
+                                setFocusedCell({ rowId: id, fieldName: field.name })
+                                if (isEditableField(field)) {
+                                  setEditingCell({ rowId: id, fieldName: field.name })
+                                }
+                              }}
+                              onCommit={(newValue) =>
+                                handleCellCommit(id, field.name, newValue)
+                              }
+                              onCommitAndAdvance={(newValue, direction) =>
+                                handleCellCommitAndAdvance(
+                                  id,
+                                  field.name,
+                                  newValue,
+                                  direction,
+                                )
+                              }
+                              onCancel={() => setEditingCell(null)}
+                            />
+                          ) : (
+                            <Cell field={field} value={rowValue(row, field.name)} />
+                          )}
                         </td>
                       ))}
                       <td className="px-3 py-2">
