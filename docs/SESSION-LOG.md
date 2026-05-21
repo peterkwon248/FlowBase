@@ -6,9 +6,9 @@
 
 ## 2026-05-21 (kkh94 머신, 이어서) — Phase 1B·2·3 구현 (시트 뷰 · AI 패널 · Import)
 
-### 🚨 핵심 — 미커밋 상태
-- 이 세션 작업물 **전부 `feat/sheet-view-v2` 브랜치에 미커밋 + origin 미push**.
-- git `user.name`/`user.email` 미설정 → 커밋 불가. 다른 머신 이어가기 전 **반드시 커밋 + 푸시** (안 하면 Phase 1B/2/3 + 설계 문서 3개 전부 유실).
+### ✅ 마무리 — 커밋·푸시·main 머지 완료
+- 이 세션 작업물을 `feat/sheet-view-v2`에 커밋(`eb31064`) → origin 푸시 → **`main` 머지·푸시**까지 완료.
+- git 식별자는 저장소 로컬 config로 설정(peterkwon248). 다른 머신에서 `git fetch && git checkout main && git pull`로 이어가면 됨.
 
 ### 완료
 - **before-work** — `peterkwon248/FlowBase` clone, `npm install`
@@ -27,12 +27,11 @@
 - `tsc --noEmit` green · `npm run build` green (5 라우트) · vitest **13/13** (parsers 8 + infer-batch 5) · 브라우저 동작 확인 (시트 편집·키보드 네비·AI 패널 pending/error toast·Import 3-step 흐름·새 보드 생성). AI 실호출은 키 미설정이라 graceful 에러 경로까지만 검증.
 
 ### 다음
-1. **🚨 커밋 + 푸시** (git 식별자 설정 후) — 다른 머신 이어가기 전 필수.
-2. `.env.local`에 `ANTHROPIC_API_KEY` → AI 실호출 검증.
-3. Phase 4 (Kanban + Dashboard). `NEXT-ACTION.md` 참조.
+1. `.env.local`에 `ANTHROPIC_API_KEY` → AI 실호출 검증.
+2. Phase 4 (Kanban + Dashboard) — `main`에서 새 브랜치 분기. `NEXT-ACTION.md` 참조.
 
 ### Watch Out
-- **미커밋 + origin에 `feat/sheet-view-v2` 브랜치 없음** — 다른 머신엔 `main`(de9acdf, Phase 1A)까지만 존재. 커밋+푸시 안 하면 이 세션 전체 유실.
+- (해결됨) 작업물은 `feat/sheet-view-v2` 커밋·푸시 + `main` 머지 완료 — origin/main이 이번 세션 결과를 포함. `feat/sheet-view-v2` 브랜치는 origin에 잔존(삭제 선택).
 - `ANTHROPIC_API_KEY` 미설정 — 사용자가 마지막에 설정 예정. AI 실호출(infer-batch/ask/analyze-import) 미검증.
 - 커밋 시 `next-env.d.ts`(빌드 생성물)·`package-lock.json`(npm install) 변경이 incidental하게 섞여 있음 — 포함 여부 판단.
 - Phase 3 Q1: `infer-batch`가 `row.quote` 하드코딩 — 임포트 보드에 `quote` 컬럼 없으면 AI 추론 입력 빈약 (소스 컬럼 일반화는 후속).

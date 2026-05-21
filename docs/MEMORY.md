@@ -7,7 +7,7 @@
 ## Phase Status
 
 - **Phase 0 (Plan)**: ✅ 완료
-- **Phase 1 (Beta)**: 🟡 진행 중 — FlowBase V2 재구축 (7단계 중 1A·1B·2·3 구현 완료 — ⚠️ 미커밋, `feat/sheet-view-v2`)
+- **Phase 1 (Beta)**: 🟡 진행 중 — FlowBase V2 재구축 (7단계 중 1A·1B·2·3 구현 완료 + `main` 머지. 다음: Phase 4)
 - **Phase 2 (Team)**: ⬜ — 멤버 초대, 권한 모델, 워크스페이스 분리 (W11)
 - **Phase 3+**: ⬜ — Realtime collab, scaling
 
@@ -17,7 +17,7 @@
 
 **2026-05-21 결정**: **FlowBase V2 재구축 착수.** `design-ref/`의 V2 핸드오프 + 프로토타입을 정본으로, 기존 3섹션 UI(설계·데이터·운영)를 V2 데이터 보드로 클린 재구축. 7단계 계획 ([01-plan/features/flowbase-v2.plan.md](01-plan/features/flowbase-v2.plan.md)).
 
-**진행**: Phase 1A~3 구현 완료 (1B 시트 뷰 · 2 AI 패널+Claude · 3 Import 모달) — ⚠️ `feat/sheet-view-v2` 브랜치에 **미커밋·origin 미push**. **다음 = 커밋·푸시 후 Phase 4(Kanban + Dashboard).**
+**진행**: Phase 1A~3 구현 완료 (1B 시트 뷰 · 2 AI 패널+Claude · 3 Import 모달) → `feat/sheet-view-v2` → **`main` 머지·푸시 완료**. **다음 = Phase 4(Kanban + Dashboard).**
 
 상세는 [../NEXT-ACTION.md](../NEXT-ACTION.md) 참조.
 
@@ -31,7 +31,7 @@
 | #3 | visual-design-update | `aa4f353` (2026-05-05) | UI 폴리시 — 채널 아이콘+텍스트, Phosphor status/priority 아이콘, 워크스페이스 셀렉터, 라이트/다크 컬러 최적화 |
 | (TBD) | session: FlowBase rebrand + pill polish | 진행 중 (2026-05-05) | TS fixes(`cc90196`) + FlowDB→FlowBase 리브랜드 + Workflow 아이콘 + 운영 status pill 통합 디자인(`8f597b0`) + 미처리 blue(`e3f8208`) |
 | — | FlowBase V2 재구축 Phase 1A (기반) | `feat/flowbase-v2` → main squash (2026-05-21) | V2 제네릭 데이터 모델·zustand 스토어·시드·undo·parsers·키보드. `design-ref/` V2 핸드오프 도입, 7단계 계획·Phase 1 design 작성 |
-| — | FlowBase V2 Phase 1B·2·3 (시트·AI·Import) | ⚠️ **미커밋** — `feat/sheet-view-v2` (2026-05-21) | 시트 뷰 · AI 패널+Claude(`claude-sonnet-4-6`) · Import 3-step 위저드. 설계 문서 phase{1,2,3}. tsc·build·vitest(13) green. `app/txt-poc` 제거. **커밋·푸시 필요** |
+| `eb31064` | FlowBase V2 Phase 1B·2·3 (시트·AI·Import) | `feat/sheet-view-v2` → `main` 머지 (2026-05-21) | 시트 뷰 · AI 패널+Claude(`claude-sonnet-4-6`) · Import 3-step 위저드. 설계 문서 phase{2,3}. tsc·build·vitest(13) green. `app/txt-poc` 제거 |
 
 ---
 
