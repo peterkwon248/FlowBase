@@ -4,6 +4,42 @@
 
 ---
 
+## 2026-05-21 (kkh94 머신, 이어서) — Phase 4·5·6 구현 (Kanban·Dashboard · 앱 셸 · 멀티보드·Schema)
+
+### ✅ 마무리 — 커밋·푸시·main 머지 완료
+- 작업물을 `feat/kanban-dashboard`에 커밋(`df7eeb4` 코드 + 후속 docs 커밋) → origin 푸시 → **`main` 머지·푸시** 완료.
+- 다른 머신: `git fetch && git checkout main && git pull && npm install`.
+
+### 완료
+- **Phase 4 (Kanban + Dashboard)** — 설계 + 구현. `components/board/view-switcher`(Sheet|Kanban|Dashboard 탭) · `components/sections/{kanban,dashboard}-view` · `components/charts/*`(recharts donut/bar + div 막대). Kanban=status 칸+이동 버튼(DnD ❌). Dashboard=제네릭 집계. page 뷰 분기. **버그 수정**: `selectVisibleRows` 직접 구독 → 무한 루프 → 의존 슬라이스 구독 + useMemo.
+- **Phase 5 (앱 셸)** — 설계 + 구현. `components/board/*`(activity-bar·board-sidebar·board-header·panels-menu·edge-collapse·expand-tab·filter-chips). page 셸 레이아웃 [액티비티바|사이드바|보드|AI패널] + 패널 조건부 렌더. `keyboard-shortcuts` 확장(⌘⇧A·⌘⇧F·⌘B·⌘N). **버그 수정**: 시트 체크박스 정렬(헤더 X 4px 어긋남 + 행 높이 소수점 jitter → `text-center`·`h-12`·`block mx-auto`).
+- **Phase 6 (멀티보드 + Schema)** — 설계 + 구현. 스토어 `renameBoard` · 사이드바 보드 `…` 메뉴(rename 인라인/delete, 마지막 보드 보호) · `schema-view`(전 보드 컬럼 인벤토리 카드 + fk 관계) · `ViewMode += "schema"` 4번째 탭.
+- 설계 문서 3개: `flowbase-v2-phase{4,5,6}.design.md`.
+
+### 큰 결정
+- Kanban 카드 이동 = 버튼 (DnD 라이브러리 ❌, Phase 4 D1).
+- Dashboard = 제네릭 집계 (interview 전용 하드코딩 폐기, Phase 4 D3). 차트 = div 막대 + recharts hero 2개 혼합.
+- **Schema = 4번째 뷰 탭** — Phase 1의 "schema ≠ view" 노트를 MVP 단순화 위해 번복 (Phase 6 D3). active board 무관 워크스페이스 렌더.
+- 옛 V2-미사용 코드 정리는 별건 — `tokens.ts`가 `mock-data` 타입 의존 등 얽힘 (Phase 6 Q2).
+
+### 검증
+- `tsc` green · `npm run build` green · vitest 13/13 · 브라우저: 4뷰 전환·Kanban 이동·Dashboard 차트·패널 토글(키보드/햄버거/엣지)·보드 rename/delete·Schema 뷰 — 모두 확인. 콘솔 getSnapshot 에러 0 (직접 카운터 검증).
+
+### 다음
+- **Phase 7 (BaaS)** — V2 7단계 중 마지막. `docs/01-baas-decision.md`(Supabase vs bkend.ai) 결정이 블로커. `NEXT-ACTION.md` 참조.
+
+### Watch Out
+- (해결됨) `feat/kanban-dashboard` 커밋·푸시 + `main` 머지 완료 — origin/main이 Phase 1~6 전체 포함.
+- `ANTHROPIC_API_KEY` 미설정 — AI 실호출(infer-batch/ask/analyze-import) 여전히 미검증.
+- **`selectVisibleRows`를 zustand 셀렉터로 직접 구독 ❌** — 새 배열 반환해 무한 루프. 의존 슬라이스 구독 + `useMemo` 패턴 필수 (Phase 4 교훈, sheet-view 패턴).
+- 옛 V2-미사용 코드 정리 미완 — 별건 (NEXT-ACTION 참조).
+- `feat/sheet-view-v2`·`feat/kanban-dashboard` 브랜치 origin 잔존 (삭제 선택).
+
+### 머신
+kkh94. 다음은 또 다른 머신 — before-work 시 `main` 동기화.
+
+---
+
 ## 2026-05-21 (kkh94 머신, 이어서) — Phase 1B·2·3 구현 (시트 뷰 · AI 패널 · Import)
 
 ### ✅ 마무리 — 커밋·푸시·main 머지 완료

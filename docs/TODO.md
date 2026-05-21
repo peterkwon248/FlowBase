@@ -6,10 +6,11 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## P0 (즉시)
 
-- [ ] **🚨 커밋 + 푸시** — Phase 1B·2·3 작업물이 `feat/sheet-view-v2`에 미커밋·origin 미push. git 식별자 설정 후 커밋·푸시 ([NEXT-ACTION.md](../NEXT-ACTION.md)).
-- [ ] **FlowBase V2 Phase 4 — Kanban + Dashboard** — `components/board/view-switcher` · `components/sections/kanban-view` · `components/charts/*` + `dashboard-view` ([01-plan/features/flowbase-v2.plan.md §8](01-plan/features/flowbase-v2.plan.md))
+- [ ] **FlowBase V2 Phase 7 — BaaS** — ⚠️ 블로커: `docs/01-baas-decision.md` (Supabase vs bkend.ai) 결정 선결. supabase migrations·RLS·Auth(Magic link)·sync layer ([01-plan/features/flowbase-v2.plan.md §8](01-plan/features/flowbase-v2.plan.md))
+- [ ] **AI 실호출 검증** — `.env.local`에 `ANTHROPIC_API_KEY` → infer-batch/ask/analyze-import 검증
+- [ ] **옛 V2-미사용 코드 정리** (별건) — `app-sidebar`·`sections/*`·`app/{trash,workspaces}`·`mock-*` 삭제 (tokens.ts 의존 주의)
 
-> P1~P3의 import/BaaS/시트 등은 V2 7단계 계획으로 재편됨 — 시트=Phase 1B✅, AI=Phase 2✅, Import=Phase 3✅, Kanban/Dashboard=Phase 4, BaaS=Phase 7.
+> V2 7단계: 시트=1B✅ · AI=2✅ · Import=3✅ · Kanban/Dashboard=4✅ · 앱 셸=5✅ · 멀티보드/Schema=6✅ · BaaS=7.
 
 ---
 
@@ -49,7 +50,8 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## 완료
 
-- [x] **FlowBase V2 Phase 1B·2·3** (2026-05-21 — ⚠️ 미커밋, `feat/sheet-view-v2`): 시트 뷰(`components/sheet/*`) · AI 패널+Claude(`app/api/ai/*`·`components/ai/*`) · Import 모달(`components/import/*`). 설계 문서 phase{2,3}. vitest 도입. `app/txt-poc` 제거. tsc·build·vitest(13) green
+- [x] **FlowBase V2 Phase 4·5·6** (2026-05-21 — `df7eeb4`, `main` 머지): Kanban·Dashboard·뷰 스위처 · 앱 셸(Activity bar·Sidebar·패널 토글·단축키) · 멀티보드(보드 CRUD)·Schema 뷰. 설계 문서 phase{4,5,6}
+- [x] **FlowBase V2 Phase 1B·2·3** (2026-05-21 — `eb31064`, `main` 머지): 시트 뷰(`components/sheet/*`) · AI 패널+Claude(`app/api/ai/*`·`components/ai/*`) · Import 모달(`components/import/*`). 설계 문서 phase{2,3}. vitest 도입. `app/txt-poc` 제거
 - [x] **FlowBase V2 Phase 1A — 기반** (2026-05-21): 제네릭 데이터 모델·zustand 스토어·시드·undo·parsers·키보드. design-ref V2 핸드오프 도입, 7단계 계획·Phase 1 design 작성
 - [x] **PR #4** (2026-05-07): Linear+shadcn overhaul, Trash, Workspaces UX, Quick switcher, Breadcrumb, Settings, design tokens
 - [x] **FlowBase 리브랜드** (2026-05-05): FlowDB → FlowBase, GitHub repo rename (peterkwon248/FlowBase), Status pill 통합 + 미처리=blue

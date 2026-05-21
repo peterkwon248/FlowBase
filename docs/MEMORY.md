@@ -7,7 +7,7 @@
 ## Phase Status
 
 - **Phase 0 (Plan)**: ✅ 완료
-- **Phase 1 (Beta)**: 🟡 진행 중 — FlowBase V2 재구축 (7단계 중 1A·1B·2·3 구현 완료 + `main` 머지. 다음: Phase 4)
+- **Phase 1 (Beta)**: 🟡 진행 중 — FlowBase V2 재구축 (7단계 중 **Phase 1~6 구현 완료 + `main` 머지**. 남음: Phase 7 BaaS)
 - **Phase 2 (Team)**: ⬜ — 멤버 초대, 권한 모델, 워크스페이스 분리 (W11)
 - **Phase 3+**: ⬜ — Realtime collab, scaling
 
@@ -17,7 +17,7 @@
 
 **2026-05-21 결정**: **FlowBase V2 재구축 착수.** `design-ref/`의 V2 핸드오프 + 프로토타입을 정본으로, 기존 3섹션 UI(설계·데이터·운영)를 V2 데이터 보드로 클린 재구축. 7단계 계획 ([01-plan/features/flowbase-v2.plan.md](01-plan/features/flowbase-v2.plan.md)).
 
-**진행**: Phase 1A~3 구현 완료 (1B 시트 뷰 · 2 AI 패널+Claude · 3 Import 모달) → `feat/sheet-view-v2` → **`main` 머지·푸시 완료**. **다음 = Phase 4(Kanban + Dashboard).**
+**진행**: Phase 1~6 구현 완료 (시트 · AI 패널+Claude · Import · Kanban · Dashboard · 앱 셸 · 멀티보드 · Schema) → **`main` 머지·푸시 완료**. **남은 Phase 7(BaaS)은 BaaS 결정(`docs/01-baas-decision.md` — Supabase vs bkend.ai)이 블로커.**
 
 상세는 [../NEXT-ACTION.md](../NEXT-ACTION.md) 참조.
 
@@ -32,6 +32,7 @@
 | (TBD) | session: FlowBase rebrand + pill polish | 진행 중 (2026-05-05) | TS fixes(`cc90196`) + FlowDB→FlowBase 리브랜드 + Workflow 아이콘 + 운영 status pill 통합 디자인(`8f597b0`) + 미처리 blue(`e3f8208`) |
 | — | FlowBase V2 재구축 Phase 1A (기반) | `feat/flowbase-v2` → main squash (2026-05-21) | V2 제네릭 데이터 모델·zustand 스토어·시드·undo·parsers·키보드. `design-ref/` V2 핸드오프 도입, 7단계 계획·Phase 1 design 작성 |
 | `eb31064` | FlowBase V2 Phase 1B·2·3 (시트·AI·Import) | `feat/sheet-view-v2` → `main` 머지 (2026-05-21) | 시트 뷰 · AI 패널+Claude(`claude-sonnet-4-6`) · Import 3-step 위저드. 설계 문서 phase{2,3}. tsc·build·vitest(13) green. `app/txt-poc` 제거 |
+| `df7eeb4` | FlowBase V2 Phase 4·5·6 (Kanban·Dashboard·앱 셸·멀티보드·Schema) | `feat/kanban-dashboard` → `main` 머지 (2026-05-21) | 뷰 스위처 · Kanban · Dashboard(recharts) · 앱 셸(패널 토글·단축키) · 보드 CRUD · Schema 뷰. 설계 문서 phase{4,5,6}. tsc·build green |
 
 ---
 
@@ -73,6 +74,8 @@
 11. **FlowBase V2 재구축 — 프로토타입 제네릭 모델** (2026-05-21) — `design-ref/`의 V2 핸드오프 + 프로토타입이 디자인 정본. 기존 3섹션 UI를 V2 데이터 보드로 클린 재구축 (7단계, [01-plan/features/flowbase-v2.plan.md](01-plan/features/flowbase-v2.plan.md)). 데이터 모델은 **제네릭 컬럼 구동** (`Board`/`TableRow`/`ColumnDef`, 10 cell type) — 핸드오프 STATE-SHAPES의 단순화 고정 `TableRow`는 폐기 ([types/flowbase.ts](../types/flowbase.ts)). `dismissAiCell`=값 유지. `feat/sheet-view`의 M1~M5(옛 모델 시트 트라이얼)는 패턴 이식만, 머지 ❌. **레퍼런스(프로토타입)는 구현 전 끝까지 정독할 것.**
 
 12. **Phase 1B·2·3 구현 결정** (2026-05-21) — (1) 시트 포커스 셀 표시는 `ring`으로 (tailwind-merge가 `outline` 스타일 클래스를 `outline-2`와 충돌로 제거 → 외곽선 안 보임). (2) **AI 모델 = `claude-sonnet-4-6`** — `claude-api` 스킬 기본값은 `claude-opus-4-7`이나, 핸드오프 AI-CONTRACTS + Phase 2 설계 D2가 Sonnet 지정 + theme/sentiment 대량 분류라 채택. `app/api/ai/_anthropic.ts`의 `AI_MODEL` 단일 상수. (3) AI 패널 **"Apply all" = Claude `infer-batch` 호출 + `confirmed:true` 적용**, ⌘Z가 검토 백스톱 — 버튼 클릭이 곧 사람의 확정이라 "자동 적용 ❌" 위반 아님. (4) **Import = 새 제네릭 보드 생성** — 프로토타입/IMPORT-SPEC §3의 고정필드 휴리스틱 매퍼 폐기 (#11 일관). (5) vitest 최소 도입 (`npm test`). 키 미설정 시 AI 라우트는 graceful 500.
+
+13. **Phase 4·5·6 구현 결정** (2026-05-21) — (1) Kanban 카드 이동 = **이동 버튼** (DnD 라이브러리 ❌ — 의존성·모션 최소). (2) **Dashboard = 제네릭 집계** (아무 보드의 categorical/num 컬럼) — interview 전용 하드코딩 폐기. 차트 = div 막대 + recharts hero 2개 혼합. (3) 앱 셸 패널 3종(activityBar/sidebar/aiPanel) — 스토어 `panels`·토글·persist는 Phase 1A 완비, Phase 5는 UI만. (4) **Schema = 4번째 뷰 탭** — Phase 1의 "schema는 뷰 아님" 노트를 MVP 단순화 위해 번복, `ViewMode += "schema"`, active board 무관 워크스페이스 렌더. (5) **`selectVisibleRows`는 zustand 셀렉터로 직접 구독 ❌** — 매 호출 새 배열 반환 → getSnapshot 무한 루프. 의존 슬라이스(board/search/filter/sort) 구독 + `useMemo` 패턴 필수 (sheet-view 패턴).
 
 ---
 
