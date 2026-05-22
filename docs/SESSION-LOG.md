@@ -4,6 +4,46 @@
 
 ---
 
+## 2026-05-22~23 (kkh94 머신) — before/after-work 명령어 · Phase 3 Q1 · 죽은코드 정리 · 앱 범위 재정의(Phase A) · Library 설계(Phase B)
+
+### ✅ 마무리 — 6 커밋 + docs, `main` 머지·푸시 완료
+- 작업을 `claude/wizardly-murdock-451e3d` 워크트리 브랜치에 커밋 → **`main` 머지·푸시**.
+- 다른 머신: `git fetch && git checkout main && git pull && npm install`.
+
+### 완료
+- **before/after-work 명령어** (`2cbf01a`·`d2ad4ea`) — `~/.claude/commands/`(머신 로컬·미동기화) 대신 `<repo>/.claude/commands/`에 프로젝트 커맨드로 생성. `.gitignore`에 `!.claude/commands/` 예외 추가 → git 추적, 모든 머신 sync. before-work=git pull 중심, after-work=커밋·push·머지 중심.
+- **Phase 3 Q1** (`afa39f1`) — `infer-batch`의 `row.quote` 하드코딩을 `sourceField` 인자로 일반화. API·`flowbase-ai.ts`·`ai-activity-panel.tsx`·테스트. vitest 13→15.
+- **옛 V1 코드 정리** (`4fa804a`) — V2에서 도달 불가능한 V1 파일 20개 삭제(−7,025줄): `app-sidebar`·`breadcrumb-bar`·`quick-switcher`·`workspace-switcher`·`sections/*-section` 6개·`sections/sheet/*` 4개·`mock-*` 3개·`view-utils`·`trash/workspaces` 라우트. `tokens.ts`는 `mock-data`의 `Tone`/`ChartColor` 타입을 인라인해 의존 제거.
+- **Phase A — 앱 셸 6모드 라우터** (`daad859`) — 액티비티 바를 아이콘 2개 → 6모드 레일(Inbox·Tables·Workspace·Library·Wiki·Search). `app/page.tsx`를 `activityMode` 라우터로, Tables 보드 본체를 `tables-mode.tsx`로 추출. **Schema를 Tables 뷰 탭 → Workspace 모드로 이동.** Library/Wiki/Inbox/Search는 "준비 중" 스텁.
+- **Phase B 설계** — `docs/02-design/features/flowbase-v2-library.design.md` (Library 서브시스템, 서브단계 B1~B4).
+
+### 큰 결정 — 앱 범위 재정의
+- **"Phase 1~6 완료"는 과대 기재였음.** 사용자 지적 + 프로토타입 정독 결과: 프로토타입은 6 액티비티 모드(Inbox·Tables·Workspace·Library·Wiki·Search)를 그리는데 V2는 **Tables 모드 하나**만 구현 — 앱의 약 1/6. docs의 "브라우저 동작 확인 완료"는 넓은 화면 한정.
+- **Schema = Workspace 서브시스템** — `prototype-app.jsx` L63(`Migrate stale "schema" view (now a workspace-level item)`)·L95(`activeWorkspaceItem: "schema"|"automations"`). Phase 6 D3("Schema = 4번째 뷰 탭")를 번복. `ViewMode`에서 `schema` 제거.
+- **Library 먼저** — 나머지 서브시스템 중 Library가 가장 구조적(컬럼·옵션 정의 레이어). Wiki·Inbox·Search는 이후.
+- **BaaS(옛 Phase 7) 후순위** — 서브시스템 구축이 우선.
+- before/after-work는 프로젝트 커맨드로 (글로벌 `~/.claude/`는 머신 간 sync 안 됨 — 이번 머신에 명령어가 없던 이유).
+
+### 검증
+- Phase 3 Q1·정리·Phase A 각각 `tsc` 0 · `build` 0 · `vitest` 15/15.
+- Phase A: preview 브라우저에서 6모드 액티비티 바 + 모드 전환(Library 스텁 · Workspace=Schema · Tables 복귀) 확인.
+- after-work 시점 재검증: tsc 0 · build 0 · vitest 15/15.
+
+### 다음
+**Phase B — Library 서브시스템 B1 구현.** 설계 `flowbase-v2-library.design.md` §5의 7단계. `NEXT-ACTION.md` 참조.
+
+### Watch Out
+- **~800px 반응형 레이아웃 깨짐** — 4패널이 좁은 폭에서 무너짐(AI 패널이 보드 덮음). 미해결 — 서브시스템 구축 뒤 별도 작업. 사용자 우선순위: 기능 > 반응형.
+- `ANTHROPIC_API_KEY` 미설정 — AI 실호출 미검증.
+- 콘솔 script-tag 경고 6개 — preview 환경/기존, Phase A 코드 무관.
+- `pnpm-lock.yaml` 중복 — 빌드 경고(무관, 기존).
+- docs의 옛 "Phase 7 BaaS가 다음" 서술은 이번 세션이 재정의 — NEXT-ACTION·MEMORY·CONTEXT·TODO 모두 갱신함.
+
+### 머신
+kkh94. 다음 머신: before-work 시 `main` 동기화.
+
+---
+
 ## 2026-05-21 (kkh94 머신, 이어서) — Phase 4·5·6 구현 (Kanban·Dashboard · 앱 셸 · 멀티보드·Schema)
 
 ### ✅ 마무리 — 커밋·푸시·main 머지 완료

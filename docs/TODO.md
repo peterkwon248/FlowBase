@@ -6,11 +6,11 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## P0 (즉시)
 
-- [ ] **FlowBase V2 Phase 7 — BaaS** — ⚠️ 블로커: `docs/01-baas-decision.md` (Supabase vs bkend.ai) 결정 선결. supabase migrations·RLS·Auth(Magic link)·sync layer ([01-plan/features/flowbase-v2.plan.md §8](01-plan/features/flowbase-v2.plan.md))
+- [ ] **Phase B — Library 서브시스템 B1** — 데이터 모델 + 시드 + Library 모드(사이드바+카탈로그, 읽기 전용). 설계 `docs/02-design/features/flowbase-v2-library.design.md` §5
+- [ ] **반응형 레이아웃 수정** — ~800px 폭에서 4패널이 무너짐(AI 패널이 보드 덮음). 반응형 처리
 - [ ] **AI 실호출 검증** — `.env.local`에 `ANTHROPIC_API_KEY` → infer-batch/ask/analyze-import 검증
-- [ ] **옛 V2-미사용 코드 정리** (별건) — `app-sidebar`·`sections/*`·`app/{trash,workspaces}`·`mock-*` 삭제 (tokens.ts 의존 주의)
 
-> V2 7단계: 시트=1B✅ · AI=2✅ · Import=3✅ · Kanban/Dashboard=4✅ · 앱 셸=5✅ · 멀티보드/Schema=6✅ · BaaS=7.
+> **앱 범위 재정의** (2026-05-23): 프로토타입은 6 액티비티 모드. V2 "Phase 1~6"은 Tables 모드뿐. 셸 6모드 라우터=Phase A✅. 다음=서브시스템 차례 구축 (Library→Wiki→Inbox→Workspace→Search). BaaS는 후순위.
 
 ---
 
@@ -50,6 +50,10 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## 완료
 
+- [x] **앱 셸 6모드 라우터 (Phase A)** (2026-05-23 — `daad859`): 액티비티 바 6모드 레일 · `activityMode` 라우터 · Schema를 Tables 뷰 탭→Workspace 모드 이동. Library 서브시스템 설계 문서
+- [x] **옛 V1 미사용 코드 정리** (2026-05-23 — `4fa804a`): V2 도달 불가 V1 파일 20개 삭제 (−7,025줄)
+- [x] **infer-batch sourceField 일반화 (Phase 3 Q1)** (2026-05-23 — `afa39f1`)
+- [x] **before/after-work 명령어** (2026-05-22 — `2cbf01a`·`d2ad4ea`): 글로벌 대신 프로젝트 커맨드로 git 추적
 - [x] **FlowBase V2 Phase 4·5·6** (2026-05-21 — `df7eeb4`, `main` 머지): Kanban·Dashboard·뷰 스위처 · 앱 셸(Activity bar·Sidebar·패널 토글·단축키) · 멀티보드(보드 CRUD)·Schema 뷰. 설계 문서 phase{4,5,6}
 - [x] **FlowBase V2 Phase 1B·2·3** (2026-05-21 — `eb31064`, `main` 머지): 시트 뷰(`components/sheet/*`) · AI 패널+Claude(`app/api/ai/*`·`components/ai/*`) · Import 모달(`components/import/*`). 설계 문서 phase{2,3}. vitest 도입. `app/txt-poc` 제거
 - [x] **FlowBase V2 Phase 1A — 기반** (2026-05-21): 제네릭 데이터 모델·zustand 스토어·시드·undo·parsers·키보드. design-ref V2 핸드오프 도입, 7단계 계획·Phase 1 design 작성
