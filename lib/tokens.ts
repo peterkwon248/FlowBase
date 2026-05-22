@@ -1,8 +1,15 @@
 // visual: light+dark semantic color tokens — Linear style, WCAG AA compliant
 // This file provides badge/label class helpers with proper dark mode support.
-// Re-exports for backwards compatibility with existing imports from mock-data.ts
 
-import type { Tone, ChartColor } from "@/lib/mock-data"
+export type ChartColor = "chart-1" | "chart-2" | "chart-3" | "chart-4" | "chart-5"
+
+export type Tone =
+  | ChartColor
+  | "destructive"
+  | "primary"
+  | "warning"
+  | "success"
+  | "muted"
 
 /**
  * Badge classes for each tone — includes both light and dark mode variants.
