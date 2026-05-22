@@ -8,6 +8,7 @@
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
 import type {
+  ActivityMode,
   AIHistoryEntry,
   Board,
   ColumnDef,
@@ -70,6 +71,7 @@ export interface FlowBaseActions {
   redo: () => void
 
   setView: (v: ViewMode) => void
+  setActivityMode: (m: ActivityMode) => void
   setSearch: (s: string) => void
   setFilter: (f: TicketStatus[]) => void
   setSort: (s: FlowBaseState["sort"]) => void
@@ -89,6 +91,7 @@ function createInitialState(): FlowBaseState {
     activeBoardId: seed.id,
     panels: { activityBar: true, sidebar: true, aiPanel: true },
     viewByBoardId: { [seed.id]: "sheet" },
+    activityMode: "tables",
     search: "",
     filter: [],
     sort: { key: "date", dir: "desc" },
@@ -352,6 +355,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           set((s) => ({
             viewByBoardId: { ...s.viewByBoardId, [s.activeBoardId]: v },
           })),
+        setActivityMode: (activityMode) => set({ activityMode }),
         setSearch: (search) => set({ search }),
         setFilter: (filter) => set({ filter }),
         setSort: (sort) => set({ sort }),
@@ -374,6 +378,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         activeBoardId: s.activeBoardId,
         panels: s.panels,
         viewByBoardId: s.viewByBoardId,
+        activityMode: s.activityMode,
       }),
     },
   ),

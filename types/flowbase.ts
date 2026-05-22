@@ -81,14 +81,17 @@ export interface Board {
   updatedAt: string
 }
 
-// 뷰 집합. "schema"는 Phase 6에서 4번째 탭으로 추가 (워크스페이스 레벨 — 전 보드 렌더).
-export type ViewMode =
-  | "sheet"
-  | "kanban"
-  | "chart"
-  | "schema"
-  | "grid"
-  | "timeline"
+// 보드 뷰 집합 — Tables 모드 안에서 전환. Schema는 Workspace 모드 소속이라 여기 없음.
+export type ViewMode = "sheet" | "kanban" | "chart" | "grid" | "timeline"
+
+// 액티비티 바 모드 — 앱 최상위 내비게이션 (프로토타입 InteractiveActivityBar 6모드).
+export type ActivityMode =
+  | "tables"
+  | "library"
+  | "workspace"
+  | "wiki"
+  | "inbox"
+  | "search"
 
 export type SortDir = "asc" | "desc"
 
@@ -112,6 +115,7 @@ export interface FlowBaseState {
   // 전역 UI (persist)
   panels: PanelState
   viewByBoardId: Record<string, ViewMode>
+  activityMode: ActivityMode
 
   // 세션 ephemeral (persist ❌ — 보드 전환 시 초기화)
   search: string

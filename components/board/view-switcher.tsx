@@ -10,7 +10,6 @@
 import {
   LayoutDashboard,
   type LucideIcon,
-  Network,
   SquareKanban,
   Table2,
 } from "lucide-react"
@@ -32,7 +31,6 @@ const VIEWS: ViewDef[] = [
   { id: "sheet", label: "Sheet", icon: Table2 },
   { id: "kanban", label: "Kanban", icon: SquareKanban },
   { id: "chart", label: "Dashboard", icon: LayoutDashboard },
-  { id: "schema", label: "Schema", icon: Network },
 ]
 
 export function ViewSwitcher() {
