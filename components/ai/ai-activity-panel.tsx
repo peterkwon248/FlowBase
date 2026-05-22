@@ -33,6 +33,9 @@ const COLUMN_LABEL: Record<AiColumn, string> = {
   sentiment: "Sentiment",
 }
 
+// 시드 인터뷰 보드의 소스 텍스트 컬럼 — infer-batch가 이 값을 읽어 분류한다.
+const SOURCE_FIELD = "quote"
+
 export function AiActivityPanel() {
   const board = useFlowBase(selectActiveBoard)
   const acceptAllAi = useFlowBase((s) => s.acceptAllAi)
@@ -66,10 +69,14 @@ export function AiActivityPanel() {
     try {
       const inputRows: InferBatchRow[] = pending.map((r) => ({
         id: r.id,
-        quote: String(r.quote ?? ""),
+        [SOURCE_FIELD]: String(r[SOURCE_FIELD] ?? ""),
       }))
-      const results = await inferBatch(column, inputRows, (done, total) =>
-        toast.loading(`분류 중 ${done}/${total}…`, { id: toastId }),
+      const results = await inferBatch(
+        column,
+        inputRows,
+        SOURCE_FIELD,
+        (done, total) =>
+          toast.loading(`분류 중 ${done}/${total}…`, { id: toastId }),
       )
       if (results.length === 0) {
         toast.error("AI 응답에 결과가 없습니다 — 다시 시도하세요.", {

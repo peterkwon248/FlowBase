@@ -21,7 +21,7 @@ const THEME_OPTIONS = [
 
 interface InferRow {
   id: string
-  quote: string
+  [key: string]: unknown
 }
 
 export async function POST(req: NextRequest) {
@@ -34,8 +34,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "잘못된 JSON 요청" }, { status: 400 })
   }
 
-  const { column, rows, themeOptions } = (body ?? {}) as {
+  const { column, sourceField, rows, themeOptions } = (body ?? {}) as {
     column?: string
+    sourceField?: unknown
     rows?: unknown
     themeOptions?: unknown
   }
@@ -43,6 +44,12 @@ export async function POST(req: NextRequest) {
   if (column !== "theme" && column !== "sentiment") {
     return NextResponse.json(
       { error: "column은 'theme' 또는 'sentiment'여야 합니다." },
+      { status: 400 },
+    )
+  }
+  if (typeof sourceField !== "string" || sourceField.length === 0) {
+    return NextResponse.json(
+      { error: "sourceField(소스 텍스트 컬럼명)가 필요합니다." },
       { status: 400 },
     )
   }
@@ -61,7 +68,7 @@ export async function POST(req: NextRequest) {
 
   const typedRows = rows as InferRow[]
   const list = typedRows
-    .map((r) => `[${r.id}] ${r.quote ?? ""}`)
+    .map((r) => `[${r.id}] ${String(r[sourceField] ?? "")}`)
     .join("\n")
 
   const opts =

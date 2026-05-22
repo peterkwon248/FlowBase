@@ -36,7 +36,11 @@ describe("POST /api/ai/infer-batch", () => {
       '[{"id":"INT-018","theme":"Pricing pushback"}]',
     )
     const res = await POST(
-      makeReq({ column: "theme", rows: [{ id: "INT-018", quote: "비싸요" }] }),
+      makeReq({
+        column: "theme",
+        sourceField: "quote",
+        rows: [{ id: "INT-018", quote: "비싸요" }],
+      }),
     )
     const data = await res.json()
     expect(data.results).toEqual([
@@ -48,14 +52,34 @@ describe("POST /api/ai/infer-batch", () => {
   it("sentiment 값 누락 시 Mixed로 fallback한다", async () => {
     mockAsk.mockResolvedValueOnce('[{"id":"INT-018"}]')
     const res = await POST(
-      makeReq({ column: "sentiment", rows: [{ id: "INT-018", quote: "x" }] }),
+      makeReq({
+        column: "sentiment",
+        sourceField: "quote",
+        rows: [{ id: "INT-018", quote: "x" }],
+      }),
     )
     const data = await res.json()
     expect(data.results).toEqual([{ id: "INT-018", value: "Mixed" }])
   })
 
+  it("sourceField로 지정한 컬럼 값을 프롬프트에 넣는다", async () => {
+    mockAsk.mockResolvedValueOnce('[{"id":"R-1","theme":"Other"}]')
+    await POST(
+      makeReq({
+        column: "theme",
+        sourceField: "comment",
+        rows: [{ id: "R-1", comment: "좋은 피드백" }],
+      }),
+    )
+    expect(mockAsk).toHaveBeenCalledWith(
+      expect.objectContaining({ user: "[R-1] 좋은 피드백" }),
+    )
+  })
+
   it("빈 rows는 빈 결과를 반환한다", async () => {
-    const res = await POST(makeReq({ column: "theme", rows: [] }))
+    const res = await POST(
+      makeReq({ column: "theme", sourceField: "quote", rows: [] }),
+    )
     const data = await res.json()
     expect(data.results).toEqual([])
   })
@@ -65,12 +89,21 @@ describe("POST /api/ai/infer-batch", () => {
       id: `R-${i}`,
       quote: "x",
     }))
-    const res = await POST(makeReq({ column: "theme", rows }))
+    const res = await POST(
+      makeReq({ column: "theme", sourceField: "quote", rows }),
+    )
     expect(res.status).toBe(400)
   })
 
   it("잘못된 column은 400을 반환한다", async () => {
     const res = await POST(makeReq({ column: "bogus", rows: [] }))
+    expect(res.status).toBe(400)
+  })
+
+  it("sourceField 누락 시 400을 반환한다", async () => {
+    const res = await POST(
+      makeReq({ column: "theme", rows: [{ id: "R-1", quote: "x" }] }),
+    )
     expect(res.status).toBe(400)
   })
 })

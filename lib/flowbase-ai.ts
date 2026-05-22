@@ -8,9 +8,10 @@
 // 서버 라우트(app/api/ai/*)도 이 파일의 타입을 import.
 
 // ── 공유 타입 ─────────────────────────────────────────────────────
+// id + sourceField로 지정한 텍스트 컬럼만 담는다 (전체 행 전송 ❌).
 export interface InferBatchRow {
   id: string
-  quote: string
+  [key: string]: unknown
 }
 
 export interface InferResult {
@@ -96,13 +97,18 @@ const CHUNK_SIZE = 100
 export async function inferBatch(
   column: AiColumn,
   rows: InferBatchRow[],
+  sourceField: string,
   onProgress?: (done: number, total: number) => void,
 ): Promise<InferResult[]> {
   checkThrottle("infer-batch")
   markCall("infer-batch")
 
   if (rows.length <= CHUNK_SIZE) {
-    const res = await callAI<InferBatchRes>("infer-batch", { column, rows })
+    const res = await callAI<InferBatchRes>("infer-batch", {
+      column,
+      sourceField,
+      rows,
+    })
     return res.results
   }
 
@@ -112,6 +118,7 @@ export async function inferBatch(
     const chunk = rows.slice(i, i + CHUNK_SIZE)
     const res = await callAI<InferBatchRes>("infer-batch", {
       column,
+      sourceField,
       rows: chunk,
     })
     merged.push(...res.results)
