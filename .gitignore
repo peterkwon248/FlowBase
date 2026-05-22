@@ -31,6 +31,8 @@ npm-debug.log*
 .vscode/
 .idea/
 
-# Claude Code — keep launch.json (project config), ignore session state
+# Claude Code — keep launch.json + commands (project config), ignore session state
 .claude/*
 !.claude/launch.json
+!.claude/commands/
+!.claude/commands/**
