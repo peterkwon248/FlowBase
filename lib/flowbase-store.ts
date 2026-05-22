@@ -13,11 +13,13 @@ import type {
   Board,
   ColumnDef,
   FlowBaseState,
+  LibraryCategoryId,
   SortDir,
   TableRow,
   TicketStatus,
   ViewMode,
 } from "@/types/flowbase"
+import { createSeedLibrary } from "@/lib/flowbase-library-seed"
 import { createSeedBoard } from "@/lib/flowbase-seed"
 import { undoStack } from "@/lib/undo-stack"
 
@@ -72,6 +74,9 @@ export interface FlowBaseActions {
 
   setView: (v: ViewMode) => void
   setActivityMode: (m: ActivityMode) => void
+  setLibCategory: (c: LibraryCategoryId) => void
+  setLibAsset: (id: string | null) => void
+  setLibView: (v: "cards" | "sheet") => void
   setSearch: (s: string) => void
   setFilter: (f: TicketStatus[]) => void
   setSort: (s: FlowBaseState["sort"]) => void
@@ -89,9 +94,13 @@ function createInitialState(): FlowBaseState {
   return {
     boards: { [seed.id]: seed },
     activeBoardId: seed.id,
+    library: createSeedLibrary(),
     panels: { activityBar: true, sidebar: true, aiPanel: true },
     viewByBoardId: { [seed.id]: "sheet" },
     activityMode: "tables",
+    libCategory: "optionLists",
+    libAssetId: null,
+    libView: "cards",
     search: "",
     filter: [],
     sort: { key: "date", dir: "desc" },
@@ -356,6 +365,10 @@ export const useFlowBase = create<FlowBaseStore>()(
             viewByBoardId: { ...s.viewByBoardId, [s.activeBoardId]: v },
           })),
         setActivityMode: (activityMode) => set({ activityMode }),
+        setLibCategory: (libCategory) =>
+          set({ libCategory, libAssetId: null }),
+        setLibAsset: (libAssetId) => set({ libAssetId }),
+        setLibView: (libView) => set({ libView }),
         setSearch: (search) => set({ search }),
         setFilter: (filter) => set({ filter }),
         setSort: (sort) => set({ sort }),
@@ -376,9 +389,13 @@ export const useFlowBase = create<FlowBaseStore>()(
       partialize: (s) => ({
         boards: s.boards,
         activeBoardId: s.activeBoardId,
+        library: s.library,
         panels: s.panels,
         viewByBoardId: s.viewByBoardId,
         activityMode: s.activityMode,
+        libCategory: s.libCategory,
+        libAssetId: s.libAssetId,
+        libView: s.libView,
       }),
     },
   ),

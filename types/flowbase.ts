@@ -81,6 +81,107 @@ export interface Board {
   updatedAt: string
 }
 
+// ─── Library — 워크스페이스 자산 카탈로그 (5 카테고리) ───
+// 출처: design-ref/prototype/library-data.jsx · 설계: flowbase-v2-library.design.md §1
+
+export type LibraryCategoryId =
+  | "optionLists"
+  | "fields"
+  | "templates"
+  | "functions"
+  | "dashboards"
+
+export interface OptionItem {
+  id: string
+  label: string
+  color: string
+}
+
+export interface OptionList {
+  id: string
+  name: string
+  desc?: string
+  usedIn: string[] // "Board.Column" 표기
+  options: OptionItem[]
+}
+
+export interface FieldConfig {
+  required?: boolean
+  default?: string
+  format?: string
+  validation?: string
+  multiline?: boolean
+  optionListId?: string // select — OptionList 참조
+  options?: OptionItem[] // status — 인라인 옵션
+}
+
+export interface LibraryField {
+  id: string
+  name: string
+  type: ColumnType
+  desc?: string
+  usedIn: string[]
+  config: FieldConfig
+}
+
+export interface LibraryTemplate {
+  id: string
+  name: string
+  desc?: string
+  icon?: string
+  usedIn: string[]
+  // 단일 테이블
+  fields?: string[] // LibraryField id 참조
+  extraFields?: { name: string; type: ColumnType; config?: FieldConfig }[]
+  recommendedViews?: ViewMode[]
+  defaultGroupBy?: string
+  // 멀티 테이블 도메인
+  multiTable?: boolean
+  tables?: {
+    key: string
+    label: string
+    colorVar?: string
+    columns: ColumnDef[]
+  }[]
+}
+
+export interface LibraryFunctionParam {
+  name: string
+  type: "column" | "optionList" | "enum" | "text" | "regex"
+  desc: string
+  options?: string[]
+}
+
+export interface LibraryFunction {
+  id: string
+  name: string
+  label: string
+  icon?: string
+  desc?: string
+  usedIn: string[]
+  params: LibraryFunctionParam[]
+  example?: string
+}
+
+export interface LibraryDashboard {
+  id: string
+  name: string
+  desc?: string
+  icon?: string
+  usedIn: string[]
+  signature: { required: unknown[]; preferred: unknown[] } // B4에서 정밀화
+  slots: Record<string, unknown>
+  charts: { type: string; title: string; width: string }[] // 표시용 최소
+}
+
+export interface Library {
+  optionLists: OptionList[]
+  fields: LibraryField[]
+  templates: LibraryTemplate[]
+  functions: LibraryFunction[]
+  dashboards: LibraryDashboard[]
+}
+
 // 보드 뷰 집합 — Tables 모드 안에서 전환. Schema는 Workspace 모드 소속이라 여기 없음.
 export type ViewMode = "sheet" | "kanban" | "chart" | "grid" | "timeline"
 
@@ -112,10 +213,16 @@ export interface FlowBaseState {
   boards: Record<string, Board>
   activeBoardId: string
 
+  // Library 자산 카탈로그 (persist)
+  library: Library
+
   // 전역 UI (persist)
   panels: PanelState
   viewByBoardId: Record<string, ViewMode>
   activityMode: ActivityMode
+  libCategory: LibraryCategoryId
+  libAssetId: string | null
+  libView: "cards" | "sheet"
 
   // 세션 ephemeral (persist ❌ — 보드 전환 시 초기화)
   search: string
