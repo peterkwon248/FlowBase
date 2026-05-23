@@ -54,6 +54,11 @@ export function useKeyboardShortcuts(): void {
         useFlowBase.getState().togglePanel("aiPanel")
         return
       }
+      if (mod && !e.shiftKey && e.key.toLowerCase() === "i") {
+        e.preventDefault()
+        useFlowBase.getState().togglePanel("detailBar")
+        return
+      }
 
       // ⌘N — active board에 새 행
       if (mod && !e.shiftKey && e.key.toLowerCase() === "n") {

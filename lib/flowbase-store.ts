@@ -104,7 +104,7 @@ function createInitialState(): FlowBaseState {
     library: createSeedLibrary(),
     automations: SEED_AUTOMATIONS,
     suggestedAutomations: SEED_SUGGESTED_AUTOMATIONS,
-    panels: { activityBar: true, sidebar: true, aiPanel: true },
+    panels: { activityBar: true, sidebar: true, aiPanel: true, detailBar: false },
     viewByBoardId: { [seed.id]: "sheet" },
     activityMode: "tables",
     activeWorkspaceItem: "schema",
@@ -391,9 +391,23 @@ export const useFlowBase = create<FlowBaseStore>()(
         togglePanel: (k) =>
           set((s) => ({ panels: { ...s.panels, [k]: !s.panels[k] } })),
         showAllPanels: () =>
-          set({ panels: { activityBar: true, sidebar: true, aiPanel: true } }),
+          set({
+            panels: {
+              activityBar: true,
+              sidebar: true,
+              aiPanel: true,
+              detailBar: true,
+            },
+          }),
         hideAllPanels: () =>
-          set({ panels: { activityBar: false, sidebar: false, aiPanel: false } }),
+          set({
+            panels: {
+              activityBar: false,
+              sidebar: false,
+              aiPanel: false,
+              detailBar: false,
+            },
+          }),
       }
     },
     {

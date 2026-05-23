@@ -10,6 +10,7 @@ import { useState } from "react"
 import { Database, Plus, Trash2, Undo2, Upload } from "lucide-react"
 import { AiActivityPanel } from "@/components/ai/ai-activity-panel"
 import { BoardSidebar } from "@/components/board/board-sidebar"
+import { DetailBar } from "@/components/board/detail-bar"
 import { EdgeCollapse } from "@/components/board/edge-collapse"
 import { ExpandTab } from "@/components/board/expand-tab"
 import { FilterChips } from "@/components/board/filter-chips"
@@ -142,6 +143,8 @@ export function TablesMode() {
           />
         )}
       </div>
+
+      {panels.detailBar && <DetailBar />}
 
       {panels.aiPanel && (
         <div className="relative shrink-0">

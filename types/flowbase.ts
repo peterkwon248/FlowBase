@@ -241,6 +241,7 @@ export interface PanelState {
   activityBar: boolean
   sidebar: boolean
   aiPanel: boolean
+  detailBar: boolean
 }
 
 // 스토어 상태 (lib/flowbase-store.ts). 액션은 스토어 파일에 정의.

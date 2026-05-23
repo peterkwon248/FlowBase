@@ -2,7 +2,7 @@
 // 설계: docs/02-design/features/flowbase-v2-phase5.design.md §5
 // 출처: design-ref/prototype/prototype-shell.jsx PanelsMenu
 //
-// 3개 패널(activityBar/sidebar/aiPanel) 체크 토글 + Show/Hide all.
+// 4개 패널(activityBar/sidebar/detailBar/aiPanel) 체크 토글 + Show/Hide all.
 
 "use client"
 
@@ -41,6 +41,7 @@ export function PanelsMenu() {
           패널
         </DropdownMenuLabel>
         <DropdownMenuCheckboxItem
+          data-panel-id="activityBar"
           checked={panels.activityBar}
           onCheckedChange={() => togglePanel("activityBar")}
         >
@@ -48,6 +49,7 @@ export function PanelsMenu() {
           <DropdownMenuShortcut>⌘⇧A</DropdownMenuShortcut>
         </DropdownMenuCheckboxItem>
         <DropdownMenuCheckboxItem
+          data-panel-id="sidebar"
           checked={panels.sidebar}
           onCheckedChange={() => togglePanel("sidebar")}
         >
@@ -55,6 +57,15 @@ export function PanelsMenu() {
           <DropdownMenuShortcut>⌘⇧F</DropdownMenuShortcut>
         </DropdownMenuCheckboxItem>
         <DropdownMenuCheckboxItem
+          data-panel-id="detailBar"
+          checked={panels.detailBar}
+          onCheckedChange={() => togglePanel("detailBar")}
+        >
+          Detail bar
+          <DropdownMenuShortcut>⌘I</DropdownMenuShortcut>
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem
+          data-panel-id="aiPanel"
           checked={panels.aiPanel}
           onCheckedChange={() => togglePanel("aiPanel")}
         >
