@@ -19,8 +19,10 @@ import type {
   SortDir,
   TableRow,
   TicketStatus,
+  TrashedBoard,
   ViewMode,
   WikiPage,
+  WorkspaceSettings,
 } from "@/types/flowbase"
 import { createSeedLibrary } from "@/lib/flowbase-library-seed"
 import { createSeedBoard } from "@/lib/flowbase-seed"
@@ -33,7 +35,7 @@ import {
 import { undoStack } from "@/lib/undo-stack"
 
 const STORE_KEY = "flowbase-state-v4"
-const STORE_VERSION = 6 // v6: Wiki 페이지 시드 추가
+const STORE_VERSION = 7 // v7: trashedBoards · settings 추가
 
 function nowIso(): string {
   return new Date().toISOString()
@@ -63,6 +65,14 @@ export interface FlowBaseActions {
   ) => string
   deleteBoard: (boardId: string) => void
   renameBoard: (boardId: string, label: string) => void
+
+  // Trash — 복원/영구 삭제
+  restoreBoard: (boardId: string) => void
+  permanentDeleteBoard: (boardId: string) => void
+  emptyTrash: () => void
+
+  // Settings
+  updateSettings: (patch: Partial<WorkspaceSettings>) => void
 
   // Columns — active board의 columns 편집. 행 값은 보존(필요 시 키 migrate).
   addColumn: (col: ColumnDef) => void
@@ -126,6 +136,8 @@ function createInitialState(): FlowBaseState {
     suggestedAutomations: SEED_SUGGESTED_AUTOMATIONS,
     wikiPages,
     wikiSelectedId: wikiPages[0]?.id ?? null,
+    trashedBoards: [],
+    settings: { workspaceLabel: "peter's workspace", workspaceInitial: "P" },
     panels: { activityBar: true, sidebar: true, aiPanel: true, detailBar: false },
     viewByBoardId: { [interviews.id]: "sheet", [tasks.id]: "sheet" },
     activityMode: "tables",
@@ -327,20 +339,58 @@ export const useFlowBase = create<FlowBaseStore>()(
 
         deleteBoard: (boardId) => {
           set((s) => {
-            if (!s.boards[boardId]) return s
+            const target = s.boards[boardId]
+            if (!target) return s
             const rest: Record<string, Board> = {}
             for (const [id, b] of Object.entries(s.boards)) {
               if (id !== boardId) rest[id] = b
             }
             const ids = Object.keys(rest)
             if (ids.length === 0) return s // 마지막 보드는 삭제 불가
+            // boards에서 빼서 trashedBoards로 이동 (복원 가능)
             return {
               boards: rest,
               activeBoardId:
                 s.activeBoardId === boardId ? ids[0] : s.activeBoardId,
+              trashedBoards: [
+                { board: target, deletedAt: nowIso() },
+                ...s.trashedBoards,
+              ],
             }
           })
         },
+
+        restoreBoard: (boardId) => {
+          set((s) => {
+            const trashed = s.trashedBoards.find(
+              (t) => t.board.id === boardId,
+            )
+            if (!trashed) return s
+            return {
+              boards: { ...s.boards, [boardId]: trashed.board },
+              viewByBoardId: {
+                ...s.viewByBoardId,
+                [boardId]: s.viewByBoardId[boardId] ?? "sheet",
+              },
+              trashedBoards: s.trashedBoards.filter(
+                (t) => t.board.id !== boardId,
+              ),
+            }
+          })
+        },
+
+        permanentDeleteBoard: (boardId) => {
+          set((s) => ({
+            trashedBoards: s.trashedBoards.filter(
+              (t) => t.board.id !== boardId,
+            ),
+          }))
+        },
+
+        emptyTrash: () => set({ trashedBoards: [] }),
+
+        updateSettings: (patch) =>
+          set((s) => ({ settings: { ...s.settings, ...patch } })),
 
         renameBoard: (boardId, label) => {
           set((s) => {
@@ -707,6 +757,7 @@ export const useFlowBase = create<FlowBaseStore>()(
       // 마이그레이션 — 기존 persisted state에 새 시드/필드 주입.
       //   v4 → v5: Tasks 보드 시드
       //   v5 → v6: Wiki 페이지 시드
+      //   v6 → v7: trashedBoards · settings
       migrate: (persistedState, version) => {
         const s = (persistedState ?? {}) as Partial<FlowBaseState>
         if (version < 5) {
@@ -731,6 +782,13 @@ export const useFlowBase = create<FlowBaseStore>()(
             s.wikiSelectedId = existing[0]?.id ?? null
           }
         }
+        if (version < 7) {
+          s.trashedBoards = s.trashedBoards ?? []
+          s.settings = s.settings ?? {
+            workspaceLabel: "peter's workspace",
+            workspaceInitial: "P",
+          }
+        }
         return s as FlowBaseState
       },
       partialize: (s) => ({
@@ -741,6 +799,8 @@ export const useFlowBase = create<FlowBaseStore>()(
         suggestedAutomations: s.suggestedAutomations,
         wikiPages: s.wikiPages,
         wikiSelectedId: s.wikiSelectedId,
+        trashedBoards: s.trashedBoards,
+        settings: s.settings,
         panels: s.panels,
         viewByBoardId: s.viewByBoardId,
         activityMode: s.activityMode,

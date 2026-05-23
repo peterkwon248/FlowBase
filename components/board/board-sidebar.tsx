@@ -29,6 +29,7 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
   const createBoard = useFlowBase((s) => s.createBoard)
   const renameBoard = useFlowBase((s) => s.renameBoard)
   const deleteBoard = useFlowBase((s) => s.deleteBoard)
+  const settings = useFlowBase((s) => s.settings)
 
   // 인라인 이름 변경 중인 보드 id (Q1 — 인라인)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -50,9 +51,9 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
       {/* 워크스페이스 헤더 */}
       <div className="flex items-center gap-2 border-b border-border-subtle px-3.5 py-2.5">
         <span className="flex size-[18px] items-center justify-center rounded bg-primary text-[11px] font-bold text-primary-foreground">
-          P
+          {settings.workspaceInitial}
         </span>
-        <span className="text-[13px] font-semibold">peter&apos;s workspace</span>
+        <span className="text-[13px] font-semibold">{settings.workspaceLabel}</span>
       </div>
 
       {/* 액션 */}

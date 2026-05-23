@@ -17,13 +17,14 @@ export function BoardHeader() {
   const search = useFlowBase((s) => s.search)
   const setSearch = useFlowBase((s) => s.setSearch)
   const setSearchOpen = useFlowBase((s) => s.setSearchOpen)
+  const workspaceLabel = useFlowBase((s) => s.settings.workspaceLabel)
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-2.5 border-b border-border-subtle px-3.5">
       <PanelsMenu />
       <NavCluster />
       <div className="ml-1 flex items-center gap-1.5 text-[13px]">
-        <span className="text-muted-foreground">peter&apos;s workspace</span>
+        <span className="text-muted-foreground">{workspaceLabel}</span>
         <span className="text-muted-foreground/50">/</span>
         <span className="font-semibold">{board?.label ?? "FlowBase"}</span>
       </div>

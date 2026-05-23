@@ -253,6 +253,18 @@ export type ActivityMode =
   | "inbox"
   | "search"
 
+// 삭제된 보드 항목 — Trash 복원/영구 삭제 대상.
+export interface TrashedBoard {
+  board: Board
+  deletedAt: string // ISO
+}
+
+// 워크스페이스 설정 (persist) — Settings 모달이 편집.
+export interface WorkspaceSettings {
+  workspaceLabel: string
+  workspaceInitial: string // 1글자 — 사이드바 아이콘 표시
+}
+
 // 인메모리 nav-history 엔트리 — 헤더 시계/‹/› 버튼이 이 스택을 탐색.
 // 출처: design-ref/prototype/nav-history.jsx
 export interface NavEntry {
@@ -298,6 +310,10 @@ export interface FlowBaseState {
   // Wiki (persist)
   wikiPages: WikiPage[]
   wikiSelectedId: string | null
+
+  // Trash · Settings (persist)
+  trashedBoards: TrashedBoard[]
+  settings: WorkspaceSettings
 
   // 전역 UI (persist)
   panels: PanelState
