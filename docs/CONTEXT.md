@@ -6,7 +6,12 @@
 
 ## Current Features (Completed — 최근 우선)
 
-1. **P1 깊이 일괄 — 컬럼 추가/편집 + Trash/Settings + 시드 영어화** (2026-05-24, `d911c06`·`a4935af`·`a7a1c77`, **main 머지 완료**) —
+1. **P1 시급 일괄 #2 — Schema ER · Automations 작동 · Wiki 편집** (2026-05-24, `7694d76`·`4969e50`·`bf02ebb`, **main 머지 완료**) —
+   - **Schema ER**: positioned 박스 + SVG bezier 엣지 + cardinality pill. Schema/Fields/Relations 3 sub-tab.
+   - **Automations 동작**: 룰 toggle/delete/test-run · 제안 accept(promote to draft)/dismiss. 실제 트리거 엔진은 후속.
+   - **Wiki 편집**: Edit 토글 → textarea + Save/Cancel. markdown 원문 직접 편집 가능.
+
+2. **P1 깊이 일괄 — 컬럼 추가/편집 + Trash/Settings + 시드 영어화** (2026-05-24, `d911c06`·`a4935af`·`a7a1c77`, **main 머지 완료**) —
    - **컬럼 CRUD** (`components/sheet/{add-column-menu,column-header-menu}.tsx`) — 헤더 "+"가 진짜 동작. Basic 7 type + Library Field 8 통합 드롭다운. 컬럼 헤더 "..." 메뉴 Rename(Dialog, key 보존) + Delete(AlertDialog 확인).
    - **Trash + Settings 실작동** (`components/board/{trash-dialog,settings-dialog}.tsx`) — status-bar 클릭 시 실 다이얼로그. Trash는 보드 복원/영구 삭제/empty. Settings는 워크스페이스 이름·initial 편집, 모든 화면 즉시 반영.
    - **시드 deep 영어화** — Library/Workspace/Interviews 자산명·옵션·quote 모두 영어. Status 키만 LOCK 한국어 유지.

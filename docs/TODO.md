@@ -19,11 +19,21 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 - [x] **Trash · Settings 실제 동작** (2026-05-24 — `a4935af`)
 - [x] **시드 deep 영어화** (2026-05-24 — `a7a1c77`)
 
-## P1 — 깊이/품질 (다음 시급)
+## P1 — 깊이/품질 (시급 3건 완료)
 
-- [ ] **Schema ER 다이어그램** — 박스 + SVG 엣지. `design-ref/prototype/schema-er.jsx` 참고
-- [ ] **Automations 실행 엔진** — 룰 카드 발화. `rule-engine.jsx` + `automation-engine.jsx`
-- [ ] **Wiki 본문 편집** — Edit 버튼 → textarea 토글, updateWikiPage 액션 이미 존재
+- [x] **Schema ER 다이어그램** (2026-05-24 — `7694d76`)
+- [x] **Automations 동작 (toggle/delete/accept/dismiss)** (2026-05-24 — `4969e50`)
+- [x] **Wiki 본문 편집** (2026-05-24 — `bf02ebb`)
+
+## P1 — 다음 시급
+
+- [ ] **Automations 실제 트리거 엔진** — 룰 발화 (현재 testRun 시 runs++만)
+- [ ] **컬럼 헤더 확장 메뉴**: Promote to Library · Attach function · Change type
+- [ ] **Gallery view** (`view-grid.jsx`) · **Timeline view** (`view-timeline.jsx`)
+- [ ] **Dashboard builder** + 추가 차트 종류 (Line/Area/Stacked)
+- [ ] **Schema pan/zoom + drag + New table from template 모달**
+- [ ] **Wiki**: 새 페이지 생성 · 사이드바 검색 활성화 · live preview
+- [ ] **다중 필드 Filter 팝오버** · **Bulk edit** · **우클릭 컨텍스트 메뉴**
 
 ---
 
@@ -74,6 +84,9 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## 완료
 
+- [x] **Wiki 본문 편집** (2026-05-24 — `bf02ebb`): editMode 토글 · Title 우측 Edit/Cancel·Save 버튼군 · textarea(min-h-400, font-mono) · markdown 문법 헬퍼 · Save → updateWikiPage({body, updatedAt}) · 페이지 전환 시 draft 자동 리셋.
+- [x] **Automations 동작** (2026-05-24 — `4969e50`): toggleAutomationStatus(active↔paused) · deleteAutomation · testRunAutomation(visual proof) · acceptSuggestion(draft promote) · dismissSuggestion · 룰 카드 status pill 클릭 + "..." 드롭다운(Test run/Delete with AlertDialog) · Empty state · SuggestionCard Accept/Dismiss 버튼.
+- [x] **Schema ER 다이어그램 + 3 sub-tab** (2026-05-24 — `7694d76`): auto-layout 3-col grid · FK → bezier 엣지 + 1:N cardinality pill · hover active 표시 + 비-active 페이드 · Schema/Fields/Relations sub-tab 분리 · 카드/리스트 동일 컬러 시스템(TableChip).
 - [x] **시드 deep 영어화** (2026-05-24 — `a7a1c77`): Library Option Lists/Fields/Templates/Functions/Dashboards 한국어 자산명·옵션 모두 영어 + usedIn 키 표기 영어 · Workspace AUT-004/005 + SUG-002 한국어 잔여 영어화 · Interviews 10 시드 한국어 이름(transliteration)·인용 영어. Status 키(미처리/진행중/대기/완료)는 LOCK 한국어 enum 유지.
 - [x] **Trash · Settings 실제 동작** (2026-05-24 — `a4935af`): TrashedBoard·WorkspaceSettings 타입 · store v6→v7 migrate · deleteBoard 변경(trashedBoards로 push, 마지막 보드 보호) · restoreBoard/permanentDeleteBoard/emptyTrash/updateSettings · trash-dialog.tsx(Restore↺/Delete forever🗑/Empty trash) · settings-dialog.tsx(Workspace name/Initial/Storage stub) · status-bar에 trashedCount 배지 · board-header/board-sidebar 하드코딩 제거.
 - [x] **컬럼 추가/편집** (2026-05-24 — `d911c06`): addColumn/deleteColumn/renameColumn/updateColumn · "+"에 Basic 7 + Library Field 8 드롭다운 · 헤더 우측 "..." 메뉴 Rename(Dialog) + Delete(AlertDialog) · 헤더셀 정렬 + 메뉴 가로 결합.

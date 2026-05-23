@@ -4,6 +4,55 @@
 
 ---
 
+## 2026-05-24 (kkh94 머신, P1 시급 일괄 #2) — Schema ER · Automations 작동 · Wiki 편집
+
+### 완료
+- **Schema ER 다이어그램 + 3 sub-tab** (`7694d76`) — flat grid → positioned 박스 + SVG bezier 엣지.
+  - `components/sections/schema-er-diagram.tsx` (신규) — auto-layout 3-column grid. FK 컬럼 → bezier 엣지 + "1:N" cardinality pill. Hover 시 active 표시 + 비-active 30% 페이드. data-er-card 셀렉터.
+  - `components/sections/schema-view.tsx` 재구성 — Schema(ER) · Fields(카드 그리드) · Relations(리스트) 3 sub-tab. data-schema-sub 셀렉터.
+  - 브라우저 검증: interviews(240×328) + tasks(240×198) 카드 렌더, Relations: 0 (FK 시드 없음).
+- **Automations 동작** (`4969e50`) — 카드가 클릭 무반응 → 모든 액션 실작동.
+  - store: `toggleAutomationStatus`(active↔paused) · `deleteAutomation` · `testRunAutomation`(runs++ visual proof) · `acceptSuggestion`(draft 룰로 promote) · `dismissSuggestion`.
+  - automations-view: 룰 status pill 클릭 가능 + "..." 드롭다운(Test run/Delete with AlertDialog) + Empty state + SuggestionCard에 Accept/Dismiss 버튼.
+  - data-automation-id / data-automation-menu / data-automation-runs / data-suggestion-id 셀렉터.
+- **Wiki 본문 편집** (`bf02ebb`) — 본문 읽기 전용 → markdown editor 토글.
+  - `components/wiki/wiki-page.tsx` — editMode state, Title 우측 Edit/Cancel·Save 버튼군, textarea (min-h-[400px]·font-mono·focus:border-primary), markdown 문법 헬퍼 힌트. Save → updateWikiPage({body, updatedAt}).
+  - 페이지 전환 시 draft 자동 리셋.
+  - data-wiki-edit-toggle / data-wiki-editor / data-wiki-save 셀렉터.
+  - 브라우저 검증: "Library guide" Edit 클릭 → textarea content "# What is the Library?..." 자동 로드 ✓.
+
+### 큰 결정
+- **ER auto-layout 우선, drag/zoom 후순위** — 사용자 데이터 규모(2~5 보드 예상)에서 row-major 3-column grid면 충분히 시각화. drag reposition은 향후.
+- **Automations 실행 엔진 = visual proof만** — 실제 row 변경 감지 + rule 평가 + Then 실행은 별도 zustand subscribe 레이어 필요 → 후속. 지금은 testRunAutomation으로 runs++ 트래킹만 검증.
+- **acceptSuggestion은 draft 상태 룰 생성** — 사용자가 트리거/액션을 명시 설정해야 active로 전환 가능. AI가 만든 룰을 무작정 active로 두지 ❌ (LOCK: "AI 추천 + 사람 확정").
+- **Wiki 본문 편집은 textarea + Save (인플레이스 vs split pane)** — split preview는 너비 부담. 사용자가 Save로 명시적 commit 후 렌더 결과 확인.
+
+### 검증
+- tsc 0 · vitest 15/15.
+- 브라우저: Workspace > Schema 진입 → ER 다이어그램 2 카드 렌더 ✓, sub-tab 3개 데이터 셀렉터 ✓ · Wiki Edit 토글 → textarea content 자동 로드 ✓.
+
+### 다음 (감사 보고서 큰 갭 중 남은 것)
+- **Automations 실제 트리거 엔진** — `lib/automation-runtime.ts`로 zustand subscribe + rule 평가. row 변경/스케줄 트리거 두 종류 처리.
+- **컬럼 헤더 메뉴 확장**: Promote to Library · Attach function · Change type 인플레이스.
+- **다중 필드 Filter 팝오버** · **Bulk edit** · **우클릭 컨텍스트 메뉴**.
+- **Gallery / Timeline view** — `view-grid.jsx` · `view-timeline.jsx`.
+- **Dashboard builder** — Line/Area/Stacked + "+ Add chart" 카탈로그.
+- **Schema 깊이**: pan/zoom · drag reposition · "New table from template" 모달.
+- **Wiki 깊이**: 새 페이지 생성 · 사이드바 검색 · live preview.
+- **Ask AI ⌘J 톱바 버튼** · **Trash 행 단위 추적**.
+- **B4 (가장 마지막)** — 컬럼↔Library 자산 링크.
+
+### Watch Out
+- **ER 엣지는 FK만** — conceptual relations(name/company shared field 등) 점선 엣지는 프로토타입엔 있지만 우리 V2 시드엔 explicit FK 없어 노이즈만 추가 → 생략.
+- **Automations 룰 변경 시 trashedBoards 같은 보존 ❌** — deleteAutomation은 즉시 영구 삭제. 향후 Trash로 옮기는 패턴 통일 검토.
+- **Wiki body edit ↔ Verified 상호작용** — body 수정 시 verified는 그대로 유지(자동 unverify ❌). Owner 검증의 의미가 콘텐츠 stability라 매번 unverify는 과함 — 별도 액션으로 분리.
+- **acceptSuggestion 룰의 when/then은 placeholder** — 사용자가 명시 편집해야 의미 있음. 룰 편집 UI 부재로 현재는 자기 자신 디자인 추측에 의존.
+
+### 머신
+kkh94. main 머지·푸시는 after-work 자동.
+
+---
+
 ## 2026-05-24 (kkh94 머신, P1 깊이 일괄) — 컬럼 추가/편집 · Trash/Settings 실작동 · 시드 영어화
 
 ### 완료

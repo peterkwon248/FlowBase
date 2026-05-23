@@ -1,72 +1,60 @@
 # NEXT-ACTION
 
 > 다음 세션 시작 시 이 파일부터 읽으세요.
-> 마지막 갱신: 2026-05-24 (kkh94 머신, P1 깊이 일괄 완료)
+> 마지막 갱신: 2026-05-24 (kkh94 머신, P1 시급 6건 완료 — 컬럼/Trash/Settings/시드/Schema/Automations/Wiki)
 
 ---
 
 ## 한 줄 요약
 
-**P1 깊이 3건 일괄 완료 — 컬럼 추가/편집 · Trash/Settings 실작동 · 시드 영어화. 다음은 감사 보고서의 큰 갭 — Schema ER · Automations 엔진 · Wiki 본문 편집.**
+**P1 시급 6건 모두 완료 — 컬럼 CRUD · Trash/Settings 실작동 · 시드 영어화 · Schema ER · Automations 토글 · Wiki 편집. 다음은 깊이 (자동화 엔진 · 추가 뷰 · 컬럼 메뉴 확장).**
 
 ---
 
 ## ✅ 머지 완료
 
-- 최신 작업: `a7a1c77` (seed 영어화) → `a4935af` (Trash/Settings) → `d911c06` (컬럼).
+- 최신: `bf02ebb` Wiki edit · `4969e50` Automations · `7694d76` Schema ER · `a7a1c77` 시드 · `a4935af` Trash/Settings · `d911c06` 컬럼.
 - 다른 머신: `git fetch && git checkout main && git pull && npm install`.
 
 ---
 
-## 🎯 다음 작업 — 감사 보고서 나머지 갭
+## 🎯 다음 작업 — 깊이 (사용자 명시 후순위 외)
 
 ### 우선순위 높음
-1. **Schema ER 다이어그램** (`design-ref/prototype/schema-er.jsx`) — 현재 flat grid + 텍스트 관계 리스트. 위치 박스 + SVG 엣지로 교체. 드래그 ❌ 일단 정적 배치.
-2. **Automations 실행 엔진** (`rule-engine.jsx` + `automation-engine.jsx`) — 룰 카드 렌더만, 실제 데이터 변경 시 발화 ❌. middleware 또는 subscribe로 row 변경 감지 → 매치되는 rule 실행. play/pause/edit/delete 버튼도.
-3. **Wiki 본문 편집** — 현재 `<MarkdownBody source={...}/>` 읽기 전용. Edit 버튼 → textarea 토글. updateWikiPage 액션은 이미 있음.
+1. **Automations 실제 트리거 엔진** — `lib/automation-runtime.ts` 신규. zustand subscribe로 row 변경 감지 → rule When 평가 → Then 실행. 우선 "row added" 트리거 + "Set value" / "Notify(log)" 두 액션 지원.
+2. **컬럼 헤더 확장 메뉴**: Promote to Library · Attach function · Change type 인플레이스.
+3. **Gallery view** (`design-ref/prototype/view-grid.jsx`) — 첨부 컬럼 없으면 metadata 그리드.
+4. **Timeline view** (`design-ref/prototype/view-timeline.jsx`) — 일정 컬럼 있을 때 Gantt/캘린더.
 
 ### 우선순위 중간
-4. **컬럼 헤더 추가 기능**: Promote to Library · Attach function · Change type 인플레이스.
-5. **다중 필드 Filter 팝오버** (`view-controls.jsx` `FilterMenu`) — 현재 status chips만.
-6. **Bulk edit** (선택 행 값 일괄 설정) — 현재 Delete만.
-7. **Gallery view** (`view-grid.jsx`) — 카드 그리드.
-8. **Timeline view** (`view-timeline.jsx`) — Gantt/캘린더.
+5. **Dashboard builder** — Line/Area/Stacked 추가 + "+ Add chart" 카탈로그.
+6. **다중 필드 Filter 팝오버** — 현재 status chips만. Theme/Sentiment/Priority 필터.
+7. **Bulk edit** (선택 행 값 일괄 설정) — 현재 Delete만.
+8. **우클릭 컨텍스트 메뉴** — 행 메뉴 (`design-ref/prototype/context-menu.jsx`).
+9. **Schema 깊이**: pan/zoom · drag reposition · "New table from template" 모달.
+10. **Wiki 깊이**: 새 페이지 생성 · 사이드바 검색 활성화 · live preview.
 
 ### 우선순위 낮음
-9. **Dashboard builder** — Line/Area/Stacked 차트 + "+ Add chart" 카탈로그.
-10. **우클릭 컨텍스트 메뉴** — 행 메뉴 (`context-menu.jsx`).
-11. **Ask AI ⌘J 톱바 버튼**.
+11. **Ask AI ⌘J 톱바 버튼** — composer는 AI 패널 안에만.
 12. **Trash 깊이**: 행 단위 deletedRows · 30일 자동 만료.
 13. **Settings 깊이**: 멤버/권한 탭 · 테마 프리셋 · 데이터 export.
 
 ### B4 (가장 마지막, 사용자 명시)
-- 컬럼 ↔ Library 자산 링크
-- "Use in table" 흐름
-- 템플릿으로 보드 생성
+- 컬럼 ↔ Library 자산 링크 · "Use in table" 흐름 · 템플릿으로 보드 생성.
 
 ---
 
-## ✅ 이번 세션 완료 (P1 깊이 일괄 — `d911c06` · `a4935af` · `a7a1c77`)
+## ✅ 이번 세션 완료 (P1 시급 6건 = 2 배치)
 
-### 컬럼 추가/편집
-- store: addColumn / deleteColumn / renameColumn / updateColumn.
-- `add-column-menu.tsx` — Basic 7 type + Library Field 8 동적 dropdown.
-- `column-header-menu.tsx` — Rename(Dialog) + Delete(AlertDialog).
-- `header-cell.tsx`/`sheet-view.tsx` — 정렬 + "..." 메뉴 + "+" 셀.
+### 시급 #1 — 컬럼 / Trash · Settings / 시드
+- 컬럼 CRUD (`d911c06`): addColumn/deleteColumn/renameColumn/updateColumn + "+" 드롭다운 + 헤더 "..." 메뉴.
+- Trash · Settings (`a4935af`): TrashedBoard·WorkspaceSettings 타입 · 4 신규 액션 · 2 다이얼로그 · settings로 워크스페이스 라벨 동기화.
+- 시드 영어화 (`a7a1c77`): Library/Workspace/Interviews 한국어 자산명·옵션·quote 모두 영어. Status 키 LOCK 보존.
 
-### Trash · Settings
-- types: TrashedBoard · WorkspaceSettings. store v6→v7.
-- `deleteBoard` → trashedBoards로 push (복원 가능, 마지막 보드 보호).
-- 액션: restoreBoard · permanentDeleteBoard · emptyTrash · updateSettings.
-- `trash-dialog.tsx` — Restore↺ / Delete forever🗑 / Empty trash.
-- `settings-dialog.tsx` — Workspace name + Initial + Storage bar.
-- board-header / board-sidebar 하드코딩 → settings.workspaceLabel/Initial.
-
-### 시드 deep 영어화
-- Library: Option Lists/Fields/Templates/Functions/Dashboards 한국어 자산명·옵션·desc 모두 영어. usedIn 키 표기도 영어.
-- Workspace: AUT-004/005 잔여 한국어 + SUG-002 영어화.
-- Interviews: 10 시드 행 이름(transliteration: Min Jiho 등) + quote 영어.
-- Status 키 LOCK 한국어 enum 유지(미처리/진행중/대기/완료).
+### 시급 #2 — Schema / Automations / Wiki
+- Schema ER (`7694d76`): positioned 박스 + bezier 엣지 + 3 sub-tab.
+- Automations 동작 (`4969e50`): toggle/delete/test-run/accept/dismiss + 다이얼로그.
+- Wiki 편집 (`bf02ebb`): Edit 토글 + textarea + Save/Cancel.
 
 ---
 
@@ -77,9 +65,10 @@
 - **셸 푸터 status bar 영구** — Trash/Settings는 패널 ❌.
 - **컬럼 변경 = undo 비대상** — UI에서 명시(AlertDialog 메시지).
 - **deleteBoard는 trashedBoards로 이동** — 진짜 삭제는 permanentDeleteBoard만.
-- **테스트 셀렉터 속성** — `data-asset-id`, `data-panel-id`, `data-workspace-item`, `data-page-id`, `data-search-tab`, `data-search-item-id`, `data-action`, `data-column-menu`, `data-trashed-board`.
+- **acceptSuggestion = draft 상태 룰** — 자동 active ❌ ("AI 추천 + 사람 확정").
+- **테스트 셀렉터 속성** — `data-asset-id`, `data-panel-id`, `data-workspace-item`, `data-page-id`, `data-search-tab`, `data-search-item-id`, `data-action`, `data-column-menu`, `data-trashed-board`, `data-er-card`, `data-schema-sub`, `data-automation-id`, `data-automation-menu`, `data-suggestion-id`, `data-wiki-edit-toggle`, `data-wiki-editor`, `data-wiki-save`.
 - **시드 추가 시 store version bump + migrate** — v4→v5(Tasks), v5→v6(Wiki), v6→v7(Trash/Settings).
-- **외부 lib 도입 신중** — Wiki 마크다운/Search 모두 의존성 0.
+- **외부 lib 도입 신중** — Wiki 마크다운/Search/ER 다이어그램 모두 의존성 0.
 - **NavStack는 ephemeral** — persist ❌.
 
 ---
