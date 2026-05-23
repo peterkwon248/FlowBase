@@ -7,16 +7,15 @@
 
 ## 한 줄 요약
 
-**앱 breadth 큰 폭 진행 — Phase A 셸 + Phase B Library(B1·B2) + Workspace Automations + Inbox + Detail bar + English UI + Tasks 보드 모두 완료. 브랜치 13 커밋 ahead of `main` (머지 대기). 다음 breadth: Wiki · Search 팔레트.**
+**앱 breadth 큰 폭 진행 — Phase A 셸 + Phase B Library(B1·B2) + Workspace Automations + Inbox + Detail bar + English UI + Tasks 보드 모두 완료. `main` 머지·푸시 완료. 다음 breadth: Wiki · Search 팔레트.**
 
 ---
 
-## ⚠️ 머지 상태 (중요)
+## ✅ 머지 완료
 
-- 작업 브랜치: `claude/wizardly-murdock-451e3d` — origin 푸시 완료, **`main`은 여전히 `4d71c8a` (머지 대기)**.
-- 다른 머신에서 이어가려면:
-  - **머지 됐으면**: `git fetch && git checkout main && git pull && npm install`
-  - **머지 아직이면**: `git fetch && git checkout claude/wizardly-murdock-451e3d && git pull && npm install`
+- `origin/main` = 이번 세션 작업 전체 포함 (fast-forward from `4d71c8a`).
+- 다른 머신에서 이어가기: `git fetch && git checkout main && git pull && npm install`.
+- **새 정책 (2026-05-23)**: `/after-work`는 step 8 (main 머지)을 무조건 포함 — 명시 확인 게이트 제거.
 
 ---
 
@@ -46,7 +45,6 @@
 - **B3** — Library 인라인 편집 (rename · 옵션 색상/추가 · field config).
 - **반응형 fix** — ~800px에서 4-5 패널 cramped.
 - **AI 실호출 검증** — `.env.local`에 `ANTHROPIC_API_KEY`.
-- **main 머지** — 13 커밋 대기.
 - **B4 (가장 마지막)** — 컬럼↔Library 자산 링크 · "Use in table" · 템플릿으로 보드 생성.
 
 ---
@@ -65,7 +63,7 @@
 | | |
 |---|---|
 | GitHub | https://github.com/peterkwon248/FlowBase (private) |
-| 기준 브랜치 | `claude/wizardly-murdock-451e3d` (origin push) — **main 머지 대기** |
+| 기준 브랜치 | `main` (머지·푸시 완료) — 작업 브랜치 `claude/wizardly-murdock-451e3d`도 origin 잔존 |
 | 미리보기 | http://localhost:3000 (`npm run dev`) |
 | 패키지 매니저 | npm · 테스트 `npm test` 또는 `npx vitest run` |
 | 명령어 | `/before-work` · `/after-work` — `.claude/commands/` (git 추적) |
@@ -74,4 +72,4 @@
 
 ## 머신
 
-kkh94 (`C:\Users\kkh94\OneDrive\Desktop\FlowBase`). 다음 머신: before-work 시 머지 상태 먼저 확인 — `git fetch && git branch -a` 후 main 머지 됐는지 보고 분기 결정.
+kkh94 (`C:\Users\kkh94\OneDrive\Desktop\FlowBase`). 다음 머신: `git fetch && git checkout main && git pull && npm install`.

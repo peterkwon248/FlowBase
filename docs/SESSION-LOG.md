@@ -6,8 +6,8 @@
 
 ## 2026-05-23 (kkh94 머신, 이어서) — Phase B Library B1·B2 · Workspace Automations · Inbox · Detail bar · English UI · Tasks 보드
 
-### 마무리 — 6 커밋 origin/branch push, `main` 머지 대기
-후속 작업물을 `claude/wizardly-murdock-451e3d`에 누적 커밋·push (총 13 커밋 ahead of main). **main 머지는 사용자 명시 yes 시 진행** — 이번 after-work에서도 step 8 명시 확인 필요.
+### 마무리 — 모든 작업 main 머지·푸시 완료
+후속 작업물 6 커밋 + docs sync + after-work 룰 변경(step 8 무조건 포함)까지 모두 `main`에 fast-forward 머지·푸시 완료(`origin/main` = `bb84e56`+). 다른 머신: `git checkout main && git pull` 한 줄로 이어가기.
 
 ### 완료
 - **Phase B B1 — Library 브라우즈** (`4148c96`) — 5 카테고리(optionLists/fields/templates/functions/dashboards) TS 타입 + 시드(`flowbase-library-seed.ts`) + 스토어 슬라이스 + LibrarySidebar 트리 + CategoryCatalog 카드 그리드 + 셸 모드 분기. 읽기 전용.
