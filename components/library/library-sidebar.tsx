@@ -60,7 +60,7 @@ export function LibrarySidebar() {
   const libCategory = useFlowBase((s) => s.libCategory)
   const libAssetId = useFlowBase((s) => s.libAssetId)
   const setLibCategory = useFlowBase((s) => s.setLibCategory)
-  const setLibAsset = useFlowBase((s) => s.setLibAsset)
+  const selectAsset = useFlowBase((s) => s.selectAsset)
 
   // 모든 카테고리 기본 펼침
   const [expanded, setExpanded] = useState<
@@ -146,7 +146,8 @@ export function LibrarySidebar() {
                     <button
                       key={asset.id}
                       type="button"
-                      onClick={() => setLibAsset(asset.id)}
+                      onClick={() => selectAsset(cat.id, asset.id)}
+                      data-asset-id={asset.id}
                       className={cn(
                         "flex w-full items-center rounded-md py-1 pl-7 pr-2 text-left text-[12.5px] transition-colors",
                         active

@@ -77,6 +77,7 @@ export interface FlowBaseActions {
   setLibCategory: (c: LibraryCategoryId) => void
   setLibAsset: (id: string | null) => void
   setLibView: (v: "cards" | "sheet") => void
+  selectAsset: (c: LibraryCategoryId, id: string) => void
   setSearch: (s: string) => void
   setFilter: (f: TicketStatus[]) => void
   setSort: (s: FlowBaseState["sort"]) => void
@@ -369,6 +370,8 @@ export const useFlowBase = create<FlowBaseStore>()(
           set({ libCategory, libAssetId: null }),
         setLibAsset: (libAssetId) => set({ libAssetId }),
         setLibView: (libView) => set({ libView }),
+        selectAsset: (libCategory, libAssetId) =>
+          set({ libCategory, libAssetId }),
         setSearch: (search) => set({ search }),
         setFilter: (filter) => set({ filter }),
         setSort: (sort) => set({ sort }),
