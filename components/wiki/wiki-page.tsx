@@ -1,10 +1,13 @@
-// FlowBase V2 — Wiki 페이지 상세 (제목 · 메타 · 본문)
+// FlowBase V2 — Wiki 페이지 상세 (제목 · 메타 · 본문 · 편집 모드)
 // 출처: design-ref/prototype/wiki-view.jsx WikiPage
 // Owner 아바타 + Verified 상태(만료 시 Re-verify 배너) + 마크다운 본문.
+// Edit 버튼 → textarea 토글. 저장 시 updateWikiPage(body).
 
 "use client"
 
-import { AlertTriangle, Check } from "lucide-react"
+import { useEffect, useState } from "react"
+import { AlertTriangle, Check, Eye, Pencil } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { MarkdownBody } from "@/components/wiki/markdown-body"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
@@ -34,12 +37,30 @@ export function WikiPageView({ page }: { page: WikiPage }) {
 
   const initial = (page.owner || "?")[0].toUpperCase()
 
+  const [editMode, setEditMode] = useState(false)
+  const [draftBody, setDraftBody] = useState(page.body)
+  // 페이지 전환 시 draft 리셋
+  useEffect(() => {
+    setEditMode(false)
+    setDraftBody(page.body)
+  }, [page.id, page.body])
+
   const reVerify = () => {
     updateWikiPage(page.id, {
       verified: true,
       verifiedAt: today,
       expiresAt: isoPlusDays(VERIFY_TTL_DAYS),
     })
+  }
+
+  const saveEdit = () => {
+    updateWikiPage(page.id, { body: draftBody, updatedAt: today })
+    setEditMode(false)
+  }
+
+  const cancelEdit = () => {
+    setDraftBody(page.body)
+    setEditMode(false)
   }
 
   return (
@@ -50,7 +71,7 @@ export function WikiPageView({ page }: { page: WikiPage }) {
       <div className="mx-auto max-w-[760px] px-10 pb-20 pt-6">
         {/* Breadcrumb */}
         <div className="mb-5 flex items-center gap-1.5 text-[12px] text-muted-foreground">
-          <span>peter's workspace</span>
+          <span>peter&apos;s workspace</span>
           <span className="opacity-50">/</span>
           <span>Wiki</span>
           <span className="opacity-50">/</span>
@@ -77,10 +98,44 @@ export function WikiPageView({ page }: { page: WikiPage }) {
           </div>
         )}
 
-        {/* Title */}
-        <h1 className="mb-2 text-[32px] font-bold leading-tight tracking-[-0.02em] text-foreground">
-          {page.title}
-        </h1>
+        {/* Title + Edit toggle */}
+        <div className="mb-2 flex items-start gap-3">
+          <h1 className="flex-1 text-[32px] font-bold leading-tight tracking-[-0.02em] text-foreground">
+            {page.title}
+          </h1>
+          {!editMode ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditMode(true)}
+              className="mt-2 h-8 gap-1.5 px-2.5 text-[12px]"
+              data-wiki-edit-toggle={page.id}
+            >
+              <Pencil className="size-3" strokeWidth={2} />
+              Edit
+            </Button>
+          ) : (
+            <div className="mt-2 flex gap-1.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={cancelEdit}
+                className="h-8 px-2.5 text-[12px] text-muted-foreground"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={saveEdit}
+                className="h-8 gap-1.5 px-2.5 text-[12px]"
+                data-wiki-save={page.id}
+              >
+                <Check className="size-3" strokeWidth={2.5} />
+                Save
+              </Button>
+            </div>
+          )}
+        </div>
 
         {/* Metadata row */}
         <div className="mb-6 flex flex-wrap items-center gap-3.5 border-b border-border-subtle pb-3.5 text-[12px] text-muted-foreground">
@@ -125,8 +180,34 @@ export function WikiPageView({ page }: { page: WikiPage }) {
           ) : null}
         </div>
 
-        {/* Body */}
-        <MarkdownBody source={page.body} />
+        {/* Body — edit or preview */}
+        {editMode ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <Pencil className="size-3" />
+                Markdown editor
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <Eye className="size-3" />
+                Save to see rendered output
+              </span>
+            </div>
+            <textarea
+              value={draftBody}
+              onChange={(e) => setDraftBody(e.target.value)}
+              spellCheck={false}
+              className="min-h-[400px] w-full rounded-md border border-border bg-card px-4 py-3 font-mono text-[13px] leading-[1.6] text-foreground outline-none transition-colors focus:border-primary"
+              data-wiki-editor={page.id}
+              autoFocus
+            />
+            <p className="text-[10.5px] text-muted-foreground">
+              Supported: # / ## / ### headings, - / 1. lists, | tables |, `inline code`, **bold**.
+            </p>
+          </div>
+        ) : (
+          <MarkdownBody source={page.body} />
+        )}
       </div>
     </div>
   )
