@@ -7,7 +7,7 @@
 ## Phase Status
 
 - **Phase 0 (Plan)**: ✅ 완료
-- **Phase 1 (Beta)**: 🟡 진행 중 — FlowBase V2. **앱 범위 재정의**(2026-05-23): 옛 "7단계 plan"은 프로토타입 6 액티비티 모드 중 Tables 하나뿐이었음. 셸 6모드 라우터=Phase A✅. 다음: Library 서브시스템(B1~B4) → Wiki·Inbox 등. BaaS는 후순위.
+- **Phase 1 (Beta)**: 🟡 진행 중 — FlowBase V2. **앱 범위 재정의**(2026-05-23): 옛 "7단계 plan"은 프로토타입 6 액티비티 모드 중 Tables 하나뿐이었음. Phase A 셸✅ → Library B1·B2✅ + Workspace Automations✅ + Inbox✅ + Detail bar✅ + English UI✅ + Tasks 보드✅. **남은 breadth**: Wiki · Search 팔레트. 깊이(B3 Library 편집·B4 테이블 연동)는 breadth 완성 뒤. BaaS는 후순위.
 - **Phase 2 (Team)**: ⬜ — 멤버 초대, 권한 모델, 워크스페이스 분리 (W11)
 - **Phase 3+**: ⬜ — Realtime collab, scaling
 
@@ -33,7 +33,8 @@
 | — | FlowBase V2 재구축 Phase 1A (기반) | `feat/flowbase-v2` → main squash (2026-05-21) | V2 제네릭 데이터 모델·zustand 스토어·시드·undo·parsers·키보드. `design-ref/` V2 핸드오프 도입, 7단계 계획·Phase 1 design 작성 |
 | `eb31064` | FlowBase V2 Phase 1B·2·3 (시트·AI·Import) | `feat/sheet-view-v2` → `main` 머지 (2026-05-21) | 시트 뷰 · AI 패널+Claude(`claude-sonnet-4-6`) · Import 3-step 위저드. 설계 문서 phase{2,3}. tsc·build·vitest(13) green. `app/txt-poc` 제거 |
 | `df7eeb4` | FlowBase V2 Phase 4·5·6 (Kanban·Dashboard·앱 셸·멀티보드·Schema) | `feat/kanban-dashboard` → `main` 머지 (2026-05-21) | 뷰 스위처 · Kanban · Dashboard(recharts) · 앱 셸(패널 토글·단축키) · 보드 CRUD · Schema 뷰. 설계 문서 phase{4,5,6}. tsc·build green |
-| `2cbf01a`~`2cdbb0f` | 세션: 명령어 · Phase 3 Q1 · 죽은코드 정리 · 앱 셸 6모드(Phase A) · Library 설계 | `claude/wizardly-murdock-451e3d` → `main` 머지 (2026-05-23) | before/after-work 프로젝트 커맨드화 · infer-batch sourceField · V1 코드 20파일 삭제(−7,025줄) · 셸 6모드 라우터+Schema→Workspace · Library 설계(B1~B4). **앱 범위 재정의** |
+| `2cbf01a`~`2cdbb0f` | 세션: 명령어 · Phase 3 Q1 · 죽은코드 정리 · 앱 셸 6모드(Phase A) · Library 설계 | `claude/wizardly-murdock-451e3d` (origin) — main 머지 대기 (2026-05-23) | before/after-work 프로젝트 커맨드화 · infer-batch sourceField · V1 코드 20파일 삭제(−7,025줄) · 셸 6모드 라우터+Schema→Workspace · Library 설계(B1~B4). **앱 범위 재정의** |
+| `4148c96`~`605b9f3` | 후속: Phase B Library(B1·B2) · Workspace Automations · Inbox · Detail bar · English UI · Tasks 보드 | `claude/wizardly-murdock-451e3d` (origin push) — **main 머지 대기** (2026-05-23) | 6 커밋. Library B1(브라우즈)·B2(디테일, selectAsset 원자 액션) · Workspace Automations(룰+AI 제안+탭) · Inbox(파생 항목·필터) · Detail bar(4번째 패널·⌘I) · UI 영어화(STATUS_LABELS 맵·17+파일) · Trash/Settings 푸터 · Tasks 시드 보드(store v4→v5 migrate). **breadth 우선 (사용자 명시)** |
 
 ---
 
@@ -79,6 +80,8 @@
 13. **Phase 4·5·6 구현 결정** (2026-05-21) — (1) Kanban 카드 이동 = **이동 버튼** (DnD 라이브러리 ❌ — 의존성·모션 최소). (2) **Dashboard = 제네릭 집계** (아무 보드의 categorical/num 컬럼) — interview 전용 하드코딩 폐기. 차트 = div 막대 + recharts hero 2개 혼합. (3) 앱 셸 패널 3종(activityBar/sidebar/aiPanel) — 스토어 `panels`·토글·persist는 Phase 1A 완비, Phase 5는 UI만. (4) **Schema = 4번째 뷰 탭** — Phase 1의 "schema는 뷰 아님" 노트를 MVP 단순화 위해 번복, `ViewMode += "schema"`, active board 무관 워크스페이스 렌더. (5) **`selectVisibleRows`는 zustand 셀렉터로 직접 구독 ❌** — 매 호출 새 배열 반환 → getSnapshot 무한 루프. 의존 슬라이스(board/search/filter/sort) 구독 + `useMemo` 패턴 필수 (sheet-view 패턴).
 
 14. **앱 범위 재정의 — 6 액티비티 모드** (2026-05-23) — V2 "Phase 1~6 완료" 기재는 과대평가였음. 프로토타입(`design-ref/prototype/`)이 그리는 앱은 액티비티 바 **6모드**(Inbox·Tables·Workspace·Library·Wiki·Search)인데 V2는 **Tables 모드**(시트·칸반·대시보드)만 구현 — 앱의 약 1/6. 셸을 `activityMode` 기반 6모드 라우터로 재구축(Phase A, `daad859`). 나머지 서브시스템을 차례로 구축 — **Library 먼저** ([flowbase-v2-library.design.md](02-design/features/flowbase-v2-library.design.md), B1~B4). **Schema는 Workspace 서브시스템** — `prototype-app.jsx`가 `schema`를 stale 뷰로 마이그레이션(`activeWorkspaceItem: "schema"|"automations"`). Phase 6 D3("Schema=4번째 뷰 탭")를 번복, `ViewMode`에서 `schema` 제거. **BaaS(옛 Phase 7)는 후순위.** before/after-work 명령어는 `~/.claude/`(머신 로컬·미동기화)가 아니라 `<repo>/.claude/commands/`에 프로젝트 커맨드로 둠(`.gitignore` 예외).
+
+15. **앱 breadth 우선 — Workspace/Inbox/Detail bar/Tasks 보드 + English UI** (2026-05-23 후속) — Phase A 셸 완성 뒤 B3(Library 편집)/B4(테이블 연동) **깊이** 대신 워크스페이스 **breadth** 완성 우선: **Library B1·B2** (읽기 전용 카탈로그·디테일) · **Workspace > Automations** (룰+AI 제안+Schema/Automations 탭) · **Inbox** (워크스페이스 상태 파생 항목·필터) · **Detail bar** (4번째 패널·⌘I·선택 행 디테일). 사용자 명시 우선순위: "목업 퀄리티와 기능들을 완벽하게 구현해내는 게 최우선." **Status는 LOCK 한국어 키 보존(`미처리/진행중/대기/완료`) + `STATUS_LABELS` 맵으로 디스플레이만 영어** ("Todo/In progress/Waiting/Done") — Key Design #8 색 매핑 호환. **Library의 cross-category 자산 클릭은 `selectAsset(category, id)` 원자 액션** — `setLibAsset`만으론 libCategory 동기 안 돼 `assetExists` false → 디테일 미렌더 버그 해결. **Tasks 보드** (`flowbase-tasks-seed.ts`)를 두 번째 시드(CS Operations 도메인) 추가 — `store v4→v5 migrate`로 기존 persisted state에 자동 주입. **테스트 셀렉터 속성** `data-asset-id` · `data-panel-id` · `data-workspace-item` 추가 (preview_click 안정화). **남은 breadth: Wiki 모드 · Search 팔레트(⌘K)** — B3/B4는 그 뒤.
 
 ---
 

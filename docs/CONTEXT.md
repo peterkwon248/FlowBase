@@ -6,7 +6,15 @@
 
 ## Current Features (Completed — 최근 우선)
 
-1. **앱 셸 6모드 라우터 (Phase A)** (2026-05-23, `main` 머지) — `app/page.tsx`가 `activityMode` 기반 6모드 라우터. 액티비티 바 6모드 레일(Inbox·Tables·Workspace·Library·Wiki·Search). Tables 모드=기존 V2 보드(시트·칸반·대시보드·Import·AI·멀티보드 — 옛 "Phase 1~6"), Workspace 모드=Schema, 나머지는 "준비 중" 스텁. **앱 범위 재정의**: V2 "Phase 1~6"은 6모드 중 Tables 하나뿐이었음 — Library부터 서브시스템 차례 구축. 다음=Library B1 (설계 `docs/02-design/features/flowbase-v2-library.design.md`).
+1. **Library + Workspace Automations + Inbox + Detail bar + English UI + Tasks 보드** (2026-05-23, branch origin, **main 머지 대기**) —
+   - **Library** (`components/library/*` + `lib/flowbase-library-seed.ts`) — 5 카테고리 사이드바 트리 + 카드 카탈로그 + 자산 디테일(B1·B2, 읽기 전용).
+   - **Workspace > Automations** (`components/workspace/automations-view.tsx` + `lib/flowbase-workspace-seed.ts`) — 룰 카드(When/Then) + AI 제안 + Schema/Automations 탭.
+   - **Inbox** (`components/inbox/inbox-view.tsx`) — 워크스페이스 상태 파생 항목(AI pending · 자동화 제안 · 빈 테이블 · 미사용 자산 · 활동 로그) + 필터 chips + 액션 네비.
+   - **Detail bar** (`components/board/detail-bar.tsx`) — 4번째 패널(`panels.detailBar`) · ⌘I · 선택/포커스 행 디테일.
+   - **English UI** — `STATUS_LABELS` 맵으로 Status 디스플레이 영어(키는 LOCK 한국어). 17+ 컴포넌트 chrome 영어화. Trash · Settings 사이드바 푸터 + 2.1/10 GB stub.
+   - **Tasks 보드** (`lib/flowbase-tasks-seed.ts`) — 2번째 시드 보드 (CS Operations 도메인). store v4→v5 migrate로 기존 persisted 자동 주입.
+
+2. **앱 셸 6모드 라우터 (Phase A)** (2026-05-23) — `app/page.tsx`가 `activityMode` 기반 6모드 라우터. 액티비티 바 6모드 레일(Inbox·Tables·Workspace·Library·Wiki·Search). Tables 모드=기존 V2 보드(시트·칸반·대시보드·Import·AI·멀티보드 — 옛 "Phase 1~6"), Workspace 모드=Schema/Automations, 나머지는 "Coming soon" 스텁(Wiki·Search 아직).
 2. **Linear+shadcn 디자인 overhaul** (PR #4, 2026-05-07) — 전체 UI 톤 통합. Trash·Workspaces·Quick switcher·Breadcrumb·Settings·design tokens(`lib/tokens.ts`).
 3. **Status pill 통합 + 미처리=blue** (2026-05-05) — 아이콘+이름+카운트 단일 pill.
 4. **FlowBase 리브랜드** (2026-05-05) — FlowDB → FlowBase, GitHub repo rename.

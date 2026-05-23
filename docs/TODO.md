@@ -4,13 +4,24 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ---
 
-## P0 (즉시)
+## P0 (즉시 — breadth 마무리)
 
-- [ ] **Phase B — Library 서브시스템 B1** — 데이터 모델 + 시드 + Library 모드(사이드바+카탈로그, 읽기 전용). 설계 `docs/02-design/features/flowbase-v2-library.design.md` §5
-- [ ] **반응형 레이아웃 수정** — ~800px 폭에서 4패널이 무너짐(AI 패널이 보드 덮음). 반응형 처리
+- [ ] **Wiki 모드** — 현재 `ComingSoonMode` 스텁. 프로토타입 `design-ref/prototype/wiki-view.jsx` 참조
+- [ ] **Search 팔레트 (⌘K)** — 스텁. 프로토타입 `search-palette.jsx` 참조
+
+> **앱 breadth 진행** (2026-05-23): Tables✅ · Workspace(Schema·Automations)✅ · Library(B1·B2 읽기 전용)✅ · Inbox✅ · Detail bar✅ · Wiki⬜ · Search⬜.
+> 사용자 명시 우선순위: "목업 퀄리티와 기능들을 완벽하게." Breadth 완성이 깊이(B3/B4)보다 먼저.
+
+---
+
+## P1 (breadth 뒤)
+
+- [ ] **시드 deep 영어화** — `flowbase-library-seed.ts` Korean 자산명(모델명·처리방식·사업부) + 옵션 라벨 · `flowbase-workspace-seed.ts` 룰 잔여 · Customer Interviews 시드 한국어 quote/name
+- [ ] **반응형 fix** — ~800px 4-5 패널 cramped (사용자 우선순위 후순위)
+- [ ] **B3 — Library 인라인 편집** — rename · 옵션 색상/추가 · field config
 - [ ] **AI 실호출 검증** — `.env.local`에 `ANTHROPIC_API_KEY` → infer-batch/ask/analyze-import 검증
-
-> **앱 범위 재정의** (2026-05-23): 프로토타입은 6 액티비티 모드. V2 "Phase 1~6"은 Tables 모드뿐. 셸 6모드 라우터=Phase A✅. 다음=서브시스템 차례 구축 (Library→Wiki→Inbox→Workspace→Search). BaaS는 후순위.
+- [ ] **`main` 머지** — 13 커밋 origin/branch 대기 → fast-forward
+- [ ] **B4 (가장 마지막, 사용자 명시)** — 컬럼↔Library 자산 링크 · "Use in table" · 템플릿으로 보드 생성
 
 ---
 
@@ -50,6 +61,12 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## 완료
 
+- [x] **English UI + Trash/Settings + Tasks 보드** (2026-05-23 — `605b9f3`): UI chrome 17+ 파일 영어화 · `STATUS_LABELS` 맵 · 사이드바 푸터(Trash·Settings·2.1/10 GB) · Tasks 시드(store v4→v5 migrate)
+- [x] **Detail bar (4번째 패널)** (2026-05-23 — `f3feae2`): `PanelState.detailBar` · DetailBar 컴포넌트 · ⌘I 단축키 · TablesMode 통합
+- [x] **Inbox 모드** (2026-05-23 — `620dadb`): 워크스페이스 상태 파생 6 kind + 필터 chips + 액션 네비
+- [x] **Workspace > Automations** (2026-05-23 — `41b7257`): 룰 카드(When/Then) + AI 제안 + Schema/Automations 탭
+- [x] **Phase B Library B2** (2026-05-23 — `5bf1ef5`): 5 카테고리 자산 디테일 + `selectAsset` 원자 액션
+- [x] **Phase B Library B1** (2026-05-23 — `4148c96`): 5 카테고리 사이드바 트리 + 카탈로그 (읽기 전용)
 - [x] **앱 셸 6모드 라우터 (Phase A)** (2026-05-23 — `daad859`): 액티비티 바 6모드 레일 · `activityMode` 라우터 · Schema를 Tables 뷰 탭→Workspace 모드 이동. Library 서브시스템 설계 문서
 - [x] **옛 V1 미사용 코드 정리** (2026-05-23 — `4fa804a`): V2 도달 불가 V1 파일 20개 삭제 (−7,025줄)
 - [x] **infer-batch sourceField 일반화 (Phase 3 Q1)** (2026-05-23 — `afa39f1`)

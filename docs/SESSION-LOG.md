@@ -4,6 +4,52 @@
 
 ---
 
+## 2026-05-23 (kkh94 머신, 이어서) — Phase B Library B1·B2 · Workspace Automations · Inbox · Detail bar · English UI · Tasks 보드
+
+### 마무리 — 6 커밋 origin/branch push, `main` 머지 대기
+후속 작업물을 `claude/wizardly-murdock-451e3d`에 누적 커밋·push (총 13 커밋 ahead of main). **main 머지는 사용자 명시 yes 시 진행** — 이번 after-work에서도 step 8 명시 확인 필요.
+
+### 완료
+- **Phase B B1 — Library 브라우즈** (`4148c96`) — 5 카테고리(optionLists/fields/templates/functions/dashboards) TS 타입 + 시드(`flowbase-library-seed.ts`) + 스토어 슬라이스 + LibrarySidebar 트리 + CategoryCatalog 카드 그리드 + 셸 모드 분기. 읽기 전용.
+- **Phase B B2 — Library 디테일** (`5bf1ef5`) — `components/library/asset-detail.tsx` (5 카테고리 디테일: OptionList 옵션 목록·Field config·Template 필드+멀티테이블·Function params/example·Dashboard 차트 메타). `selectAsset(category, id)` 원자 액션 추가 — cross-category 클릭 버그 해결. `data-asset-id` 테스트 셀렉터.
+- **Workspace > Automations** (`41b7257`) — `components/workspace/automations-view.tsx`(룰 카드 When/Then·status pill·runs/lastRun + AI Suggestions confidence%) + Schema/Automations 탭 + `flowbase-workspace-seed.ts`(5 룰 + 3 AI 제안). `ActiveWorkspaceItem` 타입.
+- **Inbox 모드** (`620dadb`) — `components/inbox/inbox-view.tsx` 워크스페이스 상태 파생(AI pending·자동화 제안·빈 테이블·미사용 자산·활동 로그). 6 kind + 필터 chips + 액션→해당 모드 네비.
+- **Detail bar (4번째 패널)** (`f3feae2`) — `PanelState.detailBar` 추가. `components/board/detail-bar.tsx` (선택/포커스 행 디테일). PanelsMenu에 체크박스 + ⌘I. TablesMode 통합. `data-panel-id` 셀렉터.
+- **English UI + Trash/Settings + Tasks 보드** (`605b9f3`) — 20 파일 변경:
+  - UI chrome 한국어→영어 (17+ 파일: board-sidebar/header, tables-mode, ai-activity-panel/composer/pending-card, filter-chips, kanban-view, editable-cell, schema-view, detail-bar, inbox-view, automations-view, coming-soon-mode, library-sidebar, asset-detail).
+  - `STATUS_LABELS` 맵(types/flowbase.ts) — Status 디스플레이만 영어, 키는 LOCK 한국어 보존.
+  - board-sidebar 푸터: Trash · Settings 아이콘 + 2.1/10 GB stub.
+  - `lib/flowbase-tasks-seed.ts` — 2번째 시드 보드 (Tasks, 8행, id·title·assignee·status·priority·due).
+  - store v4→v5 migrate — 기존 persisted state에 Tasks 자동 주입.
+
+### 큰 결정
+- **breadth 우선 (사용자 명시)** — Phase A 셸 완성 후 B3 Library 편집/B4 테이블 연동 대신 워크스페이스 breadth 완성을 우선 ("우선은 목업 퀄리티와 기능들을 완벽하게 구현해내는 게 최우선"). Library B1·B2, Workspace Automations, Inbox, Detail bar, Tasks 보드, 영어화 순.
+- **Status는 LOCK 한국어 키 보존, `STATUS_LABELS` 맵으로 디스플레이만 영어** — MEMORY Key Design #8(Status 색 매핑 한국어 키 기반) 호환. 시맨틱 키-색 매핑 그대로, 라벨만 영어("Todo/In progress/Waiting/Done").
+- **`selectAsset(category, id)` 원자 액션** — Library 사이드바에서 cross-category 자산 클릭 시 libCategory + libAssetId 동시 업데이트. 기존 `setLibAsset`만 사용 시 카테고리 미동기로 `assetExists` false → 디테일 미렌더 버그.
+- **Detail bar는 Tables 모드에서만 콘텐츠** — 다른 모드는 토글되어도 빈(UX).
+- **Tasks 보드 시드 + store v4→v5 migrate** — `flowbase-tasks-seed.ts`로 2번째 시드 보드(CS Operations 도메인) 추가. 기존 사용자 persisted state에 자동 주입.
+
+### 검증
+- 각 커밋 시점 `tsc --noEmit` 0 · `npm run build` 0 · `vitest run` 15/15.
+- 브라우저 검증: Library 5 카테고리 트리 + 카탈로그 + 자산 디테일(Field·Function 확인) · Workspace Automations 탭 5 룰 + AI 제안 · Inbox 11 파생 항목 + 필터 카운트 · Detail bar 토글 시 보드와 AI 패널 사이 렌더 · English UI 전반 (Customer Interviews + Tasks 사이드바, Todo/In progress/Waiting/Done 영어 라벨, Trash/Settings 푸터).
+- after-work 시점 재검증: tsc 0 · vitest 15/15.
+
+### 다음
+**Breadth 마무리**: Wiki 모드 + Search 팔레트(⌘K) — 둘 다 현재 스텁. 이후 시드 deep 영어화·B3 Library 편집·반응형 fix·B4 테이블 연동(가장 마지막). 자세히는 `NEXT-ACTION.md`.
+
+### Watch Out
+- **13 커밋 ahead of origin/main** — main은 `4d71c8a` 그대로. 다른 머신 이어가기는 브랜치 checkout(`claude/wizardly-murdock-451e3d`) 또는 머지 후 main pull.
+- **~800px 반응형 깨짐** — Tables 모드에 4-5 패널 동시 표시 시 cramped. 미해결.
+- **시드 deep 영어화 미완** — `flowbase-library-seed.ts`(모델명·처리방식·사업부·옵션 라벨), `flowbase-workspace-seed.ts` 룰 잔여, Customer Interviews 한국어 quote/name 잔여.
+- **`ANTHROPIC_API_KEY` 미설정** — AI 라우트 실호출 미검증.
+- **STATUS_LABELS 도입 (types/flowbase.ts)** — 신규 status 디스플레이는 `STATUS_LABELS[s]` 사용. 직접 `{s}` 렌더 ❌.
+- **테스트 셀렉터 속성** (`data-asset-id`, `data-panel-id`, `data-workspace-item`) — UI 코드에 추가됨. 새 인터랙티브 요소도 같은 패턴 권장.
+
+### 머신
+kkh94. 다음 머신: before-work 시 — main이 안 머지 됐으면 브랜치에서 이어갈 것.
+
+---
+
 ## 2026-05-22~23 (kkh94 머신) — before/after-work 명령어 · Phase 3 Q1 · 죽은코드 정리 · 앱 범위 재정의(Phase A) · Library 설계(Phase B)
 
 ### ✅ 마무리 — 6 커밋 + docs, `main` 머지·푸시 완료
