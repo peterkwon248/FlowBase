@@ -22,27 +22,27 @@ export const LIBRARY_CATEGORIES: LibraryCategoryMeta[] = [
   {
     id: "optionLists",
     label: "Option Lists",
-    desc: "공유 가능한 옵션 집합 — 드롭다운·태그·카테고리. 한 번 정의하면 여러 컬럼이 같은 옵션을 공유.",
+    desc: "Shared option sets — dropdowns, tags, categories. Define once and many columns can share the same options.",
   },
   {
     id: "fields",
     label: "Fields",
-    desc: "컬럼 정의 — 이름·타입·옵션·기본값·검증 규칙을 묶은 한 패키지.",
+    desc: "Column definitions — name, type, options, default, validation bundled together.",
   },
   {
     id: "templates",
     label: "Templates",
-    desc: "여러 Field의 묶음 + 권장 view 설정. 반복되는 테이블을 빠르게 생성.",
+    desc: "Bundles of Fields with recommended views. Spin up repeated tables fast.",
   },
   {
     id: "functions",
     label: "Functions",
-    desc: "재사용 가능한 스마트 함수 — MATCH·EXTRACT·AI_CLASSIFY. 셀을 자동 채우는 로직.",
+    desc: "Reusable smart functions — MATCH, EXTRACT, AI_CLASSIFY. Logic that auto-fills cells.",
   },
   {
     id: "dashboards",
     label: "Dashboards",
-    desc: "여러 차트가 큐레이션된 풀 dashboard. 컬럼 시그니처에 맞으면 자동 추천.",
+    desc: "Curated dashboard layouts. Auto-recommended when a board's columns match the signature.",
   },
 ]
 

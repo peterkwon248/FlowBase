@@ -12,22 +12,22 @@ const INFO: Partial<
   library: {
     label: "Library",
     Icon: Library,
-    desc: "옵션 리스트·필드·템플릿·함수·대시보드를 한곳에서 정의하고 모든 보드에서 재사용합니다.",
+    desc: "Define option lists, fields, templates, functions, and dashboards once and reuse them across every board.",
   },
   wiki: {
     label: "Wiki",
     Icon: BookText,
-    desc: "워크스페이스 문서와 노트를 페이지로 정리합니다.",
+    desc: "Organize workspace docs and notes as pages.",
   },
   inbox: {
     label: "Inbox",
     Icon: Inbox,
-    desc: "검토가 필요한 AI 추천과 알림을 한곳에 모읍니다.",
+    desc: "AI suggestions and alerts that need attention, all in one place.",
   },
   search: {
     label: "Search",
     Icon: Search,
-    desc: "⌘K — 보드·행·자산을 가로질러 빠르게 이동합니다.",
+    desc: "⌘K — jump quickly across boards, rows, and assets.",
   },
 }
 
@@ -47,7 +47,7 @@ export function ComingSoonMode({ mode }: { mode: ActivityMode }) {
           {desc}
         </p>
         <span className="mt-4 inline-block rounded-md border border-border-subtle bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-          준비 중
+          Coming soon
         </span>
       </div>
     </div>

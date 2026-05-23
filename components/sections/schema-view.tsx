@@ -39,9 +39,9 @@ export function SchemaView() {
   return (
     <div className="flex flex-1 flex-col gap-5 overflow-auto bg-background p-5">
       <div>
-        <h2 className="text-sm font-semibold">스키마</h2>
+        <h2 className="text-sm font-semibold">Schema</h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          워크스페이스의 {boardList.length}개 보드 · 컬럼 구조
+          {boardList.length} boards · column structure
         </p>
       </div>
 
@@ -56,11 +56,11 @@ export function SchemaView() {
       <div>
         <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
           <Link2 className="size-3" />
-          관계
+          Relations
         </div>
         {relations.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border bg-card px-4 py-6 text-center text-xs text-muted-foreground">
-            보드 간 관계가 없습니다 — fk 타입 컬럼을 추가하면 연결됩니다.
+            No relations between boards — add an fk-type column to link them.
           </div>
         ) : (
           <div className="flex flex-col gap-1.5">
@@ -98,7 +98,7 @@ function BoardSchemaCard({ board }: { board: Board }) {
           {board.label}
         </span>
         <span className="tabular-nums text-[11px] text-muted-foreground">
-          {board.columns.length}컬럼
+          {board.columns.length} columns
         </span>
       </div>
       {/* 컬럼 목록 */}

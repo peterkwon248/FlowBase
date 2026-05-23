@@ -11,7 +11,7 @@ import { STATUS_OPTIONS } from "@/lib/flowbase-seed"
 import { selectActiveBoard, useFlowBase } from "@/lib/flowbase-store"
 import { statusBgClass, statusColorClass } from "@/lib/tokens"
 import { cn } from "@/lib/utils"
-import type { TicketStatus } from "@/types/flowbase"
+import { STATUS_LABELS, type TicketStatus } from "@/types/flowbase"
 
 export function FilterChips() {
   const board = useFlowBase(selectActiveBoard)
@@ -49,7 +49,7 @@ export function FilterChips() {
             )}
           >
             {statusIcon(s)}
-            <span>{s}</span>
+            <span>{STATUS_LABELS[s]}</span>
             <span className="tabular-nums opacity-70">{counts[s] ?? 0}</span>
           </button>
         )
@@ -60,7 +60,7 @@ export function FilterChips() {
           onClick={() => setFilter([])}
           className="rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground"
         >
-          초기화
+          Clear
         </button>
       )}
     </div>

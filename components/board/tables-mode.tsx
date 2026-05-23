@@ -53,7 +53,7 @@ export function TablesMode() {
           <EdgeCollapse
             side="left"
             onClick={() => togglePanel("sidebar")}
-            title="사이드바 닫기 (⌘⇧F)"
+            title="Close sidebar (⌘⇧F)"
           />
         </div>
       )}
@@ -83,7 +83,7 @@ export function TablesMode() {
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.05]"
               >
                 <Trash2 className="size-3" />
-                {selectedCount}개 행 삭제
+                Delete {selectedCount} rows
               </button>
             )}
             <button
@@ -100,7 +100,7 @@ export function TablesMode() {
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.05]"
             >
               <Undo2 className="size-3" />
-              실행 취소
+              Undo
             </button>
             <button
               type="button"
@@ -131,7 +131,7 @@ export function TablesMode() {
         {!panels.sidebar && (
           <ExpandTab
             side="left"
-            label="사이드바"
+            label="Sidebar"
             onClick={() => togglePanel("sidebar")}
           />
         )}
@@ -152,7 +152,7 @@ export function TablesMode() {
           <EdgeCollapse
             side="right"
             onClick={() => togglePanel("aiPanel")}
-            title="AI 패널 닫기 (⌘B)"
+            title="Close AI panel (⌘B)"
           />
         </div>
       )}

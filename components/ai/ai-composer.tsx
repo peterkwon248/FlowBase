@@ -33,7 +33,7 @@ export function AiComposer({ busy, onSend }: AiComposerProps) {
             submit()
           }
         }}
-        placeholder="AI에게 질문…"
+        placeholder="Ask AI…"
         className="w-full bg-transparent px-1 py-0.5 text-[12.5px] outline-none placeholder:text-muted-foreground"
       />
       <div className="mt-1 flex items-center gap-1.5">
@@ -41,7 +41,7 @@ export function AiComposer({ busy, onSend }: AiComposerProps) {
           ↵
         </span>
         <span className="text-[11px] text-muted-foreground">
-          {busy ? "응답 중…" : "전송"}
+          {busy ? "Thinking…" : "Send"}
         </span>
         <div className="flex-1" />
         <button
@@ -51,7 +51,7 @@ export function AiComposer({ busy, onSend }: AiComposerProps) {
           className="inline-flex items-center gap-1 rounded bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground disabled:opacity-60"
         >
           <Send className="size-3" />
-          전송
+          Send
         </button>
       </div>
     </div>

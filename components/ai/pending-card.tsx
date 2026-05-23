@@ -15,8 +15,8 @@ const LABEL: Record<AiColumn, string> = {
 }
 
 const DETAIL: Record<AiColumn, string> = {
-  theme: "인용문 자유 텍스트 → 5개 카테고리로 분류",
-  sentiment: "인용문 → Positive / Mixed / Negative",
+  theme: "Free-text quote → 5 categories",
+  sentiment: "Quote → Positive / Mixed / Negative",
 }
 
 interface PendingCardProps {
@@ -39,7 +39,7 @@ export function PendingCard({
       <div className="mb-1.5 flex items-center gap-1.5">
         <Sparkles className="size-3.5 shrink-0 text-primary" />
         <span className="flex-1 text-[12.5px] font-semibold leading-snug">
-          {LABEL[column]} 미확정 {count}개 행
+          {count} unconfirmed {LABEL[column]} rows
         </span>
         <span className="rounded bg-primary/15 px-1.5 py-px text-[10px] font-semibold tabular-nums text-primary">
           {count}

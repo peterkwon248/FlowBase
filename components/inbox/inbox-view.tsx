@@ -114,8 +114,8 @@ function buildItems(input: {
         id: `ai-theme-${b.id}`,
         kind: "ai",
         priority: 7,
-        title: `${pendingTheme}개 행의 Theme 추천 대기`,
-        detail: `${b.label} · AI 분류 결과 확인 필요`,
+        title: `${pendingTheme} rows awaiting Theme classification`,
+        detail: `${b.label} · Review AI classification`,
         time: today,
         action: { label: "Review", onClick: () => input.goToBoard(b.id) },
       })
@@ -125,8 +125,8 @@ function buildItems(input: {
         id: `ai-sent-${b.id}`,
         kind: "ai",
         priority: 7,
-        title: `${pendingSent}개 행의 Sentiment 추천 대기`,
-        detail: `${b.label} · AI 분류 결과 확인 필요`,
+        title: `${pendingSent} rows awaiting Sentiment classification`,
+        detail: `${b.label} · Review AI classification`,
         time: today,
         action: { label: "Review", onClick: () => input.goToBoard(b.id) },
       })
@@ -154,8 +154,8 @@ function buildItems(input: {
         id: `empty-table-${b.id}`,
         kind: "tip",
         priority: 2,
-        title: `빈 테이블: ${b.label}`,
-        detail: "행 추가 또는 Import로 데이터를 채우세요",
+        title: `Empty table: ${b.label}`,
+        detail: "Add rows or import to populate",
         time: today,
         action: { label: "Open", onClick: () => input.goToBoard(b.id) },
       })
@@ -181,8 +181,8 @@ function buildItems(input: {
           id: `lib-unused-${a.id}`,
           kind: "tip",
           priority: 1,
-          title: `미사용 ${label}: ${a.name}`,
-          detail: "Library에서 안 쓰이는 자산 — 적용하거나 정리",
+          title: `Unused ${label}: ${a.name}`,
+          detail: "Unused Library asset — apply or archive",
           time: today,
           action: {
             label: "Open",
@@ -295,7 +295,7 @@ export function InboxView() {
           </span>
         </div>
         <p className="pl-[42px] text-[13px] text-muted-foreground">
-          검토가 필요한 AI 추천 · 알림 · 워크스페이스 상태 변화.
+          AI suggestions, alerts, and workspace activity that need attention.
         </p>
       </div>
 
@@ -327,7 +327,7 @@ export function InboxView() {
       <div className="flex flex-col px-6 py-4">
         {filtered.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border bg-card px-6 py-16 text-center text-[13px] text-muted-foreground">
-            받은 항목이 없습니다 — 모든 게 깔끔합니다.
+            Inbox is empty — all clear.
           </div>
         ) : (
           <div className="flex flex-col gap-2">

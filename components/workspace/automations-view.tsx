@@ -62,8 +62,8 @@ export function AutomationsView() {
           </span>
         </div>
         <p className="pl-[42px] text-[13px] text-muted-foreground">
-          데이터 변경·시간 트리거에 반응해 자동으로 행을 추가하거나 알림을
-          보냅니다.
+          React to data changes or scheduled triggers to add rows or send
+          notifications automatically.
         </p>
         <div className="mt-2 flex gap-2 pl-[42px] text-[11.5px] text-muted-foreground">
           <span>

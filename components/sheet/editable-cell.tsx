@@ -14,7 +14,7 @@ import {
   CircleHalf,
   CircleNotch,
 } from "@phosphor-icons/react"
-import type { ColumnDef, TableRow, TicketStatus } from "@/types/flowbase"
+import { STATUS_LABELS, type ColumnDef, type TableRow, type TicketStatus } from "@/types/flowbase"
 import { statusBgClass, statusColorClass } from "@/lib/tokens"
 import { cn } from "@/lib/utils"
 import { AiPendingMark } from "./ai-pending-mark"
@@ -247,7 +247,7 @@ function StatusCell({
   const status = (row.status as TicketStatus) ?? "미처리"
   const options: CellOption[] = STATUS_ENUM.map((s) => ({
     value: s,
-    label: s,
+    label: STATUS_LABELS[s],
     icon: statusIcon(s),
   }))
 
@@ -270,7 +270,7 @@ function StatusCell({
           )}
         >
           {statusIcon(status)}
-          <span>{status}</span>
+          <span>{STATUS_LABELS[status]}</span>
         </button>
       }
     />

@@ -29,7 +29,7 @@ export function BoardHeader() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="검색…"
+          placeholder="Search…"
           className="w-full bg-transparent text-[12.5px] outline-none placeholder:text-muted-foreground"
         />
       </div>

@@ -6,6 +6,13 @@
 export type TicketStatus = "미처리" | "진행중" | "대기" | "완료"
 // LOCK 색 (lib/tokens.ts statusColorClass/statusBgClass):
 //   미처리 = blue · 진행중 = amber · 대기 = violet · 완료 = emerald
+// 디스플레이는 영어 — 키는 LOCK 의미론 보존, 라벨만 영어.
+export const STATUS_LABELS: Record<TicketStatus, string> = {
+  미처리: "Todo",
+  진행중: "In progress",
+  대기: "Waiting",
+  완료: "Done",
+}
 
 export type TicketPriority = "Urgent" | "High" | "Med" | "Low"
 

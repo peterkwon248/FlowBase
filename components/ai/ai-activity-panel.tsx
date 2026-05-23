@@ -170,7 +170,7 @@ export function AiActivityPanel() {
         {pendingTotal > 0 && (
           <div className="px-3.5 pb-2 pt-3">
             <div className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-              Pending — 확인 필요
+              Pending — needs review
             </div>
             {pendingTheme.length > 0 && (
               <PendingCard
@@ -200,7 +200,7 @@ export function AiActivityPanel() {
           </div>
           {aiHistory.length === 0 ? (
             <div className="text-xs leading-relaxed text-muted-foreground">
-              아직 AI 활동이 없습니다.
+              No AI activity yet.
             </div>
           ) : (
             <div className="relative pl-3.5">

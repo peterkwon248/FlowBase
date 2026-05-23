@@ -12,7 +12,7 @@ import { selectActiveBoard, useFlowBase } from "@/lib/flowbase-store"
 
 function formatValue(v: unknown): string {
   if (v === null || v === undefined || v === "") return "—"
-  if (typeof v === "boolean") return v ? "예" : "아니오"
+  if (typeof v === "boolean") return v ? "Yes" : "No"
   if (typeof v === "object") {
     try {
       return JSON.stringify(v)
@@ -45,14 +45,14 @@ export function DetailBar() {
         <span className="text-[13px] font-semibold">Detail</span>
         {selectedRowIds.length > 1 && (
           <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {selectedRowIds.length} 선택
+            {selectedRowIds.length} selected
           </span>
         )}
         <div className="flex-1" />
         <button
           type="button"
           onClick={() => togglePanel("detailBar")}
-          title="닫기 (⌘I)"
+          title="Close (⌘I)"
           className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground"
         >
           <X className="size-3.5" />
@@ -63,7 +63,7 @@ export function DetailBar() {
       <div className="flex-1 overflow-y-auto p-3.5">
         {!row ? (
           <div className="rounded-md border border-dashed border-border bg-card p-4 text-center text-[12px] text-muted-foreground">
-            행을 선택하거나 셀에 포커스하면 상세가 표시됩니다.
+            Select a row or focus a cell to see details.
           </div>
         ) : (
           <div className="flex flex-col gap-3">

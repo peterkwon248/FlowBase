@@ -185,7 +185,7 @@ function Shell({
             </div>
           ) : (
             <p className="text-[12.5px] text-muted-foreground">
-              아직 사용되는 곳이 없습니다.
+              Not used anywhere yet.
             </p>
           )}
         </Section>
@@ -369,11 +369,11 @@ function TemplateBody({
       <>
         <Section title="Multi-table domain" count={asset.tables.length}>
           <div className="rounded-lg border border-primary/20 bg-primary/[0.04] px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
-            이 템플릿은{" "}
+            This template creates{" "}
             <strong className="text-foreground">
-              {asset.tables.length}개 테이블
-            </strong>
-            을 한 번에 생성합니다 (B4에서 활성).
+              {asset.tables.length} tables
+            </strong>{" "}
+            at once (enabled in B4).
           </div>
         </Section>
         {asset.tables.map((t) => (

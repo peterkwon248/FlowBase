@@ -22,6 +22,7 @@ import type {
 } from "@/types/flowbase"
 import { createSeedLibrary } from "@/lib/flowbase-library-seed"
 import { createSeedBoard } from "@/lib/flowbase-seed"
+import { createSeedTasksBoard } from "@/lib/flowbase-tasks-seed"
 import {
   SEED_AUTOMATIONS,
   SEED_SUGGESTED_AUTOMATIONS,
@@ -29,7 +30,7 @@ import {
 import { undoStack } from "@/lib/undo-stack"
 
 const STORE_KEY = "flowbase-state-v4"
-const STORE_VERSION = 4
+const STORE_VERSION = 5 // v5: Tasks 보드 시드 추가
 
 function nowIso(): string {
   return new Date().toISOString()
@@ -97,15 +98,16 @@ export interface FlowBaseActions {
 export type FlowBaseStore = FlowBaseState & FlowBaseActions
 
 function createInitialState(): FlowBaseState {
-  const seed = createSeedBoard()
+  const interviews = createSeedBoard()
+  const tasks = createSeedTasksBoard()
   return {
-    boards: { [seed.id]: seed },
-    activeBoardId: seed.id,
+    boards: { [interviews.id]: interviews, [tasks.id]: tasks },
+    activeBoardId: interviews.id,
     library: createSeedLibrary(),
     automations: SEED_AUTOMATIONS,
     suggestedAutomations: SEED_SUGGESTED_AUTOMATIONS,
     panels: { activityBar: true, sidebar: true, aiPanel: true, detailBar: false },
-    viewByBoardId: { [seed.id]: "sheet" },
+    viewByBoardId: { [interviews.id]: "sheet", [tasks.id]: "sheet" },
     activityMode: "tables",
     activeWorkspaceItem: "schema",
     libCategory: "optionLists",
@@ -414,6 +416,22 @@ export const useFlowBase = create<FlowBaseStore>()(
       name: STORE_KEY,
       version: STORE_VERSION,
       storage: createJSONStorage(() => localStorage),
+      // v4 → v5: 기존 persisted state에 Tasks 보드가 없으면 주입.
+      migrate: (persistedState, version) => {
+        const s = (persistedState ?? {}) as Partial<FlowBaseState>
+        if (version < 5) {
+          const tasks = createSeedTasksBoard()
+          const boards = (s.boards ?? {}) as Record<string, Board>
+          if (!boards[tasks.id]) {
+            s.boards = { ...boards, [tasks.id]: tasks }
+            s.viewByBoardId = {
+              ...(s.viewByBoardId ?? {}),
+              [tasks.id]: "sheet",
+            }
+          }
+        }
+        return s as FlowBaseState
+      },
       partialize: (s) => ({
         boards: s.boards,
         activeBoardId: s.activeBoardId,

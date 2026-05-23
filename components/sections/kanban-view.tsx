@@ -17,7 +17,7 @@ import {
 } from "@/lib/flowbase-store"
 import { priorityDotClass, statusColorClass } from "@/lib/tokens"
 import { cn } from "@/lib/utils"
-import type { ColumnDef, TableRow, TicketStatus } from "@/types/flowbase"
+import { STATUS_LABELS, type ColumnDef, type TableRow, type TicketStatus } from "@/types/flowbase"
 
 // ── 카드 표시 필드 파생 (D6) ──────────────────────────────────────
 interface CardConfig {
@@ -93,7 +93,7 @@ export function KanbanView() {
             {/* 칸 헤더 */}
             <div className="flex items-center gap-1.5 border-b border-border-subtle px-3 py-2.5">
               {statusIcon(status)}
-              <span className="text-[13px] font-semibold">{status}</span>
+              <span className="text-[13px] font-semibold">{STATUS_LABELS[status]}</span>
               <span className="tabular-nums text-[11.5px] text-muted-foreground">
                 {items.length}
               </span>
@@ -114,7 +114,7 @@ export function KanbanView() {
               ))}
               {items.length === 0 && (
                 <div className="rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
-                  비어 있음
+                  Empty
                 </div>
               )}
             </div>
@@ -213,7 +213,7 @@ function KanbanCard({
           <button
             key={to}
             type="button"
-            title={`${to}(으)로 이동`}
+            title={`Move to ${STATUS_LABELS[to]}`}
             onClick={(e) => {
               e.stopPropagation()
               onMove(to)
@@ -223,7 +223,7 @@ function KanbanCard({
               statusColorClass(to),
             )}
           >
-            →{to}
+            → {STATUS_LABELS[to]}
           </button>
         ))}
       </div>

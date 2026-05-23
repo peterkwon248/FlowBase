@@ -3,11 +3,13 @@
 // 출처: design-ref/prototype/prototype-shell.jsx InteractiveSidebar
 //
 // BOARDS 목록 — 전환(switchBoard) + 행 … 메뉴(이름 변경 인라인 / 삭제). Phase 6.
+// 푸터 — Trash · Settings + 스토리지 인디케이터(stub).
 
 "use client"
 
 import { useState } from "react"
-import { MoreHorizontal, Plus, Upload } from "lucide-react"
+import { MoreHorizontal, Plus, Settings, Trash2, Upload } from "lucide-react"
+import { toast } from "sonner"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +37,7 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
   const boardList = Object.values(boards)
 
   const handleNewBoard = () => {
-    const id = createBoard("새 보드")
+    const id = createBoard("New board")
     switchBoard(id)
   }
 
@@ -62,7 +64,7 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
           className="flex items-center gap-2 rounded-md bg-primary px-2.5 py-1.5 text-[13px] font-medium text-primary-foreground"
         >
           <Plus className="size-3.5" />
-          새 보드
+          New board
         </button>
         <button
           type="button"
@@ -70,7 +72,7 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
           className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-[13px] hover:bg-foreground/[0.05]"
         >
           <Upload className="size-3.5" />
-          데이터 가져오기
+          Import data
         </button>
       </div>
 
@@ -134,7 +136,7 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      aria-label={`${b.label} 메뉴`}
+                      aria-label={`${b.label} menu`}
                       className="mr-1 hidden size-6 items-center justify-center rounded text-muted-foreground hover:bg-foreground/[0.08] group-hover:flex data-[state=open]:flex"
                     >
                       <MoreHorizontal className="size-3.5" />
@@ -142,20 +144,20 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-36">
                     <DropdownMenuItem onSelect={() => setEditingId(b.id)}>
-                      이름 변경
+                      Rename
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       variant="destructive"
                       disabled={boardList.length <= 1}
                       onSelect={() => {
                         if (
-                          window.confirm(`"${b.label}" 보드를 삭제할까요?`)
+                          window.confirm(`Delete board "${b.label}"?`)
                         ) {
                           deleteBoard(b.id)
                         }
                       }}
                     >
-                      삭제
+                      Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -166,6 +168,30 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
       </nav>
 
       <div className="flex-1" />
+
+      {/* 푸터 — Trash · Settings · 스토리지 */}
+      <div className="flex items-center gap-1 border-t border-border-subtle px-2.5 py-2">
+        <button
+          type="button"
+          title="Trash"
+          onClick={() => toast.info("Trash — coming soon")}
+          className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground"
+        >
+          <Trash2 className="size-3.5" />
+        </button>
+        <button
+          type="button"
+          title="Settings"
+          onClick={() => toast.info("Settings — coming soon")}
+          className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground"
+        >
+          <Settings className="size-3.5" />
+        </button>
+        <div className="flex-1" />
+        <span className="font-mono text-[10.5px] tabular-nums text-muted-foreground">
+          2.1 / 10 GB
+        </span>
+      </div>
     </aside>
   )
 }

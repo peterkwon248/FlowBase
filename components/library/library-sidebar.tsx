@@ -166,9 +166,9 @@ export function LibrarySidebar() {
 
       {/* 푸터 힌트 */}
       <div className="border-t border-border-subtle px-3.5 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
-        정의는 한 번,
+        Define once,
         <br />
-        사용은 어디서나.
+        use anywhere.
       </div>
     </aside>
   )
