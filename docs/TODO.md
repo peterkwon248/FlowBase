@@ -13,11 +13,17 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ---
 
-## P1 — 깊이/품질 (시급)
+## P1 — 깊이/품질 (시급) — 3건 완료
 
-- [ ] **컬럼 추가 (Sheet "+")** — addColumn 액션 + 드롭다운(basic types / Library Field 선택). 헤더 우클릭/... 메뉴(Promote/Delete/Attach function/Rename). 참고: `design-ref/prototype/add-column.jsx`
-- [ ] **Trash · Settings 실제 동작** — Trash: deletedBoards/deletedRows 트래킹 + 복원 UI. Settings: 모달(워크스페이스 이름·아바타·storage).
-- [ ] **시드 deep 영어화** — `flowbase-library-seed.ts` 모델명/처리방식/사업부 + 옵션 라벨 · `flowbase-workspace-seed.ts` 룰 잔여 · `flowbase-seed.ts` Customer Interviews 한국어 quote/name
+- [x] **컬럼 추가 (Sheet "+")** (2026-05-24 — `d911c06`)
+- [x] **Trash · Settings 실제 동작** (2026-05-24 — `a4935af`)
+- [x] **시드 deep 영어화** (2026-05-24 — `a7a1c77`)
+
+## P1 — 깊이/품질 (다음 시급)
+
+- [ ] **Schema ER 다이어그램** — 박스 + SVG 엣지. `design-ref/prototype/schema-er.jsx` 참고
+- [ ] **Automations 실행 엔진** — 룰 카드 발화. `rule-engine.jsx` + `automation-engine.jsx`
+- [ ] **Wiki 본문 편집** — Edit 버튼 → textarea 토글, updateWikiPage 액션 이미 존재
 
 ---
 
@@ -68,6 +74,9 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## 완료
 
+- [x] **시드 deep 영어화** (2026-05-24 — `a7a1c77`): Library Option Lists/Fields/Templates/Functions/Dashboards 한국어 자산명·옵션 모두 영어 + usedIn 키 표기 영어 · Workspace AUT-004/005 + SUG-002 한국어 잔여 영어화 · Interviews 10 시드 한국어 이름(transliteration)·인용 영어. Status 키(미처리/진행중/대기/완료)는 LOCK 한국어 enum 유지.
+- [x] **Trash · Settings 실제 동작** (2026-05-24 — `a4935af`): TrashedBoard·WorkspaceSettings 타입 · store v6→v7 migrate · deleteBoard 변경(trashedBoards로 push, 마지막 보드 보호) · restoreBoard/permanentDeleteBoard/emptyTrash/updateSettings · trash-dialog.tsx(Restore↺/Delete forever🗑/Empty trash) · settings-dialog.tsx(Workspace name/Initial/Storage stub) · status-bar에 trashedCount 배지 · board-header/board-sidebar 하드코딩 제거.
+- [x] **컬럼 추가/편집** (2026-05-24 — `d911c06`): addColumn/deleteColumn/renameColumn/updateColumn · "+"에 Basic 7 + Library Field 8 드롭다운 · 헤더 우측 "..." 메뉴 Rename(Dialog) + Delete(AlertDialog) · 헤더셀 정렬 + 메뉴 가로 결합.
 - [x] **셸 chrome 보정 — status bar · NavCluster · ⌘K 힌트** (2026-05-23 — `96ff20d`): 사용자 지적 5건 해결. `status-bar.tsx`(셸 푸터, hide-all 무관 always visible, Trash·Settings·2.1/10 GB) · `nav-cluster.tsx`(시계·‹·›) + store NavEntry/navStack/goBack/goForward/jumpToNavEntry · 사이드바 푸터·액티비티 바 Settings 제거 단일화 · 검색창 ⌘K Kbd + 검색창 클릭→팔레트 · PanelsMenu Korean→English. **앱 감사 보고서**: Sheet edit/⌘N/Filter/Kanban/Dashboard/Undo/AI fetch/Import 파서 모두 실작동 검증 완료.
 - [x] **Search 모드 + ⌘K 팔레트** (2026-05-23 — `3771bc8`): `lib/search-index.ts` (boards/library/wikiPages 평면 SearchItem + prefix>contains>subtitle>keywords 스코어 필터 + countByKind) · `components/search/search-palette.tsx` 640px 모달(↑↓/Enter/Esc 키 네비, kind 그룹) · `components/search/search-mode.tsx` 풀페이지(5탭 + 카운트 chips, 200 limit) · `useNavigateSearchItem` 훅(Row 검색 시 detailBar 자동 활성) · ⌘K 키 단축키 · `ComingSoonMode` 삭제. **앱 breadth P0 100% 도달.**
 - [x] **Wiki 모드** (2026-05-23 — `01a7ae7`): `WikiPage` 타입 + 6 페이지 시드(영어, Library guide/CS runbook/Keyboard shortcuts/New hire onboarding(draft)/Glossary/Team directory) + 미니 마크다운 렌더러(의존성 0, h1~h3·ul·ol·table·inline code·bold) + 카테고리 트리 사이드바(DRAFT 배지) + 페이지 상세(Owner·Verified pill·만료 배너·Re-verify·Mark as verified) + v5→v6 migrate

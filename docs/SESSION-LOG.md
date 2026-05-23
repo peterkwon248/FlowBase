@@ -4,6 +4,60 @@
 
 ---
 
+## 2026-05-24 (kkh94 머신, P1 깊이 일괄) — 컬럼 추가/편집 · Trash/Settings 실작동 · 시드 영어화
+
+### 완료
+- **컬럼 추가/편집** (`d911c06`) — Sheet의 가장 큰 갭 해소. 헤더 "+" 셀이 진짜 동작.
+  - store: `addColumn`(중복 이름 자동 _2/_3) · `deleteColumn`(id 보호, 행 키 제거) · `renameColumn`(키 migrate) · `updateColumn`.
+  - `add-column-menu.tsx` (신규) — Basic 7 type + Library Field 8 동적 노출.
+  - `column-header-menu.tsx` (신규) — 헤더 우측 "..." 메뉴. Rename(Dialog, key 보존) + Delete(AlertDialog 확인).
+  - `header-cell.tsx`/`sheet-view.tsx` — 정렬 버튼 + 헤더 메뉴 가로 조합 + "+" 셀 활성화.
+  - 브라우저 검증: 14→15 헤더, 새 "Number" 컬럼 정상 추가 ✓.
+- **Trash + Settings 실작동** (`a4935af`) — status bar 클릭 토스트 스텁 → 실 다이얼로그.
+  - types: `TrashedBoard` · `WorkspaceSettings`. store v6→v7 migrate.
+  - `deleteBoard` 변경: boards에서 빼고 trashedBoards에 push (복원 가능). 신규 액션: `restoreBoard` / `permanentDeleteBoard` / `emptyTrash` / `updateSettings`.
+  - `trash-dialog.tsx` (신규) — 삭제 보드 리스트, 항목별 Restore↺ / Delete forever🗑, Empty trash. relativeTime + empty state.
+  - `settings-dialog.tsx` (신규) — Workspace name input + Sidebar initial(1글자) + Storage 21% 프로그레스(stub).
+  - status-bar — Trash 버튼에 trashedCount 배지(primary dot). board-header / board-sidebar 하드코딩 "peter's workspace" → `settings.workspaceLabel`/`workspaceInitial`.
+  - 브라우저 검증: Settings 다이얼로그 렌더 ✓ (Workspace name input · Sidebar initial · Storage bar).
+- **시드 deep 영어화** (`a7a1c77`) — Library / Workspace / Interviews 시드 한국어 자산명/옵션/quote 모두 영어. Status 키는 LOCK 한국어 enum 유지.
+  - `flowbase-library-seed.ts`: 모델명/처리방식/사업부 → Model/Handling type/Business unit. 옵션 라벨 단순변심 등 → Buyer's remorse 등. usedIn "Tasks.모델명" → "Tasks.model".
+  - `flowbase-workspace-seed.ts`: AUT-004/005 한국어 잔여 + SUG-002 영어화. Status 디스플레이값 영어로(자동화 엔진 미구현이라 기능 영향 0).
+  - `flowbase-seed.ts`: 10 인터뷰 한국어 이름·인용 → 영어 (transliteration 유지: Min Jiho, Jo Hyunwoo 등).
+
+### 큰 결정
+- **컬럼 추가는 Library Field 단축 진입 포함** — Basic types 7 + Library Fields 8 한 드롭다운에. Library에 정의된 Field를 그냥 골라 추가 가능.
+- **renameColumn 라벨만 변경** — 키 보존이 기본. 행 데이터 안 깨짐. 키 변경은 store에 별도 path 있지만 UI는 라벨만.
+- **deleteColumn 액션은 Undo ❌** — 행 단위는 undoStack에 있지만 컬럼 변경은 미추적. AlertDialog로 confirm 명시.
+- **삭제된 보드는 Trash 보존, 마지막 보드 삭제 ❌** — `deleteBoard`가 boards에서 빼고 trashedBoards에 push. 마지막 보드는 보호. 복원 시 viewByBoardId 함께 복원.
+- **Status 키 영어화 ❌** — LOCK 한국어 enum 보존. Library Field 내부의 workflow status 옵션(수거접수/검수중)은 영어화 OK (이건 셀 옵션, TicketStatus 아님).
+
+### 검증
+- tsc 0 · vitest 15/15.
+- 브라우저:
+  - "+" 클릭 → 12 menuitem 노출 ✓
+  - "Number" 선택 → headers 14→15 ✓
+  - Settings 다이얼로그 모든 필드 렌더 ✓
+- localStorage v6→v7 migrate 시 trashedBoards/settings 자동 주입.
+
+### 다음
+- 컬럼 헤더 메뉴: Promote to Library / Attach function / Change type 인플레이스.
+- Trash: 행 단위 deletedRows · 30일 자동 만료.
+- Settings: 멤버/권한 탭 · 테마 프리셋 · 데이터 export.
+- 나머지 갭 (감사 보고서): Schema ER 다이어그램 · Automations 실행 엔진 · Wiki 본문 편집 · Gallery/Timeline view · Dashboard builder · Bulk edit · 다중 필드 Filter · 우클릭 메뉴 · Ask AI ⌘J.
+
+### Watch Out
+- **컬럼 변경 = undo 비대상** — addColumn/deleteColumn/renameColumn 모두 undoStack ❌. 사용자에게 명시(AlertDialog 메시지).
+- **Library Field가 select 타입일 때**: optionListId 참조라 옵션 라벨이 add-column-menu에서 직접 채워지지 않음. 현재는 빈 select로 추가됨. 향후 optionList 자체 inflation 필요.
+- **renameColumn 키 변경 path**: 현재 UI는 라벨만 호출 (newName === colName). 키 변경은 store 액션에 있지만 UI 진입점 ❌.
+- **Trash deletedAt 시간 만료 없음** — 영구 보관. 30일 만료 정책은 향후.
+- **Settings storage bar 21% 하드코딩** — 실제 회계 없음.
+
+### 머신
+kkh94. main 머지·푸시는 after-work 자동.
+
+---
+
 ## 2026-05-23 (kkh94 머신, 후속 #5) — 감사 + 셸 chrome 보정 (status bar · NavCluster · ⌘K 힌트)
 
 ### 완료

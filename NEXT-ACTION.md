@@ -1,73 +1,43 @@
 # NEXT-ACTION
 
 > 다음 세션 시작 시 이 파일부터 읽으세요.
-> 마지막 갱신: 2026-05-23 (kkh94 머신, 셸 chrome 보정 + 감사 완료)
+> 마지막 갱신: 2026-05-24 (kkh94 머신, P1 깊이 일괄 완료)
 
 ---
 
 ## 한 줄 요약
 
-**Breadth P0 100% + 셸 chrome 보정 완료. 다음은 깊이/품질 — 가장 시급한 갭: (1) 컬럼 추가/편집 (Sheet "+"가 죽어있음), (2) Trash/Settings 실제 동작, (3) 시드 deep 영어화.**
+**P1 깊이 3건 일괄 완료 — 컬럼 추가/편집 · Trash/Settings 실작동 · 시드 영어화. 다음은 감사 보고서의 큰 갭 — Schema ER · Automations 엔진 · Wiki 본문 편집.**
 
 ---
 
 ## ✅ 머지 완료
 
-- `origin/main` = `96ff20d` (셸 chrome 보정 포함).
-- 다른 머신에서 이어가기: `git fetch && git checkout main && git pull && npm install`.
+- 최신 작업: `a7a1c77` (seed 영어화) → `a4935af` (Trash/Settings) → `d911c06` (컬럼).
+- 다른 머신: `git fetch && git checkout main && git pull && npm install`.
 
 ---
 
-## 🎯 다음 작업 — 깊이/품질 P1
+## 🎯 다음 작업 — 감사 보고서 나머지 갭
 
-### 1. 컬럼 추가/편집 (Sheet)
-**현재**: 헤더에 "+" 셀이 보이지만 클릭해도 아무 일 안 일어남. `addColumn` 액션 자체가 store에 없음.
-**필요**:
-- store: `addColumn(boardId, col: ColumnDef)`, `updateColumn(boardId, name, patch)`, `deleteColumn(boardId, name)`, `renameColumn`
-- UI: "+" 클릭 → 드롭다운 (basic types · Library Field 선택 · Smart fill)
-- 컬럼 헤더 우클릭/`...` 메뉴: Promote to Library · Delete · Attach function · Rename
-- 참조: `design-ref/prototype/add-column.jsx` (`AddColumnButton`, `ColumnHeaderMenu`, `AttachFunctionPanel`, `SmartFillStep`)
+### 우선순위 높음
+1. **Schema ER 다이어그램** (`design-ref/prototype/schema-er.jsx`) — 현재 flat grid + 텍스트 관계 리스트. 위치 박스 + SVG 엣지로 교체. 드래그 ❌ 일단 정적 배치.
+2. **Automations 실행 엔진** (`rule-engine.jsx` + `automation-engine.jsx`) — 룰 카드 렌더만, 실제 데이터 변경 시 발화 ❌. middleware 또는 subscribe로 row 변경 감지 → 매치되는 rule 실행. play/pause/edit/delete 버튼도.
+3. **Wiki 본문 편집** — 현재 `<MarkdownBody source={...}/>` 읽기 전용. Edit 버튼 → textarea 토글. updateWikiPage 액션은 이미 있음.
 
-### 2. Trash · Settings 실제 동작
-**현재**: status-bar 클릭 시 `toast.info("... coming soon")`
-**Trash**: store에 `deletedBoards` / `deletedRows` 트래킹, 30일 만료 정책. Trash 클릭 → 풀페이지 또는 모달로 복원 UI.
-**Settings**: 모달. 첫 탭 = 워크스페이스 (이름·아바타·이론 storage). 향후 멤버/권한.
+### 우선순위 중간
+4. **컬럼 헤더 추가 기능**: Promote to Library · Attach function · Change type 인플레이스.
+5. **다중 필드 Filter 팝오버** (`view-controls.jsx` `FilterMenu`) — 현재 status chips만.
+6. **Bulk edit** (선택 행 값 일괄 설정) — 현재 Delete만.
+7. **Gallery view** (`view-grid.jsx`) — 카드 그리드.
+8. **Timeline view** (`view-timeline.jsx`) — Gantt/캘린더.
 
-### 3. 시드 deep 영어화
-- `flowbase-library-seed.ts` — 모델명/처리방식/사업부 카테고리 자산명 + 옵션 라벨 (M-PEN-III 같은 모델 코드는 유지, "단순변심" 같은 한국어 옵션은 영어로)
-- `flowbase-workspace-seed.ts` — 룰 잔여 한국어
-- `flowbase-seed.ts` (Customer Interviews) — 한국어 quote/name
-
----
-
-## 📋 그 외 갭 (감사 보고서 기반)
-
-### Sheet 영역
-- **다중 필드 Filter 팝오버** (`view-controls.jsx` `FilterMenu`) — 현재 status chips만.
-- **다중 키 Sort 메뉴** — 현재 헤더 클릭 단일 키.
-- **Bulk edit** (선택 행 값 일괄 설정) — 현재 Delete만.
-- **Save as Library template** — 컬럼 셋을 Library로 promote.
-- **우클릭 컨텍스트 메뉴** — 코드 전체 `onContextMenu` 0건.
-
-### Workspace
-- **Schema ER 다이어그램** — 위치 박스 + SVG 엣지 (현재 flat grid + 텍스트 관계 리스트). `schema-er.jsx` 참고.
-- **Automations 실행 엔진** — 룰 카드 렌더만, 데이터 변경 시 발화 ❌. `rule-engine.jsx` + `automation-engine.jsx` 포팅.
-
-### Library
-- **B3 인라인 편집** — rename · 옵션 색상/추가 · field config.
-- **Workspace 템플릿 → 보드 생성** (`workspace-templates.jsx` `LIB_WORKSPACES`).
-
-### Wiki
-- **본문 편집 모드** — 현재 `<MarkdownBody source={...}/>` 읽기 전용. textarea + Edit 버튼 + sanitize.
-- **사이드바 검색** — 현재 `<input disabled>`.
-
-### 뷰
-- **Gallery view** (`view-grid.jsx`) — 카드 그리드.
-- **Timeline view** (`view-timeline.jsx`) — Gantt/캘린더.
-- **Dashboard builder** — Line/Area/Stacked 차트 + "+ Add chart" 카탈로그.
-
-### 셸
-- **Ask AI ⌘J 톱바 버튼** — composer는 AI 패널 안에만.
+### 우선순위 낮음
+9. **Dashboard builder** — Line/Area/Stacked 차트 + "+ Add chart" 카탈로그.
+10. **우클릭 컨텍스트 메뉴** — 행 메뉴 (`context-menu.jsx`).
+11. **Ask AI ⌘J 톱바 버튼**.
+12. **Trash 깊이**: 행 단위 deletedRows · 30일 자동 만료.
+13. **Settings 깊이**: 멤버/권한 탭 · 테마 프리셋 · 데이터 export.
 
 ### B4 (가장 마지막, 사용자 명시)
 - 컬럼 ↔ Library 자산 링크
@@ -76,26 +46,41 @@
 
 ---
 
-## ✅ 이번 세션 추가 완료 (셸 chrome 보정 — `96ff20d`)
+## ✅ 이번 세션 완료 (P1 깊이 일괄 — `d911c06` · `a4935af` · `a7a1c77`)
 
-- **status-bar.tsx** (신규) — 셸 푸터, 모든 패널 상태 무관 always visible.
-- **nav-cluster.tsx** (신규) — 시계(history) · ‹ · ›.
-- store: `NavEntry` · `navStack` · `navIndex` + `goBack`/`goForward`/`jumpToNavEntry` 액션, 7개 navigation 액션이 자동 pushNav.
-- 사이드바 푸터 / 액티비티 바 Settings 제거 → status bar 단일화.
-- 검색창 ⌘K Kbd 힌트 + 검색창 클릭으로 팔레트 열기.
-- PanelsMenu Korean → English.
+### 컬럼 추가/편집
+- store: addColumn / deleteColumn / renameColumn / updateColumn.
+- `add-column-menu.tsx` — Basic 7 type + Library Field 8 동적 dropdown.
+- `column-header-menu.tsx` — Rename(Dialog) + Delete(AlertDialog).
+- `header-cell.tsx`/`sheet-view.tsx` — 정렬 + "..." 메뉴 + "+" 셀.
+
+### Trash · Settings
+- types: TrashedBoard · WorkspaceSettings. store v6→v7.
+- `deleteBoard` → trashedBoards로 push (복원 가능, 마지막 보드 보호).
+- 액션: restoreBoard · permanentDeleteBoard · emptyTrash · updateSettings.
+- `trash-dialog.tsx` — Restore↺ / Delete forever🗑 / Empty trash.
+- `settings-dialog.tsx` — Workspace name + Initial + Storage bar.
+- board-header / board-sidebar 하드코딩 → settings.workspaceLabel/Initial.
+
+### 시드 deep 영어화
+- Library: Option Lists/Fields/Templates/Functions/Dashboards 한국어 자산명·옵션·desc 모두 영어. usedIn 키 표기도 영어.
+- Workspace: AUT-004/005 잔여 한국어 + SUG-002 영어화.
+- Interviews: 10 시드 행 이름(transliteration: Min Jiho 등) + quote 영어.
+- Status 키 LOCK 한국어 enum 유지(미처리/진행중/대기/완료).
 
 ---
 
 ## 코드/디자인 컨벤션 (LOCK)
 
-- **Status 키 LOCK 한국어 + `STATUS_LABELS` 맵으로 디스플레이 영어** — `types/flowbase.ts`.
+- **Status 키 LOCK 한국어 + `STATUS_LABELS` 맵으로 디스플레이만 영어**.
 - **`selectAsset(category, id)` 원자 액션** — Library cross-category 클릭.
-- **셸 푸터 status bar 영구** — Trash/Settings는 패널 ❌, status bar에 (hide-all 시에도 접근).
-- **테스트 셀렉터 속성** — `data-asset-id`, `data-panel-id`, `data-workspace-item`, `data-page-id`, `data-search-tab`, `data-search-item-id`.
-- **시드 추가 시 store version bump + migrate** — v4→v5(Tasks), v5→v6(Wiki).
+- **셸 푸터 status bar 영구** — Trash/Settings는 패널 ❌.
+- **컬럼 변경 = undo 비대상** — UI에서 명시(AlertDialog 메시지).
+- **deleteBoard는 trashedBoards로 이동** — 진짜 삭제는 permanentDeleteBoard만.
+- **테스트 셀렉터 속성** — `data-asset-id`, `data-panel-id`, `data-workspace-item`, `data-page-id`, `data-search-tab`, `data-search-item-id`, `data-action`, `data-column-menu`, `data-trashed-board`.
+- **시드 추가 시 store version bump + migrate** — v4→v5(Tasks), v5→v6(Wiki), v6→v7(Trash/Settings).
 - **외부 lib 도입 신중** — Wiki 마크다운/Search 모두 의존성 0.
-- **NavStack는 ephemeral** — persist ❌, 다른 머신 history 혼란 방지.
+- **NavStack는 ephemeral** — persist ❌.
 
 ---
 
@@ -104,7 +89,7 @@
 | | |
 |---|---|
 | GitHub | https://github.com/peterkwon248/FlowBase (private) |
-| 기준 브랜치 | `main` (`origin/main = 96ff20d`) |
+| 기준 브랜치 | `main` |
 | 미리보기 | http://localhost:3000 (`npm run dev`) |
 | 패키지 매니저 | npm · 테스트 `npm test` 또는 `npx vitest run` |
 | 명령어 | `/before-work` · `/after-work` — `.claude/commands/` (git 추적) |

@@ -6,7 +6,12 @@
 
 ## Current Features (Completed — 최근 우선)
 
-1. **셸 chrome 보정 — status bar · NavCluster · ⌘K 힌트** (2026-05-23, `96ff20d`, **main 머지 완료**) —
+1. **P1 깊이 일괄 — 컬럼 추가/편집 + Trash/Settings + 시드 영어화** (2026-05-24, `d911c06`·`a4935af`·`a7a1c77`, **main 머지 완료**) —
+   - **컬럼 CRUD** (`components/sheet/{add-column-menu,column-header-menu}.tsx`) — 헤더 "+"가 진짜 동작. Basic 7 type + Library Field 8 통합 드롭다운. 컬럼 헤더 "..." 메뉴 Rename(Dialog, key 보존) + Delete(AlertDialog 확인).
+   - **Trash + Settings 실작동** (`components/board/{trash-dialog,settings-dialog}.tsx`) — status-bar 클릭 시 실 다이얼로그. Trash는 보드 복원/영구 삭제/empty. Settings는 워크스페이스 이름·initial 편집, 모든 화면 즉시 반영.
+   - **시드 deep 영어화** — Library/Workspace/Interviews 자산명·옵션·quote 모두 영어. Status 키만 LOCK 한국어 유지.
+
+2. **셸 chrome 보정 — status bar · NavCluster · ⌘K 힌트** (2026-05-23, `96ff20d`, **main 머지 완료**) —
    - **status bar** (`components/board/status-bar.tsx`) — 셸 푸터, **어떤 패널 상태에서도 항상 표시**. Trash · Settings · 2.1/10 GB. hide-all 시에도 접근 가능.
    - **NavCluster** (`components/board/nav-cluster.tsx`) — 시계 (history 드롭다운, 최근 20개) · ‹ Back · › Forward. store의 `navStack`/`navIndex` + `goBack`/`goForward`/`jumpToNavEntry`. 7개 navigation 액션이 자동 pushNav (dedup + cap 50).
    - **검색창 ⌘K Kbd 힌트** — 검색창이 ⌘K 팔레트 트리거.
