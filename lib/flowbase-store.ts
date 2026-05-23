@@ -8,6 +8,7 @@
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
 import type {
+  ActiveWorkspaceItem,
   ActivityMode,
   AIHistoryEntry,
   Board,
@@ -21,6 +22,10 @@ import type {
 } from "@/types/flowbase"
 import { createSeedLibrary } from "@/lib/flowbase-library-seed"
 import { createSeedBoard } from "@/lib/flowbase-seed"
+import {
+  SEED_AUTOMATIONS,
+  SEED_SUGGESTED_AUTOMATIONS,
+} from "@/lib/flowbase-workspace-seed"
 import { undoStack } from "@/lib/undo-stack"
 
 const STORE_KEY = "flowbase-state-v4"
@@ -78,6 +83,7 @@ export interface FlowBaseActions {
   setLibAsset: (id: string | null) => void
   setLibView: (v: "cards" | "sheet") => void
   selectAsset: (c: LibraryCategoryId, id: string) => void
+  setActiveWorkspaceItem: (item: ActiveWorkspaceItem) => void
   setSearch: (s: string) => void
   setFilter: (f: TicketStatus[]) => void
   setSort: (s: FlowBaseState["sort"]) => void
@@ -96,9 +102,12 @@ function createInitialState(): FlowBaseState {
     boards: { [seed.id]: seed },
     activeBoardId: seed.id,
     library: createSeedLibrary(),
+    automations: SEED_AUTOMATIONS,
+    suggestedAutomations: SEED_SUGGESTED_AUTOMATIONS,
     panels: { activityBar: true, sidebar: true, aiPanel: true },
     viewByBoardId: { [seed.id]: "sheet" },
     activityMode: "tables",
+    activeWorkspaceItem: "schema",
     libCategory: "optionLists",
     libAssetId: null,
     libView: "cards",
@@ -366,6 +375,8 @@ export const useFlowBase = create<FlowBaseStore>()(
             viewByBoardId: { ...s.viewByBoardId, [s.activeBoardId]: v },
           })),
         setActivityMode: (activityMode) => set({ activityMode }),
+        setActiveWorkspaceItem: (activeWorkspaceItem) =>
+          set({ activeWorkspaceItem }),
         setLibCategory: (libCategory) =>
           set({ libCategory, libAssetId: null }),
         setLibAsset: (libAssetId) => set({ libAssetId }),
@@ -393,9 +404,12 @@ export const useFlowBase = create<FlowBaseStore>()(
         boards: s.boards,
         activeBoardId: s.activeBoardId,
         library: s.library,
+        automations: s.automations,
+        suggestedAutomations: s.suggestedAutomations,
         panels: s.panels,
         viewByBoardId: s.viewByBoardId,
         activityMode: s.activityMode,
+        activeWorkspaceItem: s.activeWorkspaceItem,
         libCategory: s.libCategory,
         libAssetId: s.libAssetId,
         libView: s.libView,

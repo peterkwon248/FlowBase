@@ -182,6 +182,43 @@ export interface Library {
   dashboards: LibraryDashboard[]
 }
 
+// ─── Workspace — Automations ───
+// 출처: design-ref/prototype/automations.jsx
+
+export type ActiveWorkspaceItem = "schema" | "automations"
+
+export interface AutomationTrigger {
+  table?: string // "interviews", "tasks", "—" 등; "—"는 시간 기반
+  event: string  // 자유 텍스트로 트리거 설명
+  value: string
+}
+
+export interface AutomationStep {
+  action: string // "Add row to", "Notify", "Set", ...
+  target: string
+  detail?: string
+}
+
+export type AutomationStatus = "active" | "paused" | "draft"
+
+export interface AutomationRule {
+  id: string
+  name: string
+  when: AutomationTrigger
+  then: AutomationStep[]
+  status: AutomationStatus
+  aiSuggested?: boolean
+  runsThisWeek: number
+  lastRun: string
+}
+
+export interface SuggestedAutomation {
+  id: string
+  summary: string
+  detail: string
+  confidence: number // 0~1
+}
+
 // 보드 뷰 집합 — Tables 모드 안에서 전환. Schema는 Workspace 모드 소속이라 여기 없음.
 export type ViewMode = "sheet" | "kanban" | "chart" | "grid" | "timeline"
 
@@ -216,10 +253,15 @@ export interface FlowBaseState {
   // Library 자산 카탈로그 (persist)
   library: Library
 
+  // 워크스페이스 (persist)
+  automations: AutomationRule[]
+  suggestedAutomations: SuggestedAutomation[]
+
   // 전역 UI (persist)
   panels: PanelState
   viewByBoardId: Record<string, ViewMode>
   activityMode: ActivityMode
+  activeWorkspaceItem: ActiveWorkspaceItem
   libCategory: LibraryCategoryId
   libAssetId: string | null
   libView: "cards" | "sheet"
