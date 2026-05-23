@@ -15,7 +15,6 @@ import {
   Library,
   type LucideIcon,
   Search,
-  Settings,
 } from "lucide-react"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
@@ -63,15 +62,7 @@ export function ActivityBar() {
         )
       })}
       <div className="flex-1" />
-      {/* Settings — 준비 중 */}
-      <button
-        type="button"
-        title="Settings — 준비 중"
-        disabled
-        className="flex size-8 items-center justify-center rounded-md text-muted-foreground/40"
-      >
-        <Settings className="size-[18px]" strokeWidth={1.75} />
-      </button>
+      {/* Settings/Trash는 status-bar.tsx 셸 푸터로 단일화 (모든 패널 상태 무관 always visible) */}
     </nav>
   )
 }

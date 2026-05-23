@@ -253,6 +253,21 @@ export type ActivityMode =
   | "inbox"
   | "search"
 
+// 인메모리 nav-history 엔트리 — 헤더 시계/‹/› 버튼이 이 스택을 탐색.
+// 출처: design-ref/prototype/nav-history.jsx
+export interface NavEntry {
+  key: string // 동일 entry 연속 push 방지용
+  mode: ActivityMode
+  label: string
+  sub?: string
+  // 모드별 선택 스냅샷 (해당 모드 아니면 무시)
+  boardId?: string
+  workspaceItem?: ActiveWorkspaceItem
+  libCategory?: LibraryCategoryId
+  libAssetId?: string | null
+  wikiPageId?: string | null
+}
+
 export type SortDir = "asc" | "desc"
 
 export type SortState = { key: string; dir: SortDir } | null
@@ -300,4 +315,8 @@ export interface FlowBaseState {
   selectedRowIds: string[]
   focusedCell: CellCoord | null
   searchOpen: boolean // ⌘K 모달 visibility
+
+  // 인메모리 nav-history (persist ❌ — 세션 한정 ⏰‹›)
+  navStack: NavEntry[]
+  navIndex: number // 현재 entry의 navStack 인덱스 (-1 = 비어있음)
 }

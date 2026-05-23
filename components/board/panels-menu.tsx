@@ -30,7 +30,7 @@ export function PanelsMenu() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          title="패널"
+          title="Panels"
           className="flex size-7 items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:bg-foreground/[0.05]"
         >
           <Menu className="size-3.5" />
@@ -38,7 +38,7 @@ export function PanelsMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-52">
         <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
-          패널
+          Panels
         </DropdownMenuLabel>
         <DropdownMenuCheckboxItem
           data-panel-id="activityBar"
@@ -74,10 +74,10 @@ export function PanelsMenu() {
         </DropdownMenuCheckboxItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => showAllPanels()}>
-          패널 모두 표시
+          Show all panels
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => hideAllPanels()}>
-          패널 모두 숨김
+          Hide all panels
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

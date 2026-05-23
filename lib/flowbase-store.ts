@@ -15,6 +15,7 @@ import type {
   ColumnDef,
   FlowBaseState,
   LibraryCategoryId,
+  NavEntry,
   SortDir,
   TableRow,
   TicketStatus,
@@ -89,6 +90,11 @@ export interface FlowBaseActions {
   setActiveWorkspaceItem: (item: ActiveWorkspaceItem) => void
   setWikiPage: (id: string | null) => void
   updateWikiPage: (id: string, patch: Partial<WikiPage>) => void
+
+  // nav-history (인메모리)
+  goBack: () => void
+  goForward: () => void
+  jumpToNavEntry: (index: number) => void
   setSearch: (s: string) => void
   setFilter: (f: TicketStatus[]) => void
   setSort: (s: FlowBaseState["sort"]) => void
@@ -127,7 +133,87 @@ function createInitialState(): FlowBaseState {
     selectedRowIds: [],
     focusedCell: null,
     searchOpen: false,
+    navStack: [],
+    navIndex: -1,
   }
+}
+
+// 현재 store 상태에서 NavEntry를 만들어 돌려준다 (push 직전 호출).
+function snapshotNav(s: FlowBaseState): NavEntry {
+  const mode = s.activityMode
+  switch (mode) {
+    case "tables": {
+      const b = s.boards[s.activeBoardId]
+      return {
+        key: `tables:${s.activeBoardId}`,
+        mode,
+        label: b?.label ?? "Tables",
+        sub: b?.rows ? `${b.rows.length} rows` : undefined,
+        boardId: s.activeBoardId,
+      }
+    }
+    case "workspace": {
+      return {
+        key: `workspace:${s.activeWorkspaceItem}`,
+        mode,
+        label:
+          s.activeWorkspaceItem === "schema" ? "Schema" : "Automations",
+        sub: "Workspace",
+        workspaceItem: s.activeWorkspaceItem,
+      }
+    }
+    case "library": {
+      const cat = s.libCategory
+      const id = s.libAssetId
+      let assetName: string | undefined
+      if (id) {
+        const pool =
+          cat === "optionLists"
+            ? s.library.optionLists
+            : cat === "fields"
+              ? s.library.fields
+              : cat === "templates"
+                ? s.library.templates
+                : cat === "functions"
+                  ? s.library.functions
+                  : s.library.dashboards
+        const hit = (pool as { id: string; name: string }[]).find(
+          (a) => a.id === id,
+        )
+        assetName = hit?.name
+      }
+      return {
+        key: `library:${cat}:${id ?? "-"}`,
+        mode,
+        label: assetName ?? CATEGORY_LABEL[cat],
+        sub: assetName ? `Library · ${CATEGORY_LABEL[cat]}` : "Library",
+        libCategory: cat,
+        libAssetId: id,
+      }
+    }
+    case "wiki": {
+      const p = s.wikiPages.find((x) => x.id === s.wikiSelectedId)
+      return {
+        key: `wiki:${s.wikiSelectedId ?? "-"}`,
+        mode,
+        label: p?.title ?? "Wiki",
+        sub: p?.category ? `Wiki · ${p.category}` : "Wiki",
+        wikiPageId: s.wikiSelectedId,
+      }
+    }
+    case "inbox":
+      return { key: "inbox", mode, label: "Inbox" }
+    case "search":
+      return { key: "search", mode, label: "Search" }
+  }
+}
+
+const CATEGORY_LABEL: Record<LibraryCategoryId, string> = {
+  optionLists: "Option Lists",
+  fields: "Fields",
+  templates: "Templates",
+  functions: "Functions",
+  dashboards: "Dashboards",
 }
 
 export const useFlowBase = create<FlowBaseStore>()(
@@ -166,6 +252,34 @@ export const useFlowBase = create<FlowBaseStore>()(
         })
       }
 
+      // 네비 스택에 현재 상태 push. 같은 key 연속 push ❌. forward 분기 정리.
+      // applyEntry(replay 중)에서 호출하지 않도록 명시적으로 분리.
+      const pushNav = (): void => {
+        const s = get()
+        const entry = snapshotNav(s)
+        const top = s.navStack[s.navIndex]
+        if (top && top.key === entry.key) return // dedup
+        const base = s.navStack.slice(0, s.navIndex + 1)
+        const next = [...base, entry].slice(-50) // cap 50
+        set({ navStack: next, navIndex: next.length - 1 })
+      }
+
+      // entry를 받아 store 상태를 직접 set — pushNav 호출 ❌ (replay 모드).
+      const applyNavEntry = (entry: NavEntry): void => {
+        const patch: Partial<FlowBaseState> = { activityMode: entry.mode }
+        if (entry.mode === "tables" && entry.boardId) {
+          patch.activeBoardId = entry.boardId
+        } else if (entry.mode === "workspace" && entry.workspaceItem) {
+          patch.activeWorkspaceItem = entry.workspaceItem
+        } else if (entry.mode === "library" && entry.libCategory) {
+          patch.libCategory = entry.libCategory
+          patch.libAssetId = entry.libAssetId ?? null
+        } else if (entry.mode === "wiki") {
+          patch.wikiSelectedId = entry.wikiPageId ?? null
+        }
+        set(patch)
+      }
+
       return {
         ...createInitialState(),
 
@@ -180,6 +294,7 @@ export const useFlowBase = create<FlowBaseStore>()(
             selectedRowIds: [],
             focusedCell: null,
           })
+          pushNav()
         },
 
         createBoard: (label, columns, rows) => {
@@ -385,22 +500,59 @@ export const useFlowBase = create<FlowBaseStore>()(
           set((s) => ({
             viewByBoardId: { ...s.viewByBoardId, [s.activeBoardId]: v },
           })),
-        setActivityMode: (activityMode) => set({ activityMode }),
-        setActiveWorkspaceItem: (activeWorkspaceItem) =>
-          set({ activeWorkspaceItem }),
-        setWikiPage: (wikiSelectedId) => set({ wikiSelectedId }),
+        setActivityMode: (activityMode) => {
+          set({ activityMode })
+          pushNav()
+        },
+        setActiveWorkspaceItem: (activeWorkspaceItem) => {
+          set({ activeWorkspaceItem })
+          pushNav()
+        },
+        setWikiPage: (wikiSelectedId) => {
+          set({ wikiSelectedId })
+          pushNav()
+        },
         updateWikiPage: (id, patch) =>
           set((s) => ({
             wikiPages: s.wikiPages.map((p) =>
               p.id === id ? { ...p, ...patch } : p,
             ),
           })),
-        setLibCategory: (libCategory) =>
-          set({ libCategory, libAssetId: null }),
-        setLibAsset: (libAssetId) => set({ libAssetId }),
+        setLibCategory: (libCategory) => {
+          set({ libCategory, libAssetId: null })
+          pushNav()
+        },
+        setLibAsset: (libAssetId) => {
+          set({ libAssetId })
+          pushNav()
+        },
         setLibView: (libView) => set({ libView }),
-        selectAsset: (libCategory, libAssetId) =>
-          set({ libCategory, libAssetId }),
+        selectAsset: (libCategory, libAssetId) => {
+          set({ libCategory, libAssetId })
+          pushNav()
+        },
+
+        // nav-history — applyNavEntry는 set만 호출 (pushNav ❌, replay)
+        goBack: () => {
+          const s = get()
+          if (s.navIndex <= 0) return
+          const entry = s.navStack[s.navIndex - 1]
+          applyNavEntry(entry)
+          set({ navIndex: s.navIndex - 1 })
+        },
+        goForward: () => {
+          const s = get()
+          if (s.navIndex >= s.navStack.length - 1) return
+          const entry = s.navStack[s.navIndex + 1]
+          applyNavEntry(entry)
+          set({ navIndex: s.navIndex + 1 })
+        },
+        jumpToNavEntry: (index) => {
+          const s = get()
+          if (index < 0 || index >= s.navStack.length) return
+          applyNavEntry(s.navStack[index])
+          set({ navIndex: index })
+        },
         setSearch: (search) => set({ search }),
         setFilter: (filter) => set({ filter }),
         setSort: (sort) => set({ sort }),

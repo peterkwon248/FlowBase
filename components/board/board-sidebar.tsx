@@ -3,13 +3,12 @@
 // 출처: design-ref/prototype/prototype-shell.jsx InteractiveSidebar
 //
 // BOARDS 목록 — 전환(switchBoard) + 행 … 메뉴(이름 변경 인라인 / 삭제). Phase 6.
-// 푸터 — Trash · Settings + 스토리지 인디케이터(stub).
+// Trash/Settings/스토리지는 status-bar.tsx (셸 푸터, 항상 표시)로 이동.
 
 "use client"
 
 import { useState } from "react"
-import { MoreHorizontal, Plus, Settings, Trash2, Upload } from "lucide-react"
-import { toast } from "sonner"
+import { MoreHorizontal, Plus, Upload } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -168,30 +167,6 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
       </nav>
 
       <div className="flex-1" />
-
-      {/* 푸터 — Trash · Settings · 스토리지 */}
-      <div className="flex items-center gap-1 border-t border-border-subtle px-2.5 py-2">
-        <button
-          type="button"
-          title="Trash"
-          onClick={() => toast.info("Trash — coming soon")}
-          className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground"
-        >
-          <Trash2 className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          title="Settings"
-          onClick={() => toast.info("Settings — coming soon")}
-          className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground"
-        >
-          <Settings className="size-3.5" />
-        </button>
-        <div className="flex-1" />
-        <span className="font-mono text-[10.5px] tabular-nums text-muted-foreground">
-          2.1 / 10 GB
-        </span>
-      </div>
     </aside>
   )
 }

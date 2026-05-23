@@ -9,6 +9,7 @@
 import { useEffect, useState } from "react"
 import { ActivityBar } from "@/components/board/activity-bar"
 import { BoardHeader } from "@/components/board/board-header"
+import { StatusBar } from "@/components/board/status-bar"
 import { TablesMode } from "@/components/board/tables-mode"
 import { WorkspaceMode } from "@/components/board/workspace-mode"
 import { InboxView } from "@/components/inbox/inbox-view"
@@ -58,6 +59,7 @@ export default function Home() {
         ) : null}
       </div>
 
+      <StatusBar />
       <SearchPalette />
       <Toaster />
     </div>
