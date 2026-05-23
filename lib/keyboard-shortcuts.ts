@@ -38,6 +38,13 @@ export function useKeyboardShortcuts(): void {
         return
       }
 
+      // ⌘K — 검색 팔레트 열기 (편집 중에도 동작 — 셸 단축키)
+      if (mod && !e.shiftKey && e.key.toLowerCase() === "k") {
+        e.preventDefault()
+        useFlowBase.getState().setSearchOpen(true)
+        return
+      }
+
       // 패널 토글 — ⌘⇧A / ⌘⇧F / ⌘B (편집 중에도 동작 — 셸 단축키)
       if (mod && e.shiftKey && e.key.toLowerCase() === "a") {
         e.preventDefault()

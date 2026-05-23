@@ -299,4 +299,5 @@ export interface FlowBaseState {
   sort: SortState
   selectedRowIds: string[]
   focusedCell: CellCoord | null
+  searchOpen: boolean // ⌘K 모달 visibility
 }

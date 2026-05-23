@@ -9,11 +9,12 @@
 import { useEffect, useState } from "react"
 import { ActivityBar } from "@/components/board/activity-bar"
 import { BoardHeader } from "@/components/board/board-header"
-import { ComingSoonMode } from "@/components/board/coming-soon-mode"
 import { TablesMode } from "@/components/board/tables-mode"
 import { WorkspaceMode } from "@/components/board/workspace-mode"
 import { InboxView } from "@/components/inbox/inbox-view"
 import { LibraryMode } from "@/components/library/library-mode"
+import { SearchMode } from "@/components/search/search-mode"
+import { SearchPalette } from "@/components/search/search-palette"
 import { Toaster } from "@/components/ui/sonner"
 import { WikiMode } from "@/components/wiki/wiki-mode"
 import { useFlowBase } from "@/lib/flowbase-store"
@@ -52,11 +53,12 @@ export default function Home() {
           <WikiMode />
         ) : activityMode === "inbox" ? (
           <InboxView />
-        ) : (
-          <ComingSoonMode mode={activityMode} />
-        )}
+        ) : activityMode === "search" ? (
+          <SearchMode />
+        ) : null}
       </div>
 
+      <SearchPalette />
       <Toaster />
     </div>
   )

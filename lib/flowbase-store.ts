@@ -94,6 +94,7 @@ export interface FlowBaseActions {
   setSort: (s: FlowBaseState["sort"]) => void
   setSelected: (ids: string[]) => void
   setFocused: (cell: FlowBaseState["focusedCell"]) => void
+  setSearchOpen: (open: boolean) => void
   togglePanel: (k: keyof FlowBaseState["panels"]) => void
   showAllPanels: () => void
   hideAllPanels: () => void
@@ -125,6 +126,7 @@ function createInitialState(): FlowBaseState {
     sort: { key: "date", dir: "desc" },
     selectedRowIds: [],
     focusedCell: null,
+    searchOpen: false,
   }
 }
 
@@ -404,6 +406,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         setSort: (sort) => set({ sort }),
         setSelected: (selectedRowIds) => set({ selectedRowIds }),
         setFocused: (focusedCell) => set({ focusedCell }),
+        setSearchOpen: (searchOpen) => set({ searchOpen }),
         togglePanel: (k) =>
           set((s) => ({ panels: { ...s.panels, [k]: !s.panels[k] } })),
         showAllPanels: () =>
