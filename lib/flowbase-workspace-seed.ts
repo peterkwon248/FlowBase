@@ -59,14 +59,14 @@ export const SEED_AUTOMATIONS: AutomationRule[] = [
   },
   {
     id: "AUT-004",
-    name: "Overdue task → 대기",
+    name: "Overdue task → Waiting",
     when: {
       table: "tasks",
       event: "due date passes and status is",
-      value: "진행중",
+      value: "In progress",
     },
     then: [
-      { action: "Set status", target: "tasks", detail: "대기" },
+      { action: "Set status", target: "tasks", detail: "Waiting" },
       { action: "Notify", target: "{assignee}" },
     ],
     status: "paused",
@@ -78,7 +78,7 @@ export const SEED_AUTOMATIONS: AutomationRule[] = [
     name: "Archive completed after 30 days",
     when: {
       table: "interviews",
-      event: "status=완료 for",
+      event: "status=Done for",
       value: "30 days",
     },
     then: [{ action: "Archive row", target: "interviews" }],
@@ -98,9 +98,9 @@ export const SEED_SUGGESTED_AUTOMATIONS: SuggestedAutomation[] = [
   },
   {
     id: "SUG-002",
-    summary: "Auto-flag tasks stuck in 진행중 14+ days",
+    summary: "Auto-flag tasks stuck in In progress 14+ days",
     detail:
-      "3 tasks have been in 진행중 for over 2 weeks. Move them to 대기 with a comment summarizing what's blocking?",
+      "3 tasks have been in In progress for over 2 weeks. Move them to Waiting with a comment summarizing what's blocking?",
     confidence: 0.73,
   },
   {
