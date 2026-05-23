@@ -6,10 +6,9 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## P0 (즉시 — breadth 마무리)
 
-- [ ] **Wiki 모드** — 현재 `ComingSoonMode` 스텁. 프로토타입 `design-ref/prototype/wiki-view.jsx` 참조
-- [ ] **Search 팔레트 (⌘K)** — 스텁. 프로토타입 `search-palette.jsx` 참조
+- [ ] **Search 팔레트 (⌘K)** — 스텁. 프로토타입 `search-palette.jsx` 참조. 보드·행·자산·Wiki 페이지 통합 검색.
 
-> **앱 breadth 진행** (2026-05-23): Tables✅ · Workspace(Schema·Automations)✅ · Library(B1·B2 읽기 전용)✅ · Inbox✅ · Detail bar✅ · Wiki⬜ · Search⬜.
+> **앱 breadth 진행** (2026-05-23, Wiki 마무리): Tables✅ · Workspace(Schema·Automations)✅ · Library(B1·B2 읽기 전용)✅ · Inbox✅ · Detail bar✅ · Wiki✅ · Search⬜.
 > 사용자 명시 우선순위: "목업 퀄리티와 기능들을 완벽하게." Breadth 완성이 깊이(B3/B4)보다 먼저.
 
 ---
@@ -61,6 +60,7 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## 완료
 
+- [x] **Wiki 모드** (2026-05-23 — `01a7ae7`): `WikiPage` 타입 + 6 페이지 시드(영어, Library guide/CS runbook/Keyboard shortcuts/New hire onboarding(draft)/Glossary/Team directory) + 미니 마크다운 렌더러(의존성 0, h1~h3·ul·ol·table·inline code·bold) + 카테고리 트리 사이드바(DRAFT 배지) + 페이지 상세(Owner·Verified pill·만료 배너·Re-verify·Mark as verified) + v5→v6 migrate
 - [x] **English UI + Trash/Settings + Tasks 보드** (2026-05-23 — `605b9f3`): UI chrome 17+ 파일 영어화 · `STATUS_LABELS` 맵 · 사이드바 푸터(Trash·Settings·2.1/10 GB) · Tasks 시드(store v4→v5 migrate)
 - [x] **Detail bar (4번째 패널)** (2026-05-23 — `f3feae2`): `PanelState.detailBar` · DetailBar 컴포넌트 · ⌘I 단축키 · TablesMode 통합
 - [x] **Inbox 모드** (2026-05-23 — `620dadb`): 워크스페이스 상태 파생 6 kind + 필터 chips + 액션 네비

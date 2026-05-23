@@ -4,6 +4,42 @@
 
 ---
 
+## 2026-05-23 (kkh94 머신, 후속 #3) — Wiki 모드
+
+### 완료
+- **Wiki 모드** (`01a7ae7`) — breadth P0 마지막에서 두 번째 항목 마무리.
+  - `types/flowbase.ts` — `WikiPage` 인터페이스 + `FlowBaseState.wikiPages` · `wikiSelectedId` 추가.
+  - `lib/flowbase-wiki-seed.ts` — 6 페이지 시드 (Library guide · CS case handling · Keyboard shortcuts · New hire onboarding(draft) · Glossary · Team directory). 콘텐츠는 영어화(시드 deep 번역 P1 정책과 일관).
+  - `lib/flowbase-store.ts` — `setWikiPage` · `updateWikiPage` 액션, **v5→v6 migrate** (기존 persisted state에 wikiPages 비어 있으면 시드 주입), partialize 갱신.
+  - `components/wiki/markdown-body.tsx` — 의존성 0인 미니 마크다운 렌더러 (h1~h3 · ul · ol · table · inline `code` · `**bold**`). 외부 lib ❌.
+  - `components/wiki/wiki-sidebar.tsx` — 카테고리 트리 + DRAFT 배지(unverified) + 활성 페이지 좌측 바 강조. `data-page-id` 셀렉터.
+  - `components/wiki/wiki-page.tsx` — 제목 · 브레드크럼 · Owner 아바타 · Verified pill(만료 시 빨간 배너 + Re-verify) · Mark as verified(unverified만).
+  - `components/wiki/wiki-mode.tsx` — 셸 ([사이드바 | 페이지]).
+  - `app/page.tsx` — activityMode === "wiki" → `WikiMode`.
+  - `components/board/coming-soon-mode.tsx` — wiki/library/inbox INFO 항목 제거. 이제 Search 모드만 스텁.
+
+### 큰 결정
+- **외부 마크다운 라이브러리 ❌** — `react-markdown`/`remark`-류 도입 대신 시드 마크다운 범위에 맞춘 미니 렌더러를 직접 작성. 의존성 무게 회피 · 시드/사용자 입력이 모두 워크스페이스 내부라 sanitize 단순.
+- **Wiki 시드는 영어로** — 사용자 명시 "영어버전" 정책과 시드 deep 번역 P1 일관. Library 시드(`flowbase-library-seed.ts`)의 한국어 잔존은 별도 패스로.
+- **store version v5 → v6 (migrate)** — 기존 persisted state에 `wikiPages`가 없거나 비어 있으면 자동 주입. Tasks 보드 v4→v5 패턴 답습.
+
+### 검증
+- `npx tsc --noEmit` 0 · `npm run build` 0 (정적 6/6) · `vitest run` 15/15.
+- 브라우저: Wiki 모드 진입 → 사이드바 5 카테고리(Concepts/Onboarding/Reference/Runbooks/Team) · 페이지 6개 · DRAFT 배지 · 활성 페이지 강조 · 마크다운 헤딩/리스트/inline code/bold/테이블 모두 렌더 · 페이지 전환 · "Mark as verified" 클릭 시 DRAFT 배지 사라지고 Verified · 90d left pill로 전환 (Re-verify TTL=90d).
+
+### 다음
+**Breadth 마지막**: Search 팔레트(⌘K) 만 남음 — `design-ref/prototype/search-palette.jsx` 참조. 이후 시드 deep 영어화 · B3 Library 편집 · 반응형 fix · B4 테이블 연동(가장 마지막).
+
+### Watch Out
+- **`react-markdown` 미사용** — 시드 마크다운 문법만 지원. 사용자가 wiki 페이지 편집 UI를 만들 때 입력 sanitize는 부재(현재는 시드만이라 OK).
+- **`wikiPages` partialize 포함** — Wiki 페이지 편집은 localStorage에 즉시 반영.
+- **dev server 충돌** — 이번 검증 중 `npm run dev`가 이미 :3000에 떠 있어 새 백그라운드 시작 실패 → 기존 서버 재사용으로 해결. 다음 세션에서도 dev 떠 있으면 preview MCP가 reuse한다.
+
+### 머신
+kkh94. main 머지·push는 이번 세션 마무리 시 무조건 진행 (after-work step 8 정책).
+
+---
+
 ## 2026-05-23 (kkh94 머신, 이어서) — Phase B Library B1·B2 · Workspace Automations · Inbox · Detail bar · English UI · Tasks 보드
 
 ### 마무리 — 모든 작업 main 머지·푸시 완료
