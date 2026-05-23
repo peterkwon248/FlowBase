@@ -4,12 +4,11 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ---
 
-## P0 (즉시 — breadth 마무리)
+## P0 (완료 — breadth 100%)
 
-- [ ] **Search 팔레트 (⌘K)** — 스텁. 프로토타입 `search-palette.jsx` 참조. 보드·행·자산·Wiki 페이지 통합 검색.
-
-> **앱 breadth 진행** (2026-05-23, Wiki 마무리): Tables✅ · Workspace(Schema·Automations)✅ · Library(B1·B2 읽기 전용)✅ · Inbox✅ · Detail bar✅ · Wiki✅ · Search⬜.
-> 사용자 명시 우선순위: "목업 퀄리티와 기능들을 완벽하게." Breadth 완성이 깊이(B3/B4)보다 먼저.
+> 🎯 **앱 breadth P0 100% 도달** (2026-05-23, Search 마무리): Tables✅ · Workspace(Schema·Automations)✅ · Library(B1·B2 읽기 전용)✅ · Inbox✅ · Detail bar✅ · Wiki✅ · Search✅.
+>
+> 다음 단계는 **깊이/품질** — 시드 영어화 · B3 · 반응형 · AI 실호출.
 
 ---
 
@@ -60,6 +59,7 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## 완료
 
+- [x] **Search 모드 + ⌘K 팔레트** (2026-05-23 — `3771bc8`): `lib/search-index.ts` (boards/library/wikiPages 평면 SearchItem + prefix>contains>subtitle>keywords 스코어 필터 + countByKind) · `components/search/search-palette.tsx` 640px 모달(↑↓/Enter/Esc 키 네비, kind 그룹) · `components/search/search-mode.tsx` 풀페이지(5탭 + 카운트 chips, 200 limit) · `useNavigateSearchItem` 훅(Row 검색 시 detailBar 자동 활성) · ⌘K 키 단축키 · `ComingSoonMode` 삭제. **앱 breadth P0 100% 도달.**
 - [x] **Wiki 모드** (2026-05-23 — `01a7ae7`): `WikiPage` 타입 + 6 페이지 시드(영어, Library guide/CS runbook/Keyboard shortcuts/New hire onboarding(draft)/Glossary/Team directory) + 미니 마크다운 렌더러(의존성 0, h1~h3·ul·ol·table·inline code·bold) + 카테고리 트리 사이드바(DRAFT 배지) + 페이지 상세(Owner·Verified pill·만료 배너·Re-verify·Mark as verified) + v5→v6 migrate
 - [x] **English UI + Trash/Settings + Tasks 보드** (2026-05-23 — `605b9f3`): UI chrome 17+ 파일 영어화 · `STATUS_LABELS` 맵 · 사이드바 푸터(Trash·Settings·2.1/10 GB) · Tasks 시드(store v4→v5 migrate)
 - [x] **Detail bar (4번째 패널)** (2026-05-23 — `f3feae2`): `PanelState.detailBar` · DetailBar 컴포넌트 · ⌘I 단축키 · TablesMode 통합

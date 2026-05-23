@@ -4,6 +4,49 @@
 
 ---
 
+## 2026-05-23 (kkh94 머신, 후속 #4) — Search 모드 + ⌘K 팔레트 → breadth P0 100%
+
+### 완료
+- **Search** (`3771bc8`) — breadth P0 마지막 항목 마무리. **앱 breadth 100% 도달**.
+  - `lib/search-index.ts` — `SearchItem` 평면화(table/row/library/wiki) + `filterSearch`(prefix>contains>subtitle>keywords 스코어) + `countByKind`. 인덱스는 호출자가 useMemo로 캐시.
+  - `components/search/search-helpers.tsx` — 공통 `KindBadge`(lucide Database/Rows3/Sparkles/BookText) · `HighlightMatch` · `useNavigateSearchItem` 훅. Row 클릭 시 `switchBoard` + `setActivityMode("tables")` + `setSelected([rowId])` + 디테일 바 자동 열림.
+  - `components/search/search-palette.tsx` — 640px 모달 (`fixed inset-0 z-50` + blur). store.searchOpen으로 visibility. ↑↓/Enter/Esc 키 네비, kind 그룹 헤더, 결과 카운트 푸터, `data-search-item-id` 셀렉터.
+  - `components/search/search-mode.tsx` — activityMode=== "search" 풀페이지. 큰 input + 5탭(All/Tables/Rows/Library/Wiki, 카운트 chips) + 평탄 리스트 200 limit. `data-search-tab` 셀렉터.
+  - `types/flowbase.ts` — `FlowBaseState.searchOpen` (ephemeral, 비-persist).
+  - `lib/flowbase-store.ts` — `setSearchOpen` 액션.
+  - `lib/keyboard-shortcuts.ts` — `⌘K` → `setSearchOpen(true)`. 편집 중에도 동작.
+  - `app/page.tsx` — `activityMode === "search"` → `SearchMode`. `<SearchPalette />`는 항상 마운트.
+  - **삭제**: `components/board/coming-soon-mode.tsx` — 마지막 사용자(search 스텁)가 실 구현으로 대체.
+
+### 큰 결정
+- **두 진입점, 공통 인덱스/필터** — ⌘K 모달(가벼운 인터럽트 검색)과 풀페이지 모드(긴 세션 탐색)가 같은 `buildSearchIndex` + `filterSearch`로 일관성. UI만 다름.
+- **모달은 항상 마운트, store가 visibility 제어** — `if (!open) return null`로 빠른 unmount. ⌘K 단축키는 store 액션만 호출 → 셸/모달 결합도 낮음.
+- **Row 검색 액션은 detailBar 자동 활성화** — 행을 찾아 클릭한 의도가 명확하므로, 닫혀 있던 디테일 바도 함께 열어 즉시 행 컨텍스트 노출.
+- **외부 lib 미사용** — cmdk(shadcn command)는 그루핑/스코어 정책이 우리 요구와 다름. fixed div + 키 핸들러로 직접 작성 (Wiki 마크다운 렌더러와 같은 정책).
+
+### 검증
+- `npx tsc --noEmit` 0 · `npm run build` 0(정적 6/6) · `vitest run` 15/15.
+- 브라우저: ⌘K 입력 → 모달 출현 · input 자동 포커스 · "lib" → LIBRARY+ROWS 21 결과 · "glossary" → WIKI 1결과 + 매치 하이라이트 · Enter → Wiki Glossary 페이지 모드로 전환 + 사이드바 selection 동기화 · Search 풀페이지 탭 카운트(All 44 / Tables 2 / Rows 18 / Library 18 / Wiki 6) 합산 정확 · Wiki 탭 필터링 6개만.
+
+### 다음
+**Breadth 100% — 다음은 깊이/품질 작업**:
+- 시드 deep 영어화 (`flowbase-library-seed.ts` 한국어 자산명·옵션 라벨 + `flowbase-workspace-seed.ts` 룰 잔여 + Customer Interviews 시드)
+- B3 Library 인라인 편집
+- 반응형 fix (~800px)
+- AI 실호출 검증 (`ANTHROPIC_API_KEY`)
+- Wiki 페이지 편집 UI + sanitize
+- B4 (가장 마지막, 사용자 명시) — 컬럼↔Library 자산 링크 · "Use in table" · 템플릿으로 보드 생성
+
+### Watch Out
+- **`buildSearchIndex` 호출 시점** — 모달은 open 시 매번 재인덱싱(`useMemo` deps에 `open` 포함). 모드는 데이터 자체에 deps 묶음. 데이터 폭증 시 worker 분리 후보.
+- **모달은 mount-always 패턴** — `if (!open) return null`로 unmount하지만 store 구독은 유지. 무거워지면 SSR `'use client'` 경계 살펴볼 것.
+- **Search 모드 input 자동 포커스** — `useEffect(() => inputRef.current?.focus(), [])`. mode 재진입 시에도 매번 포커스.
+
+### 머신
+kkh94. main 머지 진행 — after-work step 8 무조건 정책.
+
+---
+
 ## 2026-05-23 (kkh94 머신, 후속 #3) — Wiki 모드
 
 ### 완료

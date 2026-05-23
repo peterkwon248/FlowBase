@@ -6,7 +6,14 @@
 
 ## Current Features (Completed — 최근 우선)
 
-1. **Wiki 모드** (2026-05-23, `01a7ae7`, **main 머지 완료**) —
+1. **Search 모드 + ⌘K 팔레트** (2026-05-23, `3771bc8`, **main 머지 완료**) —
+   - `lib/search-index.ts` + `components/search/*` — Tables · Rows · Library · Wiki를 평면 인덱스로 묶고 스코어 정렬.
+   - **⌘K 팔레트** — 640px 모달, blur backdrop, kind별 그룹 결과, ↑↓/Enter/Esc 키 네비, 매치 하이라이트.
+   - **풀페이지 Search 모드** — activityMode "search"에서 5탭(All/Tables/Rows/Library/Wiki) + 카운트 chips + 평탄 리스트.
+   - Row 결과 클릭 시 자동으로 detailBar 열림. Wiki/Library 결과 클릭 시 해당 모드 + 선택 동기화.
+   - 앱 breadth P0 100% 도달 — Tables · Workspace · Library · Inbox · Detail bar · English UI · Tasks · Wiki · Search.
+
+2. **Wiki 모드** (2026-05-23, `01a7ae7`, **main 머지 완료**) —
    - `components/wiki/*` + `lib/flowbase-wiki-seed.ts` — 6 시드 페이지(영어, Concepts/Onboarding/Reference/Runbooks/Team).
    - 사이드바 카테고리 트리 + DRAFT 배지(unverified) + 활성 페이지 강조.
    - 페이지 상세: 제목 · Owner 아바타 · Verified pill(만료 시 Re-verify 배너) · Mark as verified(unverified) · 의존성 0인 미니 마크다운 본문(h1~h3·ul·ol·table·inline code·bold).
