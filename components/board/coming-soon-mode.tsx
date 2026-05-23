@@ -1,29 +1,14 @@
 // FlowBase V2 — 미구현 액티비티 모드 플레이스홀더
-// Library/Wiki/Inbox/Search — 셸이 해당 모드에서 이 컴포넌트를 렌더.
+// 현재는 Search 모드만 스텁. Library/Wiki/Inbox는 각자 구현됨.
 
 "use client"
 
-import { BookText, Inbox, Library, type LucideIcon, Search } from "lucide-react"
+import { type LucideIcon, Search } from "lucide-react"
 import type { ActivityMode } from "@/types/flowbase"
 
 const INFO: Partial<
   Record<ActivityMode, { label: string; Icon: LucideIcon; desc: string }>
 > = {
-  library: {
-    label: "Library",
-    Icon: Library,
-    desc: "Define option lists, fields, templates, functions, and dashboards once and reuse them across every board.",
-  },
-  wiki: {
-    label: "Wiki",
-    Icon: BookText,
-    desc: "Organize workspace docs and notes as pages.",
-  },
-  inbox: {
-    label: "Inbox",
-    Icon: Inbox,
-    desc: "AI suggestions and alerts that need attention, all in one place.",
-  },
   search: {
     label: "Search",
     Icon: Search,

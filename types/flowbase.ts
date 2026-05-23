@@ -189,6 +189,21 @@ export interface Library {
   dashboards: LibraryDashboard[]
 }
 
+// ─── Wiki — long-form 지식 문서 ───
+// 출처: design-ref/prototype/wiki-view.jsx SEED_PAGES
+
+export interface WikiPage {
+  id: string
+  title: string
+  category: string // "Concepts" | "Runbooks" | "Reference" | "Onboarding" | "Team" | ...
+  owner: string
+  verified: boolean
+  verifiedAt: string | null // ISO date (YYYY-MM-DD)
+  expiresAt: string | null  // ISO date — 만료 시 재검증 필요
+  updatedAt: string         // ISO date
+  body: string              // Markdown 원문
+}
+
 // ─── Workspace — Automations ───
 // 출처: design-ref/prototype/automations.jsx
 
@@ -264,6 +279,10 @@ export interface FlowBaseState {
   // 워크스페이스 (persist)
   automations: AutomationRule[]
   suggestedAutomations: SuggestedAutomation[]
+
+  // Wiki (persist)
+  wikiPages: WikiPage[]
+  wikiSelectedId: string | null
 
   // 전역 UI (persist)
   panels: PanelState

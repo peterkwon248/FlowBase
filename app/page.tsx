@@ -15,6 +15,7 @@ import { WorkspaceMode } from "@/components/board/workspace-mode"
 import { InboxView } from "@/components/inbox/inbox-view"
 import { LibraryMode } from "@/components/library/library-mode"
 import { Toaster } from "@/components/ui/sonner"
+import { WikiMode } from "@/components/wiki/wiki-mode"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { useKeyboardShortcuts } from "@/lib/keyboard-shortcuts"
 
@@ -47,6 +48,8 @@ export default function Home() {
           <WorkspaceMode />
         ) : activityMode === "library" ? (
           <LibraryMode />
+        ) : activityMode === "wiki" ? (
+          <WikiMode />
         ) : activityMode === "inbox" ? (
           <InboxView />
         ) : (

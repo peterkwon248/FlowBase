@@ -19,10 +19,12 @@ import type {
   TableRow,
   TicketStatus,
   ViewMode,
+  WikiPage,
 } from "@/types/flowbase"
 import { createSeedLibrary } from "@/lib/flowbase-library-seed"
 import { createSeedBoard } from "@/lib/flowbase-seed"
 import { createSeedTasksBoard } from "@/lib/flowbase-tasks-seed"
+import { createSeedWikiPages } from "@/lib/flowbase-wiki-seed"
 import {
   SEED_AUTOMATIONS,
   SEED_SUGGESTED_AUTOMATIONS,
@@ -30,7 +32,7 @@ import {
 import { undoStack } from "@/lib/undo-stack"
 
 const STORE_KEY = "flowbase-state-v4"
-const STORE_VERSION = 5 // v5: Tasks 보드 시드 추가
+const STORE_VERSION = 6 // v6: Wiki 페이지 시드 추가
 
 function nowIso(): string {
   return new Date().toISOString()
@@ -85,6 +87,8 @@ export interface FlowBaseActions {
   setLibView: (v: "cards" | "sheet") => void
   selectAsset: (c: LibraryCategoryId, id: string) => void
   setActiveWorkspaceItem: (item: ActiveWorkspaceItem) => void
+  setWikiPage: (id: string | null) => void
+  updateWikiPage: (id: string, patch: Partial<WikiPage>) => void
   setSearch: (s: string) => void
   setFilter: (f: TicketStatus[]) => void
   setSort: (s: FlowBaseState["sort"]) => void
@@ -100,12 +104,15 @@ export type FlowBaseStore = FlowBaseState & FlowBaseActions
 function createInitialState(): FlowBaseState {
   const interviews = createSeedBoard()
   const tasks = createSeedTasksBoard()
+  const wikiPages = createSeedWikiPages()
   return {
     boards: { [interviews.id]: interviews, [tasks.id]: tasks },
     activeBoardId: interviews.id,
     library: createSeedLibrary(),
     automations: SEED_AUTOMATIONS,
     suggestedAutomations: SEED_SUGGESTED_AUTOMATIONS,
+    wikiPages,
+    wikiSelectedId: wikiPages[0]?.id ?? null,
     panels: { activityBar: true, sidebar: true, aiPanel: true, detailBar: false },
     viewByBoardId: { [interviews.id]: "sheet", [tasks.id]: "sheet" },
     activityMode: "tables",
@@ -379,6 +386,13 @@ export const useFlowBase = create<FlowBaseStore>()(
         setActivityMode: (activityMode) => set({ activityMode }),
         setActiveWorkspaceItem: (activeWorkspaceItem) =>
           set({ activeWorkspaceItem }),
+        setWikiPage: (wikiSelectedId) => set({ wikiSelectedId }),
+        updateWikiPage: (id, patch) =>
+          set((s) => ({
+            wikiPages: s.wikiPages.map((p) =>
+              p.id === id ? { ...p, ...patch } : p,
+            ),
+          })),
         setLibCategory: (libCategory) =>
           set({ libCategory, libAssetId: null }),
         setLibAsset: (libAssetId) => set({ libAssetId }),
@@ -416,7 +430,9 @@ export const useFlowBase = create<FlowBaseStore>()(
       name: STORE_KEY,
       version: STORE_VERSION,
       storage: createJSONStorage(() => localStorage),
-      // v4 → v5: 기존 persisted state에 Tasks 보드가 없으면 주입.
+      // 마이그레이션 — 기존 persisted state에 새 시드/필드 주입.
+      //   v4 → v5: Tasks 보드 시드
+      //   v5 → v6: Wiki 페이지 시드
       migrate: (persistedState, version) => {
         const s = (persistedState ?? {}) as Partial<FlowBaseState>
         if (version < 5) {
@@ -430,6 +446,17 @@ export const useFlowBase = create<FlowBaseStore>()(
             }
           }
         }
+        if (version < 6) {
+          // Wiki 시드: 페이지가 없거나 비어 있으면 주입.
+          const existing = (s.wikiPages ?? []) as WikiPage[]
+          if (existing.length === 0) {
+            const pages = createSeedWikiPages()
+            s.wikiPages = pages
+            s.wikiSelectedId = pages[0]?.id ?? null
+          } else if (s.wikiSelectedId === undefined) {
+            s.wikiSelectedId = existing[0]?.id ?? null
+          }
+        }
         return s as FlowBaseState
       },
       partialize: (s) => ({
@@ -438,6 +465,8 @@ export const useFlowBase = create<FlowBaseStore>()(
         library: s.library,
         automations: s.automations,
         suggestedAutomations: s.suggestedAutomations,
+        wikiPages: s.wikiPages,
+        wikiSelectedId: s.wikiSelectedId,
         panels: s.panels,
         viewByBoardId: s.viewByBoardId,
         activityMode: s.activityMode,
