@@ -4,6 +4,49 @@
 
 ---
 
+## 2026-05-23 (kkh94 머신, 후속 #5) — 감사 + 셸 chrome 보정 (status bar · NavCluster · ⌘K 힌트)
+
+### 완료
+- **앱 감사** — 프로토타입 vs 앱 매핑 + 실작동 검증 (Sheet edit/⌘N/Filter/Kanban/Dashboard/Undo/AI fetch/Import 파서). 결론: 핵심 데이터 흐름은 실제 wiring, 빠진 건 편집/관리 흐름 다수.
+  - **진짜 작동 (검증함)**: ⌘N(11→12 row 카운트), Filter(11→2 visible), AI Apply all(POST `/api/ai/infer-batch` 500 + graceful toast), CSV 파서("4열·3행" 감지), Kanban 4컬럼 그룹, Dashboard 실집계, ⌘Z Undo(stack pop), ⌘K Search.
+  - **의도적 스텁**: Trash/Settings(toast), 2.1/10 GB(하드코딩), activity-bar Settings(`disabled`), Wiki 사이드바 검색(`<input disabled>`), Library asset edit(B3 미구현).
+  - **프로토타입 누락**: 컬럼 추가(+) · 헤더 메뉴 · 다중 필드 Filter · ER 다이어그램 · Automations 실행 엔진 · Wiki 본문 편집 · Gallery/Timeline view · Dashboard builder · 우클릭 메뉴 · nav-history(← 이번 세션에 해결) · Ask AI ⌘J.
+- **셸 chrome 보정** (`96ff20d`) — 사용자 지적 5건 해결:
+  - `components/board/status-bar.tsx` (신규) — 셸 푸터, hide-all 시에도 항상 표시. Trash · Settings · 2.1/10 GB.
+  - 사이드바 푸터 + 액티비티 바 Settings 제거 — status bar 단일화.
+  - `types/flowbase.ts` `NavEntry` + `navStack`/`navIndex` + 7 액션 자동 pushNav + `goBack`/`goForward`/`jumpToNavEntry`.
+  - `components/board/nav-cluster.tsx` (신규) — 시계(history 드롭다운) · ‹ · ›.
+  - `board-header.tsx` — NavCluster 배선 + ⌘K Kbd 힌트 + 검색창 클릭→팔레트.
+  - `panels-menu.tsx` — Korean → English ("Panels"/"Show all panels"/"Hide all panels").
+
+### 큰 결정
+- **사용자 통찰을 LOCK으로 채택** — "Settings/Trash는 hide-all 무관 항상 접근 가능해야". 프로토타입 sidebar 푸터 결함을 우리는 답습 ❌. 새 컨벤션: **셸 푸터 status bar가 영구**.
+- **NavCluster는 단순 visual ❌, 실제 history 스택** — 7개 액션 호출이 자동 push, dedup + cap 50. goBack/goForward는 replay 모드(pushNav 우회).
+- **검색창 = ⌘K 팔레트 트리거** — 인라인 입력도 유지하되 (헤더에서 즉시 search store 업데이트), 검색창 클릭 자체가 팔레트도 연다.
+- **감사를 솔직하게** — 사용자가 "진짜 돌아가는 앱이냐"고 묻기에 모든 핵심 path를 store-DOM-network 레벨로 검증하고 "스텁/Missing/Working" 표로 보고. 갭 숨기지 않음.
+
+### 검증
+- `npx tsc --noEmit` 0 · `npm run build` 0 · `vitest run` 15/15.
+- 브라우저: ⌘N → store 카운트 +1 ✓ · Filter In-progress → 11→2 visible ✓ · AI Apply all → 실제 POST ✓ · CSV 파서 감지 ✓ · Kanban/Dashboard 렌더 ✓ · Undo ✓ · hide-all 후 status bar 잔존 ✓ · NavCluster 3 버튼 활성/비활성 ✓.
+
+### 다음
+- **Trash · Settings 실제 onClick 로직** (현재 toast만). Trash는 store에 deletedItems 추적, Settings는 모달.
+- **컬럼 추가 ("+" 셀)** — Sheet의 핵심 갭. `addColumn` 액션 + 헤더 드롭다운(Library Field 선택/타입 선택/+추가).
+- **컬럼 헤더 메뉴 (...)** — Promote / Delete / Attach function.
+- **시드 deep 영어화** — `flowbase-library-seed.ts` 한국어 자산명 + Customer Interviews 한국어 quote/name.
+- **나머지 갭**: ER 다이어그램 · Automations 실행 엔진 · Wiki 본문 편집 · Gallery/Timeline view.
+
+### Watch Out
+- **NavStack 인메모리 only** — 새로고침하면 비워짐. persist 추가 시 다른 머신에서 history 혼란 가능. 의도적 ephemeral.
+- **pushNav가 모든 navigation 액션에 자동 호출** — 새 액션 추가할 때 nav 트래킹할 거면 pushNav() 끝에 호출. 안 할 거면 (예: setLibView 같은 미세 토글) 호출 생략.
+- **status bar는 6 모드 모두에서 표시** — Wiki/Library/Inbox/Search 모드에도 같은 푸터. Trash가 mode-aware 동작해야 할지(예: Wiki 모드에서 Trash 클릭 → 휴지통 페이지)는 미정.
+- **활성 disabled 버튼 모두 제거됨** — activity-bar Settings도 사라짐. 사용자가 액티비티 바 외 진입점을 찾을 곳은 status bar 하나.
+
+### 머신
+kkh94. main 머지·푸시는 이번 세션 마무리 시 자동 (after-work step 8 정책 적용 중).
+
+---
+
 ## 2026-05-23 (kkh94 머신, 후속 #4) — Search 모드 + ⌘K 팔레트 → breadth P0 100%
 
 ### 완료

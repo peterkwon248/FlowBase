@@ -4,11 +4,20 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ---
 
-## P0 (완료 — breadth 100%)
+## P0 (완료 — breadth 100% + 셸 chrome 보정)
 
-> 🎯 **앱 breadth P0 100% 도달** (2026-05-23, Search 마무리): Tables✅ · Workspace(Schema·Automations)✅ · Library(B1·B2 읽기 전용)✅ · Inbox✅ · Detail bar✅ · Wiki✅ · Search✅.
+> 🎯 **앱 breadth P0 100%** (2026-05-23): Tables · Workspace(Schema·Automations) · Library(B1·B2) · Inbox · Detail bar · Wiki · Search.
+> 🎨 **셸 chrome 보정** (2026-05-23, `96ff20d`): status bar(영구) · NavCluster · ⌘K 힌트 · 영어화.
 >
-> 다음 단계는 **깊이/품질** — 시드 영어화 · B3 · 반응형 · AI 실호출.
+> 다음은 **깊이/품질** — 컬럼 추가/편집 · Trash/Settings 실작동 · 시드 영어화.
+
+---
+
+## P1 — 깊이/품질 (시급)
+
+- [ ] **컬럼 추가 (Sheet "+")** — addColumn 액션 + 드롭다운(basic types / Library Field 선택). 헤더 우클릭/... 메뉴(Promote/Delete/Attach function/Rename). 참고: `design-ref/prototype/add-column.jsx`
+- [ ] **Trash · Settings 실제 동작** — Trash: deletedBoards/deletedRows 트래킹 + 복원 UI. Settings: 모달(워크스페이스 이름·아바타·storage).
+- [ ] **시드 deep 영어화** — `flowbase-library-seed.ts` 모델명/처리방식/사업부 + 옵션 라벨 · `flowbase-workspace-seed.ts` 룰 잔여 · `flowbase-seed.ts` Customer Interviews 한국어 quote/name
 
 ---
 
@@ -59,6 +68,7 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## 완료
 
+- [x] **셸 chrome 보정 — status bar · NavCluster · ⌘K 힌트** (2026-05-23 — `96ff20d`): 사용자 지적 5건 해결. `status-bar.tsx`(셸 푸터, hide-all 무관 always visible, Trash·Settings·2.1/10 GB) · `nav-cluster.tsx`(시계·‹·›) + store NavEntry/navStack/goBack/goForward/jumpToNavEntry · 사이드바 푸터·액티비티 바 Settings 제거 단일화 · 검색창 ⌘K Kbd + 검색창 클릭→팔레트 · PanelsMenu Korean→English. **앱 감사 보고서**: Sheet edit/⌘N/Filter/Kanban/Dashboard/Undo/AI fetch/Import 파서 모두 실작동 검증 완료.
 - [x] **Search 모드 + ⌘K 팔레트** (2026-05-23 — `3771bc8`): `lib/search-index.ts` (boards/library/wikiPages 평면 SearchItem + prefix>contains>subtitle>keywords 스코어 필터 + countByKind) · `components/search/search-palette.tsx` 640px 모달(↑↓/Enter/Esc 키 네비, kind 그룹) · `components/search/search-mode.tsx` 풀페이지(5탭 + 카운트 chips, 200 limit) · `useNavigateSearchItem` 훅(Row 검색 시 detailBar 자동 활성) · ⌘K 키 단축키 · `ComingSoonMode` 삭제. **앱 breadth P0 100% 도달.**
 - [x] **Wiki 모드** (2026-05-23 — `01a7ae7`): `WikiPage` 타입 + 6 페이지 시드(영어, Library guide/CS runbook/Keyboard shortcuts/New hire onboarding(draft)/Glossary/Team directory) + 미니 마크다운 렌더러(의존성 0, h1~h3·ul·ol·table·inline code·bold) + 카테고리 트리 사이드바(DRAFT 배지) + 페이지 상세(Owner·Verified pill·만료 배너·Re-verify·Mark as verified) + v5→v6 migrate
 - [x] **English UI + Trash/Settings + Tasks 보드** (2026-05-23 — `605b9f3`): UI chrome 17+ 파일 영어화 · `STATUS_LABELS` 맵 · 사이드바 푸터(Trash·Settings·2.1/10 GB) · Tasks 시드(store v4→v5 migrate)

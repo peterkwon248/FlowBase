@@ -6,7 +6,14 @@
 
 ## Current Features (Completed — 최근 우선)
 
-1. **Search 모드 + ⌘K 팔레트** (2026-05-23, `3771bc8`, **main 머지 완료**) —
+1. **셸 chrome 보정 — status bar · NavCluster · ⌘K 힌트** (2026-05-23, `96ff20d`, **main 머지 완료**) —
+   - **status bar** (`components/board/status-bar.tsx`) — 셸 푸터, **어떤 패널 상태에서도 항상 표시**. Trash · Settings · 2.1/10 GB. hide-all 시에도 접근 가능.
+   - **NavCluster** (`components/board/nav-cluster.tsx`) — 시계 (history 드롭다운, 최근 20개) · ‹ Back · › Forward. store의 `navStack`/`navIndex` + `goBack`/`goForward`/`jumpToNavEntry`. 7개 navigation 액션이 자동 pushNav (dedup + cap 50).
+   - **검색창 ⌘K Kbd 힌트** — 검색창이 ⌘K 팔레트 트리거.
+   - **사이드바 푸터 · 액티비티 바 Settings 제거** — status bar 단일화.
+   - **PanelsMenu English** — "Panels"/"Show all panels"/"Hide all panels".
+
+2. **Search 모드 + ⌘K 팔레트** (2026-05-23, `3771bc8`, **main 머지 완료**) —
    - `lib/search-index.ts` + `components/search/*` — Tables · Rows · Library · Wiki를 평면 인덱스로 묶고 스코어 정렬.
    - **⌘K 팔레트** — 640px 모달, blur backdrop, kind별 그룹 결과, ↑↓/Enter/Esc 키 네비, 매치 하이라이트.
    - **풀페이지 Search 모드** — activityMode "search"에서 5탭(All/Tables/Rows/Library/Wiki) + 카운트 chips + 평탄 리스트.
