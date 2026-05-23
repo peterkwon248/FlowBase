@@ -12,6 +12,7 @@ import { BoardHeader } from "@/components/board/board-header"
 import { ComingSoonMode } from "@/components/board/coming-soon-mode"
 import { TablesMode } from "@/components/board/tables-mode"
 import { WorkspaceMode } from "@/components/board/workspace-mode"
+import { InboxView } from "@/components/inbox/inbox-view"
 import { LibraryMode } from "@/components/library/library-mode"
 import { Toaster } from "@/components/ui/sonner"
 import { useFlowBase } from "@/lib/flowbase-store"
@@ -46,6 +47,8 @@ export default function Home() {
           <WorkspaceMode />
         ) : activityMode === "library" ? (
           <LibraryMode />
+        ) : activityMode === "inbox" ? (
+          <InboxView />
         ) : (
           <ComingSoonMode mode={activityMode} />
         )}
