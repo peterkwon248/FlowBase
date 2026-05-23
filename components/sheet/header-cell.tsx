@@ -20,6 +20,7 @@ import {
   Type,
   User,
 } from "lucide-react"
+import { ColumnHeaderMenu } from "@/components/sheet/column-header-menu"
 import type { ColumnDef, ColumnType, SortDir } from "@/types/flowbase"
 import { cn } from "@/lib/utils"
 
@@ -49,34 +50,37 @@ export function HeaderCell({ col, sortDir, onSort }: HeaderCellProps) {
   const sorted = sortDir !== null
 
   return (
-    <button
-      type="button"
-      onClick={onSort}
-      className="flex w-full items-center gap-1.5 text-left"
-    >
-      <Icon className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
-      <span
-        className={cn(
-          "text-xs font-medium",
-          sorted ? "text-foreground" : "text-muted-foreground",
-        )}
+    <div className="group flex w-full items-center gap-1.5">
+      <button
+        type="button"
+        onClick={onSort}
+        className="flex flex-1 items-center gap-1.5 text-left"
       >
-        {col.label?.trim() || col.name}
-      </span>
-      {col.ai && (
-        <span className="inline-flex items-center gap-0.5 rounded bg-primary/15 px-1 py-px text-[10px] font-semibold text-primary">
-          <Sparkles className="size-2" />
-          AI
+        <Icon className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+        <span
+          className={cn(
+            "text-xs font-medium",
+            sorted ? "text-foreground" : "text-muted-foreground",
+          )}
+        >
+          {col.label?.trim() || col.name}
         </span>
-      )}
-      <span className="flex-1" />
-      {sortDir === "asc" ? (
-        <ArrowUp className="size-3 text-primary" />
-      ) : sortDir === "desc" ? (
-        <ArrowDown className="size-3 text-primary" />
-      ) : (
-        <ArrowUpDown className="size-3 text-muted-foreground/50" />
-      )}
-    </button>
+        {col.ai && (
+          <span className="inline-flex items-center gap-0.5 rounded bg-primary/15 px-1 py-px text-[10px] font-semibold text-primary">
+            <Sparkles className="size-2" />
+            AI
+          </span>
+        )}
+        <span className="flex-1" />
+        {sortDir === "asc" ? (
+          <ArrowUp className="size-3 text-primary" />
+        ) : sortDir === "desc" ? (
+          <ArrowDown className="size-3 text-primary" />
+        ) : (
+          <ArrowUpDown className="size-3 text-muted-foreground/50" />
+        )}
+      </button>
+      <ColumnHeaderMenu col={col} />
+    </div>
   )
 }

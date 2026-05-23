@@ -15,6 +15,7 @@ import {
 } from "@/lib/flowbase-store"
 import type { ColumnDef, SortDir } from "@/types/flowbase"
 import { cn } from "@/lib/utils"
+import { AddColumnMenu } from "./add-column-menu"
 import { EditableCell } from "./editable-cell"
 import { HeaderCell } from "./header-cell"
 import { NewRowStub } from "./new-row-stub"
@@ -156,7 +157,9 @@ export function SheetView() {
                 />
               </th>
             ))}
-            <th className="sticky top-0 z-10 border-b border-border bg-surface" />
+            <th className="sticky top-0 z-10 border-b border-border bg-surface p-0">
+              <AddColumnMenu />
+            </th>
           </tr>
         </thead>
 

@@ -64,6 +64,12 @@ export interface FlowBaseActions {
   deleteBoard: (boardId: string) => void
   renameBoard: (boardId: string, label: string) => void
 
+  // Columns — active board의 columns 편집. 행 값은 보존(필요 시 키 migrate).
+  addColumn: (col: ColumnDef) => void
+  deleteColumn: (colName: string) => void
+  renameColumn: (colName: string, newName: string, newLabel?: string) => void
+  updateColumn: (colName: string, patch: Partial<ColumnDef>) => void
+
   // Rows — active board 대상. 변경 전 undo 스냅샷 push.
   addRow: (row?: Partial<TableRow>) => string
   updateRow: (rowId: string, patch: Partial<TableRow>) => void
@@ -346,6 +352,119 @@ export const useFlowBase = create<FlowBaseStore>()(
                 [boardId]: { ...b, label: label.trim(), updatedAt: nowIso() },
               },
             }
+          })
+        },
+
+        addColumn: (col) => {
+          const s = get()
+          const b = s.boards[s.activeBoardId]
+          if (!b) return
+          // 중복 이름 방어 — "name", "name 2", "name 3" 순으로 자동 증가
+          let name = col.name
+          let label = col.label || col.name
+          let n = 2
+          while (b.columns.some((c) => c.name === name)) {
+            name = `${col.name}_${n}`
+            label = `${col.label || col.name} ${n}`
+            n += 1
+          }
+          const newCol: ColumnDef = { ...col, name, label }
+          set({
+            boards: {
+              ...s.boards,
+              [b.id]: {
+                ...b,
+                columns: [...b.columns, newCol],
+                updatedAt: nowIso(),
+              },
+            },
+          })
+        },
+
+        deleteColumn: (colName) => {
+          const s = get()
+          const b = s.boards[s.activeBoardId]
+          if (!b) return
+          if (colName === "id") return // id 컬럼 보호
+          // 행에서 해당 키 제거
+          const newRows: TableRow[] = b.rows.map((r) => {
+            const next: TableRow = { ...r }
+            delete next[colName]
+            return next
+          })
+          set({
+            boards: {
+              ...s.boards,
+              [b.id]: {
+                ...b,
+                columns: b.columns.filter((c) => c.name !== colName),
+                rows: newRows,
+                updatedAt: nowIso(),
+              },
+            },
+          })
+        },
+
+        renameColumn: (colName, newName, newLabel) => {
+          const s = get()
+          const b = s.boards[s.activeBoardId]
+          if (!b) return
+          if (colName === "id") return
+          if (!newName.trim()) return
+          // 키 충돌 방어
+          if (
+            newName !== colName &&
+            b.columns.some((c) => c.name === newName)
+          ) {
+            return
+          }
+          const newCols: ColumnDef[] = b.columns.map((c) =>
+            c.name === colName
+              ? {
+                  ...c,
+                  name: newName,
+                  label: newLabel?.trim() || newName,
+                }
+              : c,
+          )
+          // 행에서 키 migrate (newName !== colName인 경우만)
+          const newRows: TableRow[] =
+            newName === colName
+              ? b.rows
+              : b.rows.map((r) => {
+                  if (!(colName in r)) return r
+                  const next: TableRow = { ...r, [newName]: r[colName] }
+                  delete next[colName]
+                  return next
+                })
+          set({
+            boards: {
+              ...s.boards,
+              [b.id]: {
+                ...b,
+                columns: newCols,
+                rows: newRows,
+                updatedAt: nowIso(),
+              },
+            },
+          })
+        },
+
+        updateColumn: (colName, patch) => {
+          const s = get()
+          const b = s.boards[s.activeBoardId]
+          if (!b) return
+          set({
+            boards: {
+              ...s.boards,
+              [b.id]: {
+                ...b,
+                columns: b.columns.map((c) =>
+                  c.name === colName ? { ...c, ...patch } : c,
+                ),
+                updatedAt: nowIso(),
+              },
+            },
           })
         },
 
