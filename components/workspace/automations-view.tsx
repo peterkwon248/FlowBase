@@ -1,9 +1,32 @@
-// FlowBase V2 — Workspace Automations 뷰 (룰 카드 + AI 제안, 읽기 전용)
+// FlowBase V2 — Workspace Automations 뷰 (룰 카드 + AI 제안, 작동)
 // 출처: design-ref/prototype/automations.jsx
+//
+// 룰: 상태 pill 클릭 → active↔paused 토글 · "..." 메뉴 Test run / Delete.
+// 제안: Accept(promote to rule) / Dismiss.
+// 실제 트리거 매칭 엔진(row 변경 감지)은 후속 작업 — testRunAutomation으로
+// runs/lastRun 갱신 visual proof만.
 
 "use client"
 
-import { Sparkles, Zap } from "lucide-react"
+import { useState } from "react"
+import { MoreHorizontal, PlayCircle, Sparkles, Trash2, Zap } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type {
@@ -94,6 +117,12 @@ export function AutomationsView() {
         {automations.map((rule) => (
           <RuleCard key={rule.id} rule={rule} />
         ))}
+        {automations.length === 0 && (
+          <div className="rounded-lg border border-dashed border-border bg-card px-5 py-10 text-center text-[12.5px] text-muted-foreground">
+            No automations yet. Accept an AI suggestion below or create one
+            from scratch.
+          </div>
+        )}
       </div>
 
       {/* AI Suggestions */}
@@ -121,47 +150,121 @@ export function AutomationsView() {
 
 function RuleCard({ rule }: { rule: AutomationRule }) {
   const style = STATUS_STYLE[rule.status]
+  const toggleAutomationStatus = useFlowBase(
+    (s) => s.toggleAutomationStatus,
+  )
+  const testRunAutomation = useFlowBase((s) => s.testRunAutomation)
+  const deleteAutomation = useFlowBase((s) => s.deleteAutomation)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   return (
-    <div className="flex flex-col gap-2.5 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center gap-2">
-        <span className={cn("size-2 shrink-0 rounded-full", style.dot)} />
-        <span className="flex-1 text-[13.5px] font-semibold">{rule.name}</span>
-        {rule.aiSuggested && (
-          <span className="inline-flex items-center gap-1 rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-            <Sparkles className="size-2.5" strokeWidth={2} />
-            AI built
+    <>
+      <div
+        className="flex flex-col gap-2.5 rounded-lg border border-border bg-card p-4"
+        data-automation-id={rule.id}
+      >
+        <div className="flex items-center gap-2">
+          <span className={cn("size-2 shrink-0 rounded-full", style.dot)} />
+          <span className="flex-1 text-[13.5px] font-semibold">
+            {rule.name}
           </span>
-        )}
-        <span
-          className={cn(
-            "rounded px-1.5 py-0.5 text-[10.5px] font-semibold",
-            style.bg,
-            style.fg,
+          {rule.aiSuggested && (
+            <span className="inline-flex items-center gap-1 rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+              <Sparkles className="size-2.5" strokeWidth={2} />
+              AI built
+            </span>
           )}
-        >
-          {style.label}
-        </span>
+          <button
+            type="button"
+            onClick={() => toggleAutomationStatus(rule.id)}
+            title={
+              rule.status === "active"
+                ? "Pause this automation"
+                : "Activate this automation"
+            }
+            className={cn(
+              "rounded px-1.5 py-0.5 text-[10.5px] font-semibold transition-opacity hover:opacity-80",
+              style.bg,
+              style.fg,
+            )}
+          >
+            {style.label}
+          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                title="Automation options"
+                data-automation-menu={rule.id}
+                className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+              >
+                <MoreHorizontal className="size-3.5" strokeWidth={2} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem
+                onSelect={() => testRunAutomation(rule.id)}
+                className="gap-2"
+              >
+                <PlayCircle className="size-3.5 text-muted-foreground" />
+                Test run
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => setConfirmDelete(true)}
+                className="gap-2 text-destructive focus:text-destructive"
+              >
+                <Trash2 className="size-3.5" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <TriggerBlock when={rule.when} />
+          {rule.then.map((step, i) => (
+            <ActionBlock key={i} step={step} />
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2 border-t border-border-subtle pt-2 text-[11.5px] text-muted-foreground">
+          <span>
+            Runs this week:{" "}
+            <strong
+              className="font-semibold tabular-nums text-foreground"
+              data-automation-runs={rule.id}
+            >
+              {rule.runsThisWeek}
+            </strong>
+          </span>
+          <span className="opacity-50">·</span>
+          <span>Last run: {rule.lastRun}</span>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <TriggerBlock when={rule.when} />
-        {rule.then.map((step, i) => (
-          <ActionBlock key={i} step={step} />
-        ))}
-      </div>
-
-      <div className="flex items-center gap-2 border-t border-border-subtle pt-2 text-[11.5px] text-muted-foreground">
-        <span>
-          Runs this week:{" "}
-          <strong className="font-semibold tabular-nums text-foreground">
-            {rule.runsThisWeek}
-          </strong>
-        </span>
-        <span className="opacity-50">·</span>
-        <span>Last run: {rule.lastRun}</span>
-      </div>
-    </div>
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete &ldquo;{rule.name}&rdquo;?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This automation will be permanently removed. Suggestions can
+              re-create similar rules later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteAutomation(rule.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 
@@ -215,8 +318,14 @@ function ActionBlock({ step }: { step: AutomationStep }) {
 
 function SuggestionCard({ suggestion }: { suggestion: SuggestedAutomation }) {
   const confidencePct = Math.round(suggestion.confidence * 100)
+  const acceptSuggestion = useFlowBase((s) => s.acceptSuggestion)
+  const dismissSuggestion = useFlowBase((s) => s.dismissSuggestion)
+
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-primary/20 bg-primary/[0.04] p-3">
+    <div
+      className="flex flex-col gap-2 rounded-lg border border-primary/20 bg-primary/[0.04] p-3"
+      data-suggestion-id={suggestion.id}
+    >
       <div className="flex items-start gap-2">
         <Sparkles
           className="mt-0.5 size-3 shrink-0 text-primary"
@@ -232,6 +341,23 @@ function SuggestionCard({ suggestion }: { suggestion: SuggestedAutomation }) {
       <p className="text-[12px] leading-relaxed text-muted-foreground">
         {suggestion.detail}
       </p>
+      <div className="flex items-center gap-1.5 pt-1">
+        <Button
+          size="sm"
+          onClick={() => acceptSuggestion(suggestion.id)}
+          className="h-7 px-2.5 text-[11.5px]"
+        >
+          Accept
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => dismissSuggestion(suggestion.id)}
+          className="h-7 px-2.5 text-[11.5px] text-muted-foreground"
+        >
+          Dismiss
+        </Button>
+      </div>
     </div>
   )
 }

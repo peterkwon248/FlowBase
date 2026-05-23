@@ -74,6 +74,13 @@ export interface FlowBaseActions {
   // Settings
   updateSettings: (patch: Partial<WorkspaceSettings>) => void
 
+  // Automations — rule 토글/삭제 + suggestion accept/dismiss + 테스트 실행
+  toggleAutomationStatus: (id: string) => void
+  deleteAutomation: (id: string) => void
+  testRunAutomation: (id: string) => void
+  acceptSuggestion: (id: string) => void
+  dismissSuggestion: (id: string) => void
+
   // Columns — active board의 columns 편집. 행 값은 보존(필요 시 키 migrate).
   addColumn: (col: ColumnDef) => void
   deleteColumn: (colName: string) => void
@@ -391,6 +398,81 @@ export const useFlowBase = create<FlowBaseStore>()(
 
         updateSettings: (patch) =>
           set((s) => ({ settings: { ...s.settings, ...patch } })),
+
+        // Automations — rule 토글: active ↔ paused. draft는 따로 명시적 변경.
+        toggleAutomationStatus: (id) =>
+          set((s) => ({
+            automations: s.automations.map((r) => {
+              if (r.id !== id) return r
+              const next =
+                r.status === "active"
+                  ? "paused"
+                  : r.status === "paused"
+                    ? "active"
+                    : "active"
+              return { ...r, status: next }
+            }),
+          })),
+
+        deleteAutomation: (id) =>
+          set((s) => ({
+            automations: s.automations.filter((r) => r.id !== id),
+          })),
+
+        // 테스트 실행 — runsThisWeek++, lastRun = "just now".
+        // 실제 트리거 매치 로직은 future work (rule-engine.jsx). 이건 visual proof.
+        testRunAutomation: (id) =>
+          set((s) => ({
+            automations: s.automations.map((r) =>
+              r.id === id
+                ? {
+                    ...r,
+                    runsThisWeek: r.runsThisWeek + 1,
+                    lastRun: "just now",
+                  }
+                : r,
+            ),
+          })),
+
+        // Suggestion accept — 새 룰로 promote (간소화: name/desc 기반 빈 룰).
+        acceptSuggestion: (id) =>
+          set((s) => {
+            const sug = s.suggestedAutomations.find((x) => x.id === id)
+            if (!sug) return s
+            const newRule = {
+              id: `AUT-${Date.now().toString(36).slice(-6)}`,
+              name: sug.summary,
+              when: {
+                table: "—",
+                event: "manual trigger",
+                value: "(needs configuration)",
+              },
+              then: [
+                {
+                  action: "Configure",
+                  target: "this automation",
+                  detail: sug.detail,
+                },
+              ],
+              status: "draft" as const,
+              aiSuggested: true,
+              runsThisWeek: 0,
+              lastRun: "never",
+            }
+            return {
+              automations: [newRule, ...s.automations],
+              suggestedAutomations: s.suggestedAutomations.filter(
+                (x) => x.id !== id,
+              ),
+            }
+          }),
+
+        dismissSuggestion: (id) =>
+          set((s) => ({
+            suggestedAutomations: s.suggestedAutomations.filter(
+              (x) => x.id !== id,
+            ),
+          })),
 
         renameBoard: (boardId, label) => {
           set((s) => {
