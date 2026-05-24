@@ -11,6 +11,7 @@
 
 "use client"
 
+import type React from "react"
 import { useMemo } from "react"
 import { Check, Filter as FilterIcon, X } from "lucide-react"
 import {
@@ -85,7 +86,7 @@ function buildInValues(
   }))
 }
 
-function activeCountOf(cond: FilterCondition | undefined): number {
+function activeCountOfSingle(cond: FilterCondition | undefined): number {
   if (!cond) return 0
   if (cond.kind === "in" || cond.kind === "not_in") return cond.values.length
   if (cond.kind === "range")
@@ -93,6 +94,12 @@ function activeCountOf(cond: FilterCondition | undefined): number {
   if (cond.kind === "contains" || cond.kind === "not_contains")
     return cond.text.trim() ? 1 : 0
   return (cond.from ? 1 : 0) + (cond.to ? 1 : 0)
+}
+
+// 컬럼당 multiple condition (AND) — 모든 cond의 count 합
+function activeCountOf(conds: FilterCondition[] | undefined): number {
+  if (!conds || conds.length === 0) return 0
+  return conds.reduce((n, c) => n + activeCountOfSingle(c), 0)
 }
 
 export function FilterMenu() {
@@ -112,11 +119,13 @@ export function FilterMenu() {
       .slice(0, 5)
   }, [recentFilters, board])
 
-  const applyRecentFilter = (snapshot: { conditions: Record<string, FilterCondition> }) => {
-    // 현재 모두 clear 후 snapshot 적용 (직관적 — recent click = 그 상태로 복원)
+  const applyRecentFilter = (snapshot: { conditions: Record<string, FilterCondition[]> }) => {
+    // 현재 모두 clear 후 snapshot 적용 — 각 컬럼의 cond array를 순차로 set (index별)
     clearAllFilters()
-    Object.entries(snapshot.conditions).forEach(([col, cond]) => {
-      setColumnCondition(col, cond)
+    Object.entries(snapshot.conditions).forEach(([col, conds]) => {
+      conds.forEach((cond, i) => {
+        setColumnCondition(col, cond, i)
+      })
     })
   }
 
@@ -184,7 +193,7 @@ export function FilterMenu() {
             <FilterColSub
               key={option.col.name}
               option={option}
-              cond={columnFilters[option.col.name]}
+              conds={columnFilters[option.col.name]}
             />
           ))
         )}
@@ -250,17 +259,20 @@ export function FilterMenu() {
 }
 
 // ─── Sub per column ───────────────────────────────────────
+// 컬럼당 multiple condition array — UI는 첫 element만 (minimum). 추가 cond는 ActiveFilterChips에서 표시.
 function FilterColSub({
   option,
-  cond,
+  conds,
 }: {
   option: ColumnOption
-  cond: FilterCondition | undefined
+  conds: FilterCondition[] | undefined
 }) {
   const Icon = TYPE_ICON[option.col.type]
-  const activeCount = activeCountOf(cond)
+  const activeCount = activeCountOf(conds)
   const toggleColumnInValue = useFlowBase((s) => s.toggleColumnInValue)
   const setColumnCondition = useFlowBase((s) => s.setColumnCondition)
+  // UI에서는 첫 cond만 처리 — 첫 in/not_in 또는 첫 cond
+  const cond = conds?.[0]
 
   return (
     <DropdownMenuSub>
@@ -558,93 +570,125 @@ function DateRangeWidget({
   )
 }
 
-// ─── 활성 필터 칩 바 — kind별 라벨 ──────────────────────
+// ─── 활성 필터 칩 바 — 컬럼당 multiple condition AND, kind별 라벨 ──────
 export function ActiveFilterChips() {
   const board = useFlowBase(selectActiveBoard)
   const columnFilters = useFlowBase((s) => s.columnFilters)
   const setColumnCondition = useFlowBase((s) => s.setColumnCondition)
   const toggleColumnInValue = useFlowBase((s) => s.toggleColumnInValue)
+  const removeColumnCondition = useFlowBase((s) => s.removeColumnCondition)
 
   if (!board) return null
 
   const colByName = (n: string) => board.columns.find((c) => c.name === n)
 
   const entries = Object.entries(columnFilters).filter(
-    ([, c]) => activeCountOf(c) > 0,
+    ([, conds]) => activeCountOf(conds) > 0,
   )
   if (entries.length === 0) return null
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {entries.flatMap(([col, cond]) => {
+      {entries.flatMap(([col, conds]) => {
         const c = colByName(col)
         const colLabel = c?.label || col
-        if (cond.kind === "in" || cond.kind === "not_in") {
-          const prefix = cond.kind === "not_in" ? "≠ " : ""
-          return cond.values.map((v) => {
-            const label =
-              c?.type === "status"
-                ? (STATUS_LABELS[v as keyof typeof STATUS_LABELS] ?? v)
-                : v
-            return (
-              <Chip
-                key={`${col}:${cond.kind}:${v}`}
-                colLabel={colLabel}
-                valueLabel={`${prefix}${label}`}
-                onRemove={() => toggleColumnInValue(col, v)}
-                dataAttr={`${col}:${v}`}
-              />
-            )
-          })
-        }
-        if (cond.kind === "range") {
-          const text =
-            cond.min !== undefined && cond.max !== undefined
-              ? `${cond.min}–${cond.max}`
-              : cond.min !== undefined
-                ? `≥ ${cond.min}`
-                : `≤ ${cond.max ?? "?"}`
-          return [
-            <Chip
-              key={`${col}:range`}
-              colLabel={colLabel}
-              valueLabel={text}
-              onRemove={() => setColumnCondition(col, null)}
-              dataAttr={`${col}:range`}
-            />,
-          ]
-        }
-        if (cond.kind === "contains" || cond.kind === "not_contains") {
-          const prefix = cond.kind === "not_contains" ? "≠ " : ""
-          return [
-            <Chip
-              key={`${col}:${cond.kind}`}
-              colLabel={colLabel}
-              valueLabel={`${prefix}"${cond.text}"`}
-              onRemove={() => setColumnCondition(col, null)}
-              dataAttr={`${col}:${cond.kind}`}
-            />,
-          ]
-        }
-        // date-range
-        const text =
-          cond.from && cond.to
-            ? `${cond.from} ~ ${cond.to}`
-            : cond.from
-              ? `from ${cond.from}`
-              : `to ${cond.to ?? "?"}`
-        return [
-          <Chip
-            key={`${col}:date-range`}
-            colLabel={colLabel}
-            valueLabel={text}
-            onRemove={() => setColumnCondition(col, null)}
-            dataAttr={`${col}:date-range`}
-          />,
-        ]
+        // 각 cond를 별도 chip(s)으로 렌더 — index 추적해서 remove 시 그 cond만 제거
+        return conds.flatMap((cond, condIdx) => renderCondChips(
+          col,
+          colLabel,
+          c?.type,
+          cond,
+          condIdx,
+          conds.length,
+          toggleColumnInValue,
+          removeColumnCondition,
+          setColumnCondition,
+        ))
       })}
     </div>
   )
+}
+
+function renderCondChips(
+  col: string,
+  colLabel: string,
+  colType: string | undefined,
+  cond: FilterCondition,
+  condIdx: number,
+  totalConds: number,
+  toggleColumnInValue: (col: string, value: string) => void,
+  removeColumnCondition: (col: string, index: number) => void,
+  setColumnCondition: (col: string, cond: FilterCondition | null, index?: number) => void,
+): React.ReactNode[] {
+  // 단일 cond 제거 helper — totalConds=1이면 컬럼 전체 clear, 아니면 그 cond만
+  const removeThis = () => {
+    if (totalConds === 1) setColumnCondition(col, null, 0)
+    else removeColumnCondition(col, condIdx)
+  }
+
+  if (cond.kind === "in" || cond.kind === "not_in") {
+    const prefix = cond.kind === "not_in" ? "≠ " : ""
+    return cond.values.map((v) => {
+      const label =
+        colType === "status"
+          ? (STATUS_LABELS[v as keyof typeof STATUS_LABELS] ?? v)
+          : v
+      return (
+        <Chip
+          key={`${col}:${condIdx}:${cond.kind}:${v}`}
+          colLabel={colLabel}
+          valueLabel={`${prefix}${label}`}
+          onRemove={() => toggleColumnInValue(col, v)}
+          dataAttr={`${col}:${v}`}
+        />
+      )
+    })
+  }
+  if (cond.kind === "range") {
+    const text =
+      cond.min !== undefined && cond.max !== undefined
+        ? `${cond.min}–${cond.max}`
+        : cond.min !== undefined
+          ? `≥ ${cond.min}`
+          : `≤ ${cond.max ?? "?"}`
+    return [
+      <Chip
+        key={`${col}:${condIdx}:range`}
+        colLabel={colLabel}
+        valueLabel={text}
+        onRemove={removeThis}
+        dataAttr={`${col}:range`}
+      />,
+    ]
+  }
+  if (cond.kind === "contains" || cond.kind === "not_contains") {
+    const prefix = cond.kind === "not_contains" ? "≠ " : ""
+    return [
+      <Chip
+        key={`${col}:${condIdx}:${cond.kind}`}
+        colLabel={colLabel}
+        valueLabel={`${prefix}"${cond.text}"`}
+        onRemove={removeThis}
+        dataAttr={`${col}:${cond.kind}`}
+      />,
+    ]
+  }
+  // date-range
+  const text =
+    cond.from && cond.to
+      ? `${cond.from} ~ ${cond.to}`
+      : cond.from
+        ? `from ${cond.from}`
+        : `to ${cond.to ?? "?"}`
+  return [
+    <Chip
+      key={`${col}:${condIdx}:date-range`}
+      colLabel={colLabel}
+      valueLabel={text}
+      onRemove={removeThis}
+      dataAttr={`${col}:date-range`}
+    />,
+  ]
 }
 
 function Chip({

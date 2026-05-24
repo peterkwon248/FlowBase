@@ -485,7 +485,7 @@ export interface MemoryEntry {
 export interface RecentFilterSnapshot {
   ts: number                                   // 최근 사용 시각 (epoch ms)
   boardId: string
-  conditions: Record<string, FilterCondition>  // 시점의 columnFilters 전체
+  conditions: Record<string, FilterCondition[]>  // 시점의 columnFilters 전체
 }
 
 export interface RecentSortSnapshot {
@@ -560,7 +560,9 @@ export interface FlowBaseState {
   //   status/select → in (values)
   //   num            → range (min/max)
   //   date           → date-range (from/to ISO YYYY-MM-DD)
-  columnFilters: Record<string, FilterCondition>
+  // 컬럼당 multiple condition (AND 결합). OR 결합은 후속 phase.
+  // ephemeral (persist ❌). RecentFilterSnapshot.conditions도 같은 형식.
+  columnFilters: Record<string, FilterCondition[]>
   sort: SortState
   selectedRowIds: string[]
   focusedCell: CellCoord | null

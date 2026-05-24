@@ -241,10 +241,15 @@ export interface FlowBaseActions {
   jumpToNavEntry: (index: number) => void
   setSearch: (s: string) => void
   setFilter: (f: TicketStatus[]) => void
-  // 다중 필드 필터 — discriminated union (FilterCondition).
-  setColumnCondition: (col: string, cond: FilterCondition | null) => void
-  // 'in' 전용 편의 액션 (FilterMenu 체크박스 토글).
+  // 다중 필드 필터 — 컬럼당 multiple condition (AND). FilterCondition discriminated union.
+  // setColumnCondition: 인덱스 명시 — 0 = 단일 cond 자리 (legacy single-cond 호출처 호환).
+  setColumnCondition: (col: string, cond: FilterCondition | null, index?: number) => void
+  // 'in' 전용 편의 액션 (FilterMenu 체크박스 토글) — 첫 번째 in/not_in cond에 적용.
   toggleColumnInValue: (col: string, value: string) => void
+  // 컬럼에 새 condition 추가 (AND).
+  addColumnCondition: (col: string, cond: FilterCondition) => void
+  // 컬럼의 index번째 condition 제거.
+  removeColumnCondition: (col: string, index: number) => void
   clearAllFilters: () => void
   setSort: (s: FlowBaseState["sort"]) => void
   setSelected: (ids: string[]) => void
@@ -1908,10 +1913,14 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
         setSearch: (search) => set({ search }),
         setFilter: (filter) => set({ filter }),
-        setColumnCondition: (col, cond) => {
+        // condition 단일 슬롯에 set/replace/clear.
+        // index=0(default) = 첫 cond. cond=null이면 그 index 제거.
+        // 빈 cond(empty values/empty text 등)도 제거 처리.
+        setColumnCondition: (col, cond, index = 0) => {
           set((s) => {
             const next = { ...s.columnFilters }
-            if (
+            const list = [...(next[col] ?? [])]
+            const isEmpty =
               cond === null ||
               ((cond.kind === "in" || cond.kind === "not_in") &&
                 cond.values.length === 0) ||
@@ -1921,39 +1930,81 @@ export const useFlowBase = create<FlowBaseStore>()(
               (cond.kind === "date-range" && !cond.from && !cond.to) ||
               ((cond.kind === "contains" || cond.kind === "not_contains") &&
                 !cond.text.trim())
-            ) {
+            if (isEmpty) {
+              list.splice(index, 1)
+            } else if (index < list.length) {
+              list[index] = cond as FilterCondition
+            } else {
+              list.push(cond as FilterCondition)
+            }
+            if (list.length === 0) {
               delete next[col]
             } else {
-              next[col] = cond
+              next[col] = list
             }
             return { columnFilters: next }
           })
           scheduleLearnRecentFilter()
         },
-        // values 토글 — 현재 kind(in 또는 not_in) 보존. kind 변경은 setColumnCondition 사용.
+        // values 토글 — 컬럼의 첫 in/not_in cond에 적용. 없으면 새로 추가(in).
         toggleColumnInValue: (col, value) => {
           scheduleLearnRecentFilter()
           set((s) => {
-            const cur = s.columnFilters[col]
-            const isNot = cur?.kind === "not_in"
-            const curValues =
-              cur && (cur.kind === "in" || cur.kind === "not_in")
-                ? cur.values
-                : ([] as string[])
-            const has = curValues.includes(value)
-            const nextVals = has
-              ? curValues.filter((v) => v !== value)
-              : [...curValues, value]
             const next = { ...s.columnFilters }
-            if (nextVals.length === 0) {
+            const list = [...(next[col] ?? [])]
+            // 첫 in/not_in cond 찾기
+            const idx = list.findIndex(
+              (c) => c.kind === "in" || c.kind === "not_in",
+            )
+            if (idx === -1) {
+              // 없으면 새 in 추가
+              list.push({ kind: "in", values: [value] })
+            } else {
+              const cur = list[idx]
+              if (cur.kind !== "in" && cur.kind !== "not_in") return s
+              const isNot = cur.kind === "not_in"
+              const has = cur.values.includes(value)
+              const nextVals = has
+                ? cur.values.filter((v) => v !== value)
+                : [...cur.values, value]
+              if (nextVals.length === 0) {
+                list.splice(idx, 1)
+              } else {
+                list[idx] = isNot
+                  ? { kind: "not_in", values: nextVals }
+                  : { kind: "in", values: nextVals }
+              }
+            }
+            if (list.length === 0) {
               delete next[col]
             } else {
-              next[col] = isNot
-                ? { kind: "not_in", values: nextVals }
-                : { kind: "in", values: nextVals }
+              next[col] = list
             }
             return { columnFilters: next }
           })
+        },
+        addColumnCondition: (col, cond) => {
+          set((s) => {
+            const next = { ...s.columnFilters }
+            const list = [...(next[col] ?? []), cond]
+            next[col] = list
+            return { columnFilters: next }
+          })
+          scheduleLearnRecentFilter()
+        },
+        removeColumnCondition: (col, index) => {
+          set((s) => {
+            const next = { ...s.columnFilters }
+            const list = [...(next[col] ?? [])]
+            list.splice(index, 1)
+            if (list.length === 0) {
+              delete next[col]
+            } else {
+              next[col] = list
+            }
+            return { columnFilters: next }
+          })
+          scheduleLearnRecentFilter()
         },
         clearAllFilters: () => set({ filter: [], columnFilters: {} }),
         setSort: (sort) => {
@@ -2249,51 +2300,53 @@ export function selectVisibleRows(state: FlowBaseState): TableRow[] {
     rows = rows.filter((r) => allowed.has(String(r.status ?? "")))
   }
 
-  // 다중 필드 필터 (columnFilters — discriminated union)
-  for (const [col, cond] of Object.entries(state.columnFilters)) {
-    if (!cond) continue
-    if (cond.kind === "in") {
-      if (cond.values.length === 0) continue
-      const allowed = new Set(cond.values)
-      rows = rows.filter((r) => allowed.has(String(r[col] ?? "")))
-    } else if (cond.kind === "not_in") {
-      if (cond.values.length === 0) continue
-      const excluded = new Set(cond.values)
-      rows = rows.filter((r) => !excluded.has(String(r[col] ?? "")))
-    } else if (cond.kind === "range") {
-      const { min, max } = cond
-      if (min === undefined && max === undefined) continue
-      rows = rows.filter((r) => {
-        const n = Number(r[col])
-        if (!Number.isFinite(n)) return false
-        if (min !== undefined && n < min) return false
-        if (max !== undefined && n > max) return false
-        return true
-      })
-    } else if (cond.kind === "date-range") {
-      const { from, to } = cond
-      if (!from && !to) continue
-      rows = rows.filter((r) => {
-        const v = String(r[col] ?? "")
-        if (!v) return false
-        if (from && v < from) return false
-        if (to && v > to) return false
-        return true
-      })
-    } else if (cond.kind === "contains") {
-      const q = cond.text.trim().toLowerCase()
-      if (!q) continue
-      rows = rows.filter((r) => {
-        const v = r[col]
-        return typeof v === "string" && v.toLowerCase().includes(q)
-      })
-    } else if (cond.kind === "not_contains") {
-      const q = cond.text.trim().toLowerCase()
-      if (!q) continue
-      rows = rows.filter((r) => {
-        const v = r[col]
-        return !(typeof v === "string" && v.toLowerCase().includes(q))
-      })
+  // 다중 필드 필터 (columnFilters — 컬럼당 multi-condition AND, FilterCondition union)
+  for (const [col, conds] of Object.entries(state.columnFilters)) {
+    if (!conds || conds.length === 0) continue
+    for (const cond of conds) {
+      if (cond.kind === "in") {
+        if (cond.values.length === 0) continue
+        const allowed = new Set(cond.values)
+        rows = rows.filter((r) => allowed.has(String(r[col] ?? "")))
+      } else if (cond.kind === "not_in") {
+        if (cond.values.length === 0) continue
+        const excluded = new Set(cond.values)
+        rows = rows.filter((r) => !excluded.has(String(r[col] ?? "")))
+      } else if (cond.kind === "range") {
+        const { min, max } = cond
+        if (min === undefined && max === undefined) continue
+        rows = rows.filter((r) => {
+          const n = Number(r[col])
+          if (!Number.isFinite(n)) return false
+          if (min !== undefined && n < min) return false
+          if (max !== undefined && n > max) return false
+          return true
+        })
+      } else if (cond.kind === "date-range") {
+        const { from, to } = cond
+        if (!from && !to) continue
+        rows = rows.filter((r) => {
+          const v = String(r[col] ?? "")
+          if (!v) return false
+          if (from && v < from) return false
+          if (to && v > to) return false
+          return true
+        })
+      } else if (cond.kind === "contains") {
+        const q = cond.text.trim().toLowerCase()
+        if (!q) continue
+        rows = rows.filter((r) => {
+          const v = r[col]
+          return typeof v === "string" && v.toLowerCase().includes(q)
+        })
+      } else if (cond.kind === "not_contains") {
+        const q = cond.text.trim().toLowerCase()
+        if (!q) continue
+        rows = rows.filter((r) => {
+          const v = r[col]
+          return !(typeof v === "string" && v.toLowerCase().includes(q))
+        })
+      }
     }
   }
 
