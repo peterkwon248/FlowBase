@@ -6,6 +6,15 @@
 
 ## Current Features (Completed — 최근 우선)
 
+1. **폴리시 #7 — Filter cascade 복원 · firedKeys persist · Theme accent · Data Import · Members 깊이** (2026-05-24, `568526d`, **main 머지 완료**) —
+   - **Filter cascade hover 복원** (`components/board/filter-menu.tsx`) — DropdownMenu Sub + kind별 widget (Linear 정확). 직전 #6 2-step inline 폐기.
+   - **Legacy filter 액션 제거** — setColumnFilter/toggleColumnFilter 삭제.
+   - **permanentDeleteBoard cleanup** — viewSettings · schemaPositions · viewByBoardId dangling 키 정리.
+   - **firedKeys persist** (`lib/automation-runtime.tsx`) — localStorage + 30일 daily cleanup.
+   - **Theme accent 4 프리셋** (`globals.css` + `app/page.tsx` mount sync + `settings-dialog` AccentSection) — purple/blue/emerald/amber.
+   - **Data Import** (`store.importBoards` + settings-dialog ImportSection) — JSON 보드만 머지, id 충돌 시 새 id.
+   - **Members 깊이 minimum** — `WorkspaceMember.lastSeenAt` + `roleCanEdit` + `settings.currentUserId` (v12→v13) + Settings Members "You" 배지·lastSeen 표시. addRow demo 가드.
+
 1. **깊이 #6 — Timeline Gantt · Filter (2-step + range) · Display 옵션 · Chart reorder · Library 점프** (2026-05-24, `a818f82`, **main 머지 완료**) —
    - **Timeline Gantt 재작성** (`components/sections/timeline-view.tsx`) — 월별 카드 리스트 폐기, sticky day-column + Gantt bar + OVERDUE.
    - **Filter Popover 2-step inline** (`components/board/filter-menu.tsx`) — DropdownMenu Sub 폐기, 컬럼 hue dot.

@@ -4,6 +4,58 @@
 
 ---
 
+## 2026-05-24 (kkh94 머신, 폴리시 #7) — Filter cascade 복원 · firedKeys persist · Theme accent · Data Import · Members 깊이
+
+### 완료 (1 commit `568526d`)
+**6 폴리시(NEXT-ACTION 우선순위 중간 1~6) + Filter UX 재검토.** 직전 #6에서 사용자 보고로 인한 Filter UX 재설계 포함.
+
+1. **Filter cascade hover 복원** (사용자 보고 fix)
+   - 직전 세션 #6의 Popover 2-step inline 폐기 → **DropdownMenu Sub cascade로 복원** (Linear 정확 답습).
+   - 호버 시 sub menu 자동. SubContent 안에 kind별 widget — in 체크박스 / range min-max / date-range from-to.
+   - 컬럼 hue dot 유지. #6 dropdown-menu.tsx z-[60]/sideOffset 6/cursor-pointer 그대로.
+2. **Legacy filter 액션 제거** — setColumnFilter/toggleColumnFilter (FilterCondition alias) 호출처 없음 확인 후 store에서 삭제.
+3. **permanentDeleteBoard dangling cleanup** — viewSettings · schemaPositions · viewByBoardId 키 정리.
+4. **시간 트리거 firedKeys persist** — automation-runtime의 in-memory Set → localStorage `flowbase-automation-firedKeys-v1`. 30일 이전 daily key 자동 cleanup. 페이지 새로고침 후 같은 daily 중복 발화 ❌.
+5. **Theme accent color 프리셋** (Settings Appearance)
+   - types.ThemeAccent 'purple'|'blue'|'emerald'|'amber'.
+   - app/globals.css `[data-theme-accent="X"]` selector × light/dark 변종 (--primary, --ring override).
+   - app/page.tsx mount + 변경 시 `documentElement.setAttribute("data-theme-accent", X)`.
+   - Settings Appearance AccentSection 4 카드 (swatch + label + active check).
+6. **Data Import** (Settings Data 짝)
+   - `store.importBoards(Record<string, Board>)`: 새 boardIds. id 충돌 시 새 id 부여.
+   - ImportSection — file input + JSON 파싱 + confirm dialog + 보드만 머지 (다른 데이터 영향 ❌).
+7. **Members 깊이 (minimum viable)**
+   - types.WorkspaceMember.lastSeenAt? + `roleCanEdit(role)` helper.
+   - WorkspaceSettings.currentUserId (default mem-peter, store v12→v13 migrate).
+   - 시드 멤버에 lastSeenAt mock (now / 5m / 2h / 1d).
+   - store.addRow에 viewer readonly **demo 가드** (silent no-op — Phase 2에서 모든 mutation 확장).
+   - Settings Members 탭 "You" 배지 + "Xh ago" lastSeen 표시.
+
+### 큰 결정
+- **Filter UX 재검토 — Linear cascade hover로 복귀** — #6에서 "Linear 스타일 2-step inline"으로 잘못 매핑 (실제 Linear는 cascade). 사용자 보고로 정확한 패턴 복원. **lesson**: "Linear" "Notion" 패턴 매핑 시 정확한 reference 확인 필요.
+- **DropdownMenu Sub 다시 채택** — #6 폐기 결정 번복. #6의 z/sideOffset/cursor fix는 유효하므로 그대로 활용.
+- **firedKeys cleanup 패턴** — daily key는 ruleId:YYYY-MM-DD 형식 → 30일 cutoff. dueDate key (ruleId:boardId:rowId)는 보드/행 살아있는 동안 의미 — 별도 cleanup 안 함 (대량 누적 가능성 낮음, 다음 폴리시 후보).
+- **Theme accent 4 옵션** — purple(default)/blue/emerald/amber. 사용자 친숙 hue + WCAG AA 가능. light/dark 각 oklch 변종.
+- **Data Import는 보드만 머지** — library/wiki/automations 등 import는 후속 (충돌 정책 복잡). 첫 패스는 데이터 안전 우선.
+- **Members 깊이 minimum viable** — full enforcement는 모든 mutation에 가드 필요(15+ 액션). 광범위 변경이라 demo로 addRow만 + Phase 2 W11 실 분리 시 확장. UI(You/lastSeen)만 우선.
+- **single commit** — 직전 #5/#6 패턴 답습. PR 단위 큼이지만 시리즈 일관성. 분할 검토는 다음부터.
+
+### 검증
+- tsc 0 · vitest 44/44.
+- Filter cascade hover, firedKeys persist, Theme accent, Data Import, Members UI는 코드 검증 (브라우저 검증은 다음 세션에서 사용자가 직접 확인 — 변경량 많아 dev session stale 가능성 + 시간 효율).
+
+### Watch Out
+- **Members viewer readonly enforcement 부분 적용** — addRow만 차단 (silent). 다른 mutation은 viewer도 통과. Phase 2 실 분리 전엔 UI 약속 vs 실제 동작 불일치 가능. README/Members 탭에 "(mock — Phase 2 enforcement)" 명시 후속.
+- **Theme accent oklch 변종 light/dark 직접 매칭 어려움** — 4 accent × 2 mode = 8 색 수동 튜닝. 브라우저에서 실 확인 후 수정 가능성.
+- **Data Import 보드만** — viewSettings/schemaPositions 등 board별 메타는 같이 안 옴. 사용자 export 후 import 시 보드 외 상태 잃음 — 후속.
+- **firedKeys cleanup 30일 cutoff는 daily만** — dueDate key는 영원 누적 가능성. 보드 영구 삭제 시 같이 cleanup하는 후속 필요.
+- **filter cascade 사용자 환경 확인 필요** — preview에서 hover 동작 정확 검증 어려움 (mouse 이벤트 시뮬레이션). 사용자 실제 hover 시 잘 작동하는지 직접 확인.
+
+### 머신
+kkh94. main 머지·푸시 자동.
+
+---
+
 ## 2026-05-24 (kkh94 머신, 깊이 #6) — Timeline Gantt · Filter (2-step + range) · Display 옵션 · Chart reorder · Library 점프
 
 ### 완료 (1 commit `a818f82`)
