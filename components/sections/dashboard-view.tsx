@@ -436,7 +436,8 @@ function CustomChartCard({
           {renderChartBody(chart, rows, sourceCol)}
         </ChartCard>
         <div
-          className="absolute right-1.5 top-1.5 flex items-center gap-0.5 rounded-md bg-card/80 px-0.5 py-0.5 opacity-0 backdrop-blur transition-opacity group-hover:opacity-100"
+          // 데스크탑: group-hover로 fade. 터치 디바이스(hover:none): 항상 visible.
+          className="absolute right-1.5 top-1.5 flex items-center gap-0.5 rounded-md bg-card/80 px-0.5 py-0.5 opacity-0 backdrop-blur transition-opacity group-hover:opacity-100 [@media(hover:none)]:opacity-100"
           data-chart-toolbar={chart.id}
         >
           <ToolbarBtn
