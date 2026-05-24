@@ -6,9 +6,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { AlertTriangle, Check, Eye, Pencil } from "lucide-react"
+import { AlertTriangle, Check, Eye, History, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MarkdownBody } from "@/components/wiki/markdown-body"
+import { WikiHistoryDialog } from "@/components/wiki/wiki-history-dialog"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { WikiPage } from "@/types/flowbase"
@@ -39,11 +40,14 @@ export function WikiPageView({ page }: { page: WikiPage }) {
 
   const [editMode, setEditMode] = useState(false)
   const [draftBody, setDraftBody] = useState(page.body)
+  const [historyOpen, setHistoryOpen] = useState(false)
   // 페이지 전환 시 draft 리셋
   useEffect(() => {
     setEditMode(false)
     setDraftBody(page.body)
   }, [page.id, page.body])
+
+  const revisionCount = page.revisions?.length ?? 0
 
   const reVerify = () => {
     updateWikiPage(page.id, {
@@ -104,16 +108,34 @@ export function WikiPageView({ page }: { page: WikiPage }) {
             {page.title}
           </h1>
           {!editMode ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setEditMode(true)}
-              className="mt-2 h-8 gap-1.5 px-2.5 text-[12px]"
-              data-wiki-edit-toggle={page.id}
-            >
-              <Pencil className="size-3" strokeWidth={2} />
-              Edit
-            </Button>
+            <div className="mt-2 flex gap-1.5">
+              {revisionCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setHistoryOpen(true)}
+                  className="h-8 gap-1.5 px-2.5 text-[12px] text-muted-foreground"
+                  title={`${revisionCount} previous version${revisionCount === 1 ? "" : "s"}`}
+                  data-wiki-history={page.id}
+                >
+                  <History className="size-3" strokeWidth={2} />
+                  History
+                  <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground/[0.08] px-1 text-[9.5px] tabular-nums">
+                    {revisionCount}
+                  </span>
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditMode(true)}
+                className="h-8 gap-1.5 px-2.5 text-[12px]"
+                data-wiki-edit-toggle={page.id}
+              >
+                <Pencil className="size-3" strokeWidth={2} />
+                Edit
+              </Button>
+            </div>
           ) : (
             <div className="mt-2 flex gap-1.5">
               <Button
@@ -209,6 +231,12 @@ export function WikiPageView({ page }: { page: WikiPage }) {
           <MarkdownBody source={page.body} />
         )}
       </div>
+
+      <WikiHistoryDialog
+        page={page}
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+      />
     </div>
   )
 }

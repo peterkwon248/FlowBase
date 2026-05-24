@@ -24,6 +24,7 @@ import type {
   LibraryCategoryId,
   MemoryEntry,
   NavEntry,
+  PageRevision,
   RecentFilterSnapshot,
   RecentSortSnapshot,
   SortDir,
@@ -1809,9 +1810,24 @@ export const useFlowBase = create<FlowBaseStore>()(
         updateWikiPage: (id, patch) => {
           if (!ensureCanEdit(get(), "Edit wiki page")) return
           set((s) => ({
-            wikiPages: s.wikiPages.map((p) =>
-              p.id === id ? { ...p, ...patch } : p,
-            ),
+            wikiPages: s.wikiPages.map((p) => {
+              if (p.id !== id) return p
+              // body 또는 title 변경 시 revisions에 prev 보존 (max 20 FIFO).
+              // 같은 값으로 set 시 noop.
+              const bodyChanged = patch.body !== undefined && patch.body !== p.body
+              const titleChanged =
+                patch.title !== undefined && patch.title !== p.title
+              if (!bodyChanged && !titleChanged) {
+                return { ...p, ...patch }
+              }
+              const prevRev: PageRevision = {
+                ts: Date.now(),
+                title: p.title,
+                body: p.body,
+              }
+              const revisions = [prevRev, ...(p.revisions ?? [])].slice(0, 20)
+              return { ...p, ...patch, revisions }
+            }),
           }))
         },
         addWikiPage: (init) => {

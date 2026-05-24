@@ -226,6 +226,15 @@ export interface WikiPage {
   expiresAt: string | null  // ISO date — 만료 시 재검증 필요
   updatedAt: string         // ISO date
   body: string              // Markdown 원문
+  // 직전 N개 revisions FIFO. updateWikiPage(body 변경 시)가 prev push.
+  // body diff/version history Dialog가 이걸 표시. revert 가능. cap N=20.
+  revisions?: PageRevision[]
+}
+
+export interface PageRevision {
+  ts: number       // epoch ms (해당 revision으로 *바뀌기 직전*의 timestamp)
+  title: string
+  body: string
 }
 
 // ─── Workspace — Automations ───
