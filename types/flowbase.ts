@@ -471,8 +471,24 @@ export interface MemoryEntry {
   lastUsedTs: number    // 최근 사용 시각 (epoch ms)
 }
 
+// Phase B1: recent filter/sort snapshot — 자동 학습 (debounce 2s) + JSON dedupe + 최대 10개.
+// Click 시 그 snapshot을 active board에 재적용. FilterMenu Recent 섹션 entry.
+export interface RecentFilterSnapshot {
+  ts: number                                   // 최근 사용 시각 (epoch ms)
+  boardId: string
+  conditions: Record<string, FilterCondition>  // 시점의 columnFilters 전체
+}
+
+export interface RecentSortSnapshot {
+  ts: number
+  boardId: string
+  sort: SortState                              // 단일 sort key (state.sort)
+}
+
 export interface WorkspaceMemory {
   byScope: Record<string, MemoryEntry[]>
+  recentFilters: RecentFilterSnapshot[]
+  recentSorts: RecentSortSnapshot[]
 }
 
 export interface PanelState {

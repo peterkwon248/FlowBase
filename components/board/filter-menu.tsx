@@ -100,6 +100,25 @@ export function FilterMenu() {
   const columnFilters = useFlowBase((s) => s.columnFilters)
   const clearAllFilters = useFlowBase((s) => s.clearAllFilters)
   const setFilter = useFlowBase((s) => s.setFilter)
+  // B1-1: Recent filters — 활성 보드의 최근 snapshot 5개
+  const recentFilters = useFlowBase(
+    (s) => s.workspaceMemory.recentFilters,
+  )
+  const setColumnCondition = useFlowBase((s) => s.setColumnCondition)
+  const activeRecentFilters = useMemo(() => {
+    if (!board) return []
+    return recentFilters
+      .filter((r) => r.boardId === board.id)
+      .slice(0, 5)
+  }, [recentFilters, board])
+
+  const applyRecentFilter = (snapshot: { conditions: Record<string, FilterCondition> }) => {
+    // 현재 모두 clear 후 snapshot 적용 (직관적 — recent click = 그 상태로 복원)
+    clearAllFilters()
+    Object.entries(snapshot.conditions).forEach(([col, cond]) => {
+      setColumnCondition(col, cond)
+    })
+  }
 
   const filterableCols = useMemo<ColumnOption[]>(() => {
     if (!board) return []
@@ -168,6 +187,47 @@ export function FilterMenu() {
               cond={columnFilters[option.col.name]}
             />
           ))
+        )}
+
+        {/* B1-1: Recent filters — 활성 보드 최근 snapshot 재적용 진입점 */}
+        {activeRecentFilters.length > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
+              Recent
+            </DropdownMenuLabel>
+            {activeRecentFilters.map((r) => {
+              const condCount = Object.keys(r.conditions).length
+              const ageMin = Math.max(
+                1,
+                Math.round((Date.now() - r.ts) / 60000),
+              )
+              const ageLabel =
+                ageMin < 60
+                  ? `${ageMin}m`
+                  : ageMin < 1440
+                    ? `${Math.round(ageMin / 60)}h`
+                    : `${Math.round(ageMin / 1440)}d`
+              return (
+                <DropdownMenuItem
+                  key={r.ts}
+                  onSelect={() => applyRecentFilter(r)}
+                  className="gap-2"
+                  data-recent-filter={r.ts}
+                >
+                  <span className="text-[11px] tabular-nums text-muted-foreground">
+                    {condCount}
+                  </span>
+                  <span className="flex-1 truncate text-[12px]">
+                    {Object.keys(r.conditions).join(", ")}
+                  </span>
+                  <span className="text-[10px] tabular-nums text-muted-foreground/70">
+                    {ageLabel}
+                  </span>
+                </DropdownMenuItem>
+              )
+            })}
+          </>
         )}
         {totalActive > 0 && (
           <>

@@ -24,6 +24,8 @@ import type {
   LibraryCategoryId,
   MemoryEntry,
   NavEntry,
+  RecentFilterSnapshot,
+  RecentSortSnapshot,
   SortDir,
   TableRow,
   TicketStatus,
@@ -280,7 +282,7 @@ function createInitialState(): FlowBaseState {
     },
     schemaPositions: {},
     viewSettings: {},
-    workspaceMemory: { byScope: {} },
+    workspaceMemory: { byScope: {}, recentFilters: [], recentSorts: [] },
     events: [],
     panels: { activityBar: true, sidebar: true, aiPanel: true, detailBar: false },
     viewByBoardId: { [interviews.id]: "sheet", [tasks.id]: "sheet" },
@@ -354,6 +356,56 @@ const MEMORY_CAP_PER_SCOPE = 50
 const MEMORY_LEARN_TYPES = new Set<ColumnType>(["text", "select", "status"])
 // B1-3: frequency 도달 시 Library promote bridge toast 권유. LOCK: 자동 등록 ❌, 명시 click 시만.
 const PROMOTE_BRIDGE_COUNT = 5
+
+// B1-1/B1-2: recent filter/sort 자동 학습. debounce 2s + JSON dedupe + 최대 10개.
+// LOCK: 자동 학습이지만 사용자 부담 0 — 변경 후 짧은 멈춤 = "확정"으로 추정.
+const RECENT_LEARN_DEBOUNCE_MS = 2000
+const RECENT_CAP = 10
+let _filterLearnTimer: ReturnType<typeof setTimeout> | null = null
+let _sortLearnTimer: ReturnType<typeof setTimeout> | null = null
+
+function scheduleLearnRecentFilter(): void {
+  if (_filterLearnTimer) clearTimeout(_filterLearnTimer)
+  _filterLearnTimer = setTimeout(() => {
+    const s = useFlowBase.getState()
+    const empty = Object.keys(s.columnFilters).length === 0
+    if (empty) return
+    const snapshot: RecentFilterSnapshot = {
+      ts: Date.now(),
+      boardId: s.activeBoardId,
+      conditions: { ...s.columnFilters },
+    }
+    const key = JSON.stringify({ b: snapshot.boardId, c: snapshot.conditions })
+    const existing = s.workspaceMemory.recentFilters.filter(
+      (r) => JSON.stringify({ b: r.boardId, c: r.conditions }) !== key,
+    )
+    const next = [snapshot, ...existing].slice(0, RECENT_CAP)
+    useFlowBase.setState({
+      workspaceMemory: { ...s.workspaceMemory, recentFilters: next },
+    })
+  }, RECENT_LEARN_DEBOUNCE_MS)
+}
+
+function scheduleLearnRecentSort(): void {
+  if (_sortLearnTimer) clearTimeout(_sortLearnTimer)
+  _sortLearnTimer = setTimeout(() => {
+    const s = useFlowBase.getState()
+    if (!s.sort) return
+    const snapshot: RecentSortSnapshot = {
+      ts: Date.now(),
+      boardId: s.activeBoardId,
+      sort: s.sort,
+    }
+    const key = JSON.stringify({ b: snapshot.boardId, s: snapshot.sort })
+    const existing = s.workspaceMemory.recentSorts.filter(
+      (r) => JSON.stringify({ b: r.boardId, s: r.sort }) !== key,
+    )
+    const next = [snapshot, ...existing].slice(0, RECENT_CAP)
+    useFlowBase.setState({
+      workspaceMemory: { ...s.workspaceMemory, recentSorts: next },
+    })
+  }, RECENT_LEARN_DEBOUNCE_MS)
+}
 
 function memoryScopeKey(col: ColumnDef): string {
   return `${col.name}::${col.libraryFieldId ?? "_"}`
@@ -461,7 +513,11 @@ function learnFromPatch(
       })
     }
   }
-  return { byScope }
+  return {
+    byScope,
+    recentFilters: state.workspaceMemory.recentFilters,
+    recentSorts: state.workspaceMemory.recentSorts,
+  }
 }
 
 // 현재 store 상태에서 NavEntry를 만들어 돌려준다 (push 직전 호출).
@@ -1836,7 +1892,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
         setSearch: (search) => set({ search }),
         setFilter: (filter) => set({ filter }),
-        setColumnCondition: (col, cond) =>
+        setColumnCondition: (col, cond) => {
           set((s) => {
             const next = { ...s.columnFilters }
             if (
@@ -1855,9 +1911,12 @@ export const useFlowBase = create<FlowBaseStore>()(
               next[col] = cond
             }
             return { columnFilters: next }
-          }),
+          })
+          scheduleLearnRecentFilter()
+        },
         // values 토글 — 현재 kind(in 또는 not_in) 보존. kind 변경은 setColumnCondition 사용.
-        toggleColumnInValue: (col, value) =>
+        toggleColumnInValue: (col, value) => {
+          scheduleLearnRecentFilter()
           set((s) => {
             const cur = s.columnFilters[col]
             const isNot = cur?.kind === "not_in"
@@ -1878,9 +1937,13 @@ export const useFlowBase = create<FlowBaseStore>()(
                 : { kind: "in", values: nextVals }
             }
             return { columnFilters: next }
-          }),
+          })
+        },
         clearAllFilters: () => set({ filter: [], columnFilters: {} }),
-        setSort: (sort) => set({ sort }),
+        setSort: (sort) => {
+          set({ sort })
+          scheduleLearnRecentSort()
+        },
         setSelected: (selectedRowIds) => set({ selectedRowIds }),
         setFocused: (focusedCell) => set({ focusedCell }),
         setSearchOpen: (searchOpen) => set({ searchOpen }),
@@ -1994,7 +2057,16 @@ export const useFlowBase = create<FlowBaseStore>()(
           }
         }
         if (version < 14) {
-          s.workspaceMemory = s.workspaceMemory ?? { byScope: {} }
+          s.workspaceMemory = s.workspaceMemory ?? {
+            byScope: {},
+            recentFilters: [],
+            recentSorts: [],
+          }
+        }
+        // v14에서 추가된 workspaceMemory에 recentFilters/Sorts 필드가 없을 수 있음 — 보강.
+        if (s.workspaceMemory) {
+          s.workspaceMemory.recentFilters = s.workspaceMemory.recentFilters ?? []
+          s.workspaceMemory.recentSorts = s.workspaceMemory.recentSorts ?? []
         }
         if (version < 15) {
           // 기존 board.aiHistory entries를 events로 백필 (호환 유지 — aiHistory도 그대로 남김).
