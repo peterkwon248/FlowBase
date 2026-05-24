@@ -17,6 +17,7 @@ import {
   type LucideIcon,
   Sparkles,
 } from "lucide-react"
+import { InboxSidebar, type InboxFilter } from "@/components/inbox/inbox-sidebar"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type {
@@ -238,7 +239,8 @@ export function InboxView() {
   const setActiveWorkspaceItem = useFlowBase((s) => s.setActiveWorkspaceItem)
   const selectAsset = useFlowBase((s) => s.selectAsset)
 
-  const [filter, setFilter] = useState<InboxKind | "all">("all")
+  const [filter, setFilter] = useState<InboxFilter>("all")
+  const sidebarOn = useFlowBase((s) => s.panels.sidebar)
 
   const items = useMemo(
     () =>
@@ -281,63 +283,63 @@ export function InboxView() {
   const filtered =
     filter === "all" ? items : items.filter((i) => i.kind === filter)
 
+  const filterLabel = FILTERS.find((f) => f.id === filter)?.label ?? "All"
+
   return (
-    <div className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-background">
-      {/* 헤더 */}
-      <div className="shrink-0 px-6 pb-3 pt-5">
-        <div className="mb-1.5 flex items-center gap-2.5">
-          <span className="inline-flex size-8 items-center justify-center rounded-md bg-primary/15 text-primary">
-            <InboxIcon className="size-4" strokeWidth={1.75} />
-          </span>
-          <h1 className="text-[22px] font-bold tracking-[-0.02em]">Inbox</h1>
-          <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
-            {items.length}
-          </span>
+    <>
+      {sidebarOn && (
+        <InboxSidebar
+          filter={filter}
+          onFilter={setFilter}
+          counts={counts}
+        />
+      )}
+      <div className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-background">
+        {/* 헤더 */}
+        <div className="shrink-0 px-6 pb-3 pt-5">
+          <div className="mb-1.5 flex items-center gap-2.5">
+            <span className="inline-flex size-8 items-center justify-center rounded-md bg-primary/15 text-primary">
+              <InboxIcon className="size-4" strokeWidth={1.75} />
+            </span>
+            <h1 className="text-[22px] font-bold tracking-[-0.02em]">
+              {filterLabel}
+            </h1>
+            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+              {filtered.length}
+            </span>
+            {filter !== "all" && (
+              <button
+                type="button"
+                onClick={() => setFilter("all")}
+                className="ml-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+              >
+                · Show all
+              </button>
+            )}
+          </div>
+          <p className="pl-[42px] text-[13px] text-muted-foreground">
+            AI suggestions, alerts, and workspace activity that need attention.
+          </p>
         </div>
-        <p className="pl-[42px] text-[13px] text-muted-foreground">
-          AI suggestions, alerts, and workspace activity that need attention.
-        </p>
-      </div>
 
-      {/* 필터 chips */}
-      <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-border-subtle px-6 py-2">
-        {FILTERS.map((f) => {
-          const on = filter === f.id
-          const count = counts[f.id] ?? 0
-          return (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => setFilter(f.id)}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[12px] font-medium transition-colors",
-                on
-                  ? "border-transparent bg-foreground/[0.08] text-foreground"
-                  : "border-border-subtle bg-transparent text-muted-foreground hover:bg-foreground/[0.04]",
-              )}
-            >
-              {f.label}
-              <span className="tabular-nums opacity-60">{count}</span>
-            </button>
-          )
-        })}
+        {/* 항목 목록 */}
+        <div className="flex flex-col px-6 py-4">
+          {filtered.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border bg-card px-6 py-16 text-center text-[13px] text-muted-foreground">
+              {filter === "all"
+                ? "Inbox is empty — all clear."
+                : `No items in "${filterLabel}".`}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {filtered.map((item) => (
+                <ItemRow key={item.id} item={item} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* 항목 목록 */}
-      <div className="flex flex-col px-6 py-4">
-        {filtered.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border bg-card px-6 py-16 text-center text-[13px] text-muted-foreground">
-            Inbox is empty — all clear.
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {filtered.map((item) => (
-              <ItemRow key={item.id} item={item} />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+    </>
   )
 }
 
