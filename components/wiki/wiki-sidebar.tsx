@@ -5,7 +5,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { BookText, ChevronDown, FileText, Search } from "lucide-react"
+import { BookText, ChevronDown, FileText, Plus, Search, X } from "lucide-react"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { WikiPage } from "@/types/flowbase"
@@ -20,12 +20,26 @@ function groupByCategory(pages: WikiPage[]): Record<string, WikiPage[]> {
   return out
 }
 
+function filterPages(pages: WikiPage[], query: string): WikiPage[] {
+  const q = query.trim().toLowerCase()
+  if (!q) return pages
+  return pages.filter(
+    (p) =>
+      p.title.toLowerCase().includes(q) ||
+      p.category.toLowerCase().includes(q) ||
+      p.body.toLowerCase().includes(q),
+  )
+}
+
 export function WikiSidebar() {
   const pages = useFlowBase((s) => s.wikiPages)
   const selectedId = useFlowBase((s) => s.wikiSelectedId)
   const setWikiPage = useFlowBase((s) => s.setWikiPage)
+  const addWikiPage = useFlowBase((s) => s.addWikiPage)
 
-  const grouped = useMemo(() => groupByCategory(pages), [pages])
+  const [query, setQuery] = useState("")
+  const filtered = useMemo(() => filterPages(pages, query), [pages, query])
+  const grouped = useMemo(() => groupByCategory(filtered), [filtered])
   const categories = useMemo(() => Object.keys(grouped).sort(), [grouped])
 
   // 모든 카테고리 기본 펼침
@@ -40,24 +54,55 @@ export function WikiSidebar() {
         <span className="flex size-5 items-center justify-center rounded bg-chart-3/15 text-chart-3">
           <BookText className="size-3" strokeWidth={1.75} />
         </span>
-        <span className="text-[13px] font-semibold">Wiki</span>
+        <span className="flex-1 text-[13px] font-semibold">Wiki</span>
+        <button
+          type="button"
+          title="New page"
+          onClick={() => addWikiPage()}
+          data-wiki-new-page
+          className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+        >
+          <Plus className="size-3" strokeWidth={2} />
+        </button>
       </div>
 
-      {/* 검색 (스텁 — 후순위 작업) */}
+      {/* 검색 — 활성 (title/category/body 매치) */}
       <div className="px-2.5 pb-1 pt-2.5">
-        <div className="flex items-center gap-1.5 rounded-md border border-border-subtle bg-muted px-2 py-1 opacity-60">
+        <div
+          className={cn(
+            "flex items-center gap-1.5 rounded-md border bg-muted px-2 py-1 transition-colors",
+            query ? "border-border" : "border-border-subtle",
+          )}
+        >
           <Search className="size-3 text-muted-foreground" />
           <input
             type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder="Search pages…"
+            data-wiki-sidebar-search
             className="w-full bg-transparent text-[12px] outline-none placeholder:text-muted-foreground"
-            disabled
           />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="flex size-3 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+              title="Clear"
+            >
+              <X className="size-2.5" strokeWidth={2.5} />
+            </button>
+          )}
         </div>
       </div>
 
       {/* 카테고리 트리 */}
       <div className="flex-1 overflow-y-auto px-1.5 pb-3 pt-2">
+        {categories.length === 0 && (
+          <div className="px-3 py-6 text-center text-[11.5px] text-muted-foreground">
+            {query ? `No pages matching "${query}"` : "No pages yet."}
+          </div>
+        )}
         {categories.map((cat) => {
           const isCollapsed = !!collapsed[cat]
           const items = grouped[cat]

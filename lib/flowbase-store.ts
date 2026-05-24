@@ -117,6 +117,8 @@ export interface FlowBaseActions {
   setActiveWorkspaceItem: (item: ActiveWorkspaceItem) => void
   setWikiPage: (id: string | null) => void
   updateWikiPage: (id: string, patch: Partial<WikiPage>) => void
+  addWikiPage: (init?: Partial<WikiPage>) => string
+  deleteWikiPage: (id: string) => void
 
   // nav-history (인메모리)
   goBack: () => void
@@ -869,6 +871,37 @@ export const useFlowBase = create<FlowBaseStore>()(
               p.id === id ? { ...p, ...patch } : p,
             ),
           })),
+        addWikiPage: (init) => {
+          const today = new Date().toISOString().slice(0, 10)
+          const id = `wiki-${Date.now().toString(36).slice(-6)}`
+          const newPage: WikiPage = {
+            id,
+            title: init?.title ?? "Untitled page",
+            category: init?.category ?? "Uncategorized",
+            owner: init?.owner ?? "peter",
+            verified: false,
+            verifiedAt: null,
+            expiresAt: null,
+            updatedAt: today,
+            body: init?.body ?? "# Untitled\n\nStart writing…",
+          }
+          set((s) => ({
+            wikiPages: [newPage, ...s.wikiPages],
+            wikiSelectedId: id,
+          }))
+          return id
+        },
+        deleteWikiPage: (id) =>
+          set((s) => {
+            const remaining = s.wikiPages.filter((p) => p.id !== id)
+            return {
+              wikiPages: remaining,
+              wikiSelectedId:
+                s.wikiSelectedId === id
+                  ? (remaining[0]?.id ?? null)
+                  : s.wikiSelectedId,
+            }
+          }),
         setLibCategory: (libCategory) => {
           set({ libCategory, libAssetId: null })
           pushNav()
