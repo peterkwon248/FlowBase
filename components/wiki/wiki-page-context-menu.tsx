@@ -170,8 +170,8 @@ export function WikiPageContextMenu({
               Delete &ldquo;{page.title}&rdquo;?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This page will be removed. (Trash for wiki pages coming soon — for
-              now this is permanent.)
+              The page moves to trash and is permanently deleted after 30 days.
+              You can restore it from Trash any time before then.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

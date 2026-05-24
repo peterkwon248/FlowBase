@@ -86,6 +86,7 @@ export type ChartType =
   | "donut"
   | "line"
   | "stacked-bar"
+  | "heatmap"
 
 export type ChartWidth = "quarter" | "half" | "two-thirds" | "full"
 
@@ -290,10 +291,37 @@ export interface TrashedRow {
   deletedAt: string // ISO
 }
 
+// 삭제된 Wiki 페이지 — page 스냅샷 + deletedAt. 30일 후 자동 만료.
+export interface TrashedWikiPage {
+  page: WikiPage
+  deletedAt: string // ISO
+}
+
+// 멤버/권한 — 백엔드 없는 mock. Phase 2(W11)에서 실 분리.
+// Owner는 워크스페이스당 1명, 변경/삭제 ❌. 다른 role은 Settings에서 편집.
+export type MemberRole = "owner" | "admin" | "member" | "viewer"
+
+export const MEMBER_ROLE_LABELS: Record<MemberRole, string> = {
+  owner: "Owner",
+  admin: "Admin",
+  member: "Member",
+  viewer: "Viewer",
+}
+
+export interface WorkspaceMember {
+  id: string
+  name: string
+  email: string
+  initial: string // avatar 표시용 1글자
+  role: MemberRole
+  joinedAt: string // ISO date
+}
+
 // 워크스페이스 설정 (persist) — Settings 모달이 편집.
 export interface WorkspaceSettings {
   workspaceLabel: string
   workspaceInitial: string // 1글자 — 사이드바 아이콘 표시
+  members: WorkspaceMember[]
 }
 
 // 자동화 런타임이 listen하는 데이터 변경 이벤트 (ephemeral, persist ❌).
@@ -357,6 +385,7 @@ export interface FlowBaseState {
   // Trash · Settings (persist)
   trashedBoards: TrashedBoard[]
   trashedRows: TrashedRow[]
+  trashedWikiPages: TrashedWikiPage[]
   settings: WorkspaceSettings
 
   // Schema ER 카드 수동 위치 (persist) — 없으면 auto-layout
@@ -386,4 +415,8 @@ export interface FlowBaseState {
 
   // 자동화 런타임이 구독하는 마지막 데이터 변경 (persist ❌)
   lastChange: ChangeEvent | null
+
+  // Ask AI 포커스 요청 토큰 (persist ❌). 매 요청 시 timestamp set →
+  // AiComposer가 변화 감지해 input focus. 0 = 요청 없음(초기).
+  askAiFocusToken: number
 }

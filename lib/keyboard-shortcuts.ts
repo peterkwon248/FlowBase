@@ -45,6 +45,13 @@ export function useKeyboardShortcuts(): void {
         return
       }
 
+      // ⌘J — Ask AI: 패널 닫혀 있으면 열고 composer focus (편집 중에도 동작)
+      if (mod && !e.shiftKey && e.key.toLowerCase() === "j") {
+        e.preventDefault()
+        useFlowBase.getState().requestAskAi()
+        return
+      }
+
       // 패널 토글 — ⌘⇧A / ⌘⇧F / ⌘B (편집 중에도 동작 — 셸 단축키)
       if (mod && e.shiftKey && e.key.toLowerCase() === "a") {
         e.preventDefault()

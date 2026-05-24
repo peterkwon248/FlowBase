@@ -21,10 +21,13 @@ import type {
   SortDir,
   TableRow,
   TicketStatus,
+  MemberRole,
   TrashedBoard,
   TrashedRow,
+  TrashedWikiPage,
   ViewMode,
   WikiPage,
+  WorkspaceMember,
   WorkspaceSettings,
 } from "@/types/flowbase"
 import { createSeedLibrary } from "@/lib/flowbase-library-seed"
@@ -38,7 +41,18 @@ import {
 import { undoStack } from "@/lib/undo-stack"
 
 const STORE_KEY = "flowbase-state-v4"
-const STORE_VERSION = 9 // v9: trashedRows 추가 + 30일 만료 정책
+const STORE_VERSION = 11 // v11: settings.members 추가 (멤버/권한 mock — Phase 2 W11에서 실 분리)
+
+// 초기 시드 멤버 — 데모용 4명. 사용자는 Owner.
+function createSeedMembers(): WorkspaceMember[] {
+  const today = new Date().toISOString().slice(0, 10)
+  return [
+    { id: "mem-peter", name: "peter", email: "peter@flowbase.app", initial: "P", role: "owner", joinedAt: today },
+    { id: "mem-jisoo", name: "Jisoo Kim", email: "jisoo@flowbase.app", initial: "J", role: "admin", joinedAt: today },
+    { id: "mem-min", name: "Min Park", email: "min@flowbase.app", initial: "M", role: "member", joinedAt: today },
+    { id: "mem-rina", name: "Rina Lee", email: "rina@flowbase.app", initial: "R", role: "viewer", joinedAt: today },
+  ]
+}
 
 const TRASH_EXPIRY_MS = 30 * 86_400_000 // 30 days
 
@@ -76,12 +90,22 @@ export interface FlowBaseActions {
   permanentDeleteBoard: (boardId: string) => void
   restoreRow: (rowId: string) => void
   permanentDeleteRow: (rowId: string) => void
+  restoreWikiPage: (pageId: string) => void
+  permanentDeleteWikiPage: (pageId: string) => void
   emptyTrash: () => void
   // 30일 만료 자동 정리 (mount 시 호출 권장)
   cleanupExpiredTrash: () => void
 
   // Settings
   updateSettings: (patch: Partial<WorkspaceSettings>) => void
+
+  // Members — mock 멤버/권한. Owner는 변경/삭제 ❌.
+  addMember: (init: { name: string; email: string; role: MemberRole }) => string
+  updateMemberRole: (id: string, role: MemberRole) => void
+  removeMember: (id: string) => void
+
+  // Data export — 전체 store 상태(persisted slice)를 JSON 문자열로.
+  exportData: () => string
 
   // Schema positions
   setSchemaPosition: (boardId: string, pos: { x: number; y: number }) => void
@@ -157,6 +181,9 @@ export interface FlowBaseActions {
   togglePanel: (k: keyof FlowBaseState["panels"]) => void
   showAllPanels: () => void
   hideAllPanels: () => void
+
+  // Ask AI 진입 — 헤더 버튼/⌘J 단축키 양쪽에서 호출. AI 패널 보장 + composer focus.
+  requestAskAi: () => void
 }
 
 export type FlowBaseStore = FlowBaseState & FlowBaseActions
@@ -175,7 +202,12 @@ function createInitialState(): FlowBaseState {
     wikiSelectedId: wikiPages[0]?.id ?? null,
     trashedBoards: [],
     trashedRows: [],
-    settings: { workspaceLabel: "peter's workspace", workspaceInitial: "P" },
+    trashedWikiPages: [],
+    settings: {
+      workspaceLabel: "peter's workspace",
+      workspaceInitial: "P",
+      members: createSeedMembers(),
+    },
     schemaPositions: {},
     panels: { activityBar: true, sidebar: true, aiPanel: true, detailBar: false },
     viewByBoardId: { [interviews.id]: "sheet", [tasks.id]: "sheet" },
@@ -194,6 +226,7 @@ function createInitialState(): FlowBaseState {
     navStack: [],
     navIndex: -1,
     lastChange: null,
+    askAiFocusToken: 0,
   }
 }
 
@@ -466,7 +499,39 @@ export const useFlowBase = create<FlowBaseStore>()(
           }))
         },
 
-        emptyTrash: () => set({ trashedBoards: [], trashedRows: [] }),
+        restoreWikiPage: (pageId) => {
+          set((s) => {
+            const trashed = s.trashedWikiPages.find(
+              (t) => t.page.id === pageId,
+            )
+            if (!trashed) return s
+            // 같은 id가 이미 있으면(드물지만) 중복 ❌ — trash에서만 빼고 끝.
+            if (s.wikiPages.some((p) => p.id === pageId)) {
+              return {
+                trashedWikiPages: s.trashedWikiPages.filter(
+                  (t) => t.page.id !== pageId,
+                ),
+              }
+            }
+            return {
+              wikiPages: [trashed.page, ...s.wikiPages],
+              trashedWikiPages: s.trashedWikiPages.filter(
+                (t) => t.page.id !== pageId,
+              ),
+            }
+          })
+        },
+
+        permanentDeleteWikiPage: (pageId) => {
+          set((s) => ({
+            trashedWikiPages: s.trashedWikiPages.filter(
+              (t) => t.page.id !== pageId,
+            ),
+          }))
+        },
+
+        emptyTrash: () =>
+          set({ trashedBoards: [], trashedRows: [], trashedWikiPages: [] }),
 
         cleanupExpiredTrash: () => {
           const cutoff = Date.now() - TRASH_EXPIRY_MS
@@ -477,11 +542,78 @@ export const useFlowBase = create<FlowBaseStore>()(
             trashedRows: s.trashedRows.filter(
               (t) => new Date(t.deletedAt).getTime() >= cutoff,
             ),
+            trashedWikiPages: s.trashedWikiPages.filter(
+              (t) => new Date(t.deletedAt).getTime() >= cutoff,
+            ),
           }))
         },
 
         updateSettings: (patch) =>
           set((s) => ({ settings: { ...s.settings, ...patch } })),
+
+        addMember: ({ name, email, role }) => {
+          const id = `mem-${Date.now().toString(36).slice(-6)}`
+          const newMember: WorkspaceMember = {
+            id,
+            name: name.trim() || "Unnamed",
+            email: email.trim(),
+            initial: (name.trim()[0] || "?").toUpperCase(),
+            role,
+            joinedAt: new Date().toISOString().slice(0, 10),
+          }
+          set((s) => ({
+            settings: {
+              ...s.settings,
+              members: [...s.settings.members, newMember],
+            },
+          }))
+          return id
+        },
+
+        updateMemberRole: (id, role) =>
+          set((s) => ({
+            settings: {
+              ...s.settings,
+              members: s.settings.members.map((m) =>
+                // Owner role은 변경 ❌ (다른 멤버를 owner로 승격하지도 못함 — 워크스페이스당 1 owner)
+                m.id === id && m.role !== "owner" && role !== "owner"
+                  ? { ...m, role }
+                  : m,
+              ),
+            },
+          })),
+
+        removeMember: (id) =>
+          set((s) => ({
+            settings: {
+              ...s.settings,
+              members: s.settings.members.filter(
+                (m) => m.id !== id || m.role === "owner", // Owner 삭제 ❌
+              ),
+            },
+          })),
+
+        exportData: () => {
+          const s = get()
+          // partialize와 같은 슬라이스만 — ephemeral state 제외 (signal-to-noise)
+          const snapshot = {
+            exportedAt: new Date().toISOString(),
+            storeVersion: STORE_VERSION,
+            boards: s.boards,
+            activeBoardId: s.activeBoardId,
+            library: s.library,
+            automations: s.automations,
+            suggestedAutomations: s.suggestedAutomations,
+            wikiPages: s.wikiPages,
+            wikiSelectedId: s.wikiSelectedId,
+            trashedBoards: s.trashedBoards,
+            trashedRows: s.trashedRows,
+            trashedWikiPages: s.trashedWikiPages,
+            settings: s.settings,
+            schemaPositions: s.schemaPositions,
+          }
+          return JSON.stringify(snapshot, null, 2)
+        },
 
         setSchemaPosition: (boardId, pos) =>
           set((s) => ({
@@ -1099,8 +1231,11 @@ export const useFlowBase = create<FlowBaseStore>()(
           }))
           return id
         },
+        // 삭제 = trash 이동. 30일 후 cleanupExpiredTrash가 자동 영구 삭제.
         deleteWikiPage: (id) =>
           set((s) => {
+            const target = s.wikiPages.find((p) => p.id === id)
+            if (!target) return s
             const remaining = s.wikiPages.filter((p) => p.id !== id)
             return {
               wikiPages: remaining,
@@ -1108,6 +1243,10 @@ export const useFlowBase = create<FlowBaseStore>()(
                 s.wikiSelectedId === id
                   ? (remaining[0]?.id ?? null)
                   : s.wikiSelectedId,
+              trashedWikiPages: [
+                { page: target, deletedAt: nowIso() },
+                ...s.trashedWikiPages,
+              ],
             }
           }),
         setLibCategory: (libCategory) => {
@@ -1197,6 +1336,16 @@ export const useFlowBase = create<FlowBaseStore>()(
               detailBar: false,
             },
           }),
+
+        // Ask AI — 헤더 버튼/⌘J. 패널 닫혀 있으면 강제로 열고, focus 토큰 갱신.
+        // 같은 turn에 두 set이 일어나도 React batching이 합치므로 안전.
+        requestAskAi: () => {
+          const s = get()
+          if (!s.panels.aiPanel) {
+            set({ panels: { ...s.panels, aiPanel: true } })
+          }
+          set({ askAiFocusToken: Date.now() })
+        },
       }
     },
     {
@@ -1207,6 +1356,10 @@ export const useFlowBase = create<FlowBaseStore>()(
       //   v4 → v5: Tasks 보드 시드
       //   v5 → v6: Wiki 페이지 시드
       //   v6 → v7: trashedBoards · settings
+      //   v7 → v8: schemaPositions
+      //   v8 → v9: trashedRows
+      //   v9 → v10: trashedWikiPages
+      //   v10 → v11: settings.members
       migrate: (persistedState, version) => {
         const s = (persistedState ?? {}) as Partial<FlowBaseState>
         if (version < 5) {
@@ -1233,16 +1386,29 @@ export const useFlowBase = create<FlowBaseStore>()(
         }
         if (version < 7) {
           s.trashedBoards = s.trashedBoards ?? []
-          s.settings = s.settings ?? {
+          s.settings = (s.settings ?? {
             workspaceLabel: "peter's workspace",
             workspaceInitial: "P",
-          }
+          }) as WorkspaceSettings
         }
         if (version < 8) {
           s.schemaPositions = s.schemaPositions ?? {}
         }
         if (version < 9) {
           s.trashedRows = s.trashedRows ?? []
+        }
+        if (version < 10) {
+          s.trashedWikiPages = s.trashedWikiPages ?? []
+        }
+        if (version < 11) {
+          // settings.members 시드 주입 (기존 사용자에게 데모 표시)
+          s.settings = {
+            workspaceLabel: s.settings?.workspaceLabel ?? "peter's workspace",
+            workspaceInitial: s.settings?.workspaceInitial ?? "P",
+            members:
+              (s.settings as Partial<WorkspaceSettings>)?.members ??
+              createSeedMembers(),
+          }
         }
         return s as FlowBaseState
       },
@@ -1256,6 +1422,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         wikiSelectedId: s.wikiSelectedId,
         trashedBoards: s.trashedBoards,
         trashedRows: s.trashedRows,
+        trashedWikiPages: s.trashedWikiPages,
         settings: s.settings,
         schemaPositions: s.schemaPositions,
         panels: s.panels,

@@ -5,7 +5,7 @@
 
 "use client"
 
-import { Search } from "lucide-react"
+import { Search, Sparkles } from "lucide-react"
 import { NavCluster } from "@/components/board/nav-cluster"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Kbd } from "@/components/ui/kbd"
@@ -17,6 +17,7 @@ export function BoardHeader() {
   const search = useFlowBase((s) => s.search)
   const setSearch = useFlowBase((s) => s.setSearch)
   const setSearchOpen = useFlowBase((s) => s.setSearchOpen)
+  const requestAskAi = useFlowBase((s) => s.requestAskAi)
   const workspaceLabel = useFlowBase((s) => s.settings.workspaceLabel)
 
   return (
@@ -48,6 +49,17 @@ export function BoardHeader() {
           onClick={(e) => e.stopPropagation()}
         />
         {!search && <Kbd className="text-[10px]">⌘K</Kbd>}
+      </button>
+      <button
+        type="button"
+        onClick={() => requestAskAi()}
+        data-ask-ai-trigger
+        className="flex items-center gap-1.5 rounded-md border border-border-subtle bg-muted px-2 py-1.5 text-[12.5px] transition-colors hover:border-border"
+        title="Ask AI ⌘J"
+      >
+        <Sparkles className="size-3.5 text-primary" />
+        <span className="text-muted-foreground">Ask AI</span>
+        <Kbd className="ml-0.5 text-[10px]">⌘J</Kbd>
       </button>
       <ThemeToggle />
     </header>

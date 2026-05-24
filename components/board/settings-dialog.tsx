@@ -1,11 +1,18 @@
 // FlowBase V2 — Settings 다이얼로그 (status bar Settings 클릭으로 열림)
 //
-// 첫 패스: 워크스페이스 이름 · 단축 표기(P) · 저장공간 정보 (read-only stub).
-// 향후 추가: 멤버/권한 · 테마 프리셋 · 데이터 export 등.
+// 4 탭: General · Members · Appearance · Data.
+// - General — workspace name·initial (편집), Storage (read-only stub)
+// - Members — mock 멤버/권한 (시드 4명 · role Select · Invite · Remove)
+// - Appearance — next-themes Light/Dark/System 카드 토글
+// - Data — 전체 store JSON export (Blob 다운로드)
+// 백엔드 없는 시점이라 멤버는 mock UX. Phase 2(W11)에서 실 분리.
 
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { Check, Download, Monitor, Moon, Sun, Trash2, UserPlus } from "lucide-react"
+import { useTheme } from "next-themes"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -17,7 +24,21 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useFlowBase } from "@/lib/flowbase-store"
+import { cn } from "@/lib/utils"
+import {
+  MEMBER_ROLE_LABELS,
+  type MemberRole,
+  type WorkspaceMember,
+} from "@/types/flowbase"
 
 export function SettingsDialog({
   open,
@@ -26,99 +47,462 @@ export function SettingsDialog({
   open: boolean
   onOpenChange: (o: boolean) => void
 }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Settings</DialogTitle>
+          <DialogDescription className="text-[12px]">
+            Customize your workspace.
+          </DialogDescription>
+        </DialogHeader>
+
+        <Tabs defaultValue="general">
+          <TabsList className="w-full">
+            <TabsTrigger value="general" data-settings-tab="general">
+              General
+            </TabsTrigger>
+            <TabsTrigger value="members" data-settings-tab="members">
+              Members
+            </TabsTrigger>
+            <TabsTrigger value="appearance" data-settings-tab="appearance">
+              Appearance
+            </TabsTrigger>
+            <TabsTrigger value="data" data-settings-tab="data">
+              Data
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="general" className="mt-4">
+            <GeneralTab onClose={() => onOpenChange(false)} />
+          </TabsContent>
+          <TabsContent value="members" className="mt-4">
+            <MembersTab />
+          </TabsContent>
+          <TabsContent value="appearance" className="mt-4">
+            <AppearanceTab />
+          </TabsContent>
+          <TabsContent value="data" className="mt-4">
+            <DataTab />
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ─── General ───────────────────────────────────────
+function GeneralTab({ onClose }: { onClose: () => void }) {
   const settings = useFlowBase((s) => s.settings)
   const updateSettings = useFlowBase((s) => s.updateSettings)
 
   const [draftLabel, setDraftLabel] = useState(settings.workspaceLabel)
   const [draftInitial, setDraftInitial] = useState(settings.workspaceInitial)
 
-  // 다이얼로그가 열릴 때마다 store 값으로 초기화 (이전 편집 폐기)
+  // store 값이 외부 변경 시 (다른 머신 sync 등) 동기화
   useEffect(() => {
-    if (open) {
-      setDraftLabel(settings.workspaceLabel)
-      setDraftInitial(settings.workspaceInitial)
-    }
-  }, [open, settings.workspaceLabel, settings.workspaceInitial])
+    setDraftLabel(settings.workspaceLabel)
+    setDraftInitial(settings.workspaceInitial)
+  }, [settings.workspaceLabel, settings.workspaceInitial])
 
   const save = () => {
     const label = draftLabel.trim() || "Workspace"
     const initial =
       (draftInitial.trim() || label[0] || "W").slice(0, 1).toUpperCase()
-    updateSettings({
-      workspaceLabel: label,
-      workspaceInitial: initial,
-    })
-    onOpenChange(false)
+    updateSettings({ workspaceLabel: label, workspaceInitial: initial })
+    toast.success("Workspace updated")
+    onClose()
+  }
+
+  const dirty =
+    draftLabel !== settings.workspaceLabel ||
+    draftInitial !== settings.workspaceInitial
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="ws-label" className="text-[12px]">
+          Workspace name
+        </Label>
+        <Input
+          id="ws-label"
+          value={draftLabel}
+          onChange={(e) => setDraftLabel(e.target.value)}
+          maxLength={60}
+          placeholder="peter's workspace"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="ws-initial" className="text-[12px]">
+          Sidebar initial
+        </Label>
+        <Input
+          id="ws-initial"
+          value={draftInitial}
+          onChange={(e) => setDraftInitial(e.target.value.slice(0, 1))}
+          maxLength={1}
+          className="w-16 text-center font-semibold uppercase"
+          placeholder="P"
+        />
+        <p className="text-[10.5px] text-muted-foreground">
+          The single letter shown on the sidebar workspace badge.
+        </p>
+      </div>
+
+      <div className="border-t border-border-subtle pt-3">
+        <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+          Storage
+        </div>
+        <div className="flex items-center justify-between text-[12.5px]">
+          <span className="text-muted-foreground">Used</span>
+          <span className="tabular-nums font-medium">2.1 / 10 GB</span>
+        </div>
+        <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
+          <div className="h-full bg-primary" style={{ width: "21%" }} />
+        </div>
+        <p className="mt-2 text-[10.5px] text-muted-foreground">
+          Storage tracking is currently a placeholder.
+        </p>
+      </div>
+
+      <DialogFooter>
+        <Button variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={save} disabled={!dirty}>
+          Save
+        </Button>
+      </DialogFooter>
+    </div>
+  )
+}
+
+// ─── Members ───────────────────────────────────────
+function MembersTab() {
+  const members = useFlowBase((s) => s.settings.members)
+  const updateMemberRole = useFlowBase((s) => s.updateMemberRole)
+  const removeMember = useFlowBase((s) => s.removeMember)
+  const addMember = useFlowBase((s) => s.addMember)
+
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [draftName, setDraftName] = useState("")
+  const [draftEmail, setDraftEmail] = useState("")
+  const [draftRole, setDraftRole] = useState<MemberRole>("member")
+
+  const submitInvite = () => {
+    const name = draftName.trim()
+    if (!name) {
+      toast.error("Name is required")
+      return
+    }
+    addMember({ name, email: draftEmail.trim(), role: draftRole })
+    toast.success(`${name} invited as ${MEMBER_ROLE_LABELS[draftRole]}`)
+    setDraftName("")
+    setDraftEmail("")
+    setDraftRole("member")
+    setInviteOpen(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
-          <DialogDescription className="text-[12px]">
-            Customize your workspace. More options coming soon.
-          </DialogDescription>
-        </DialogHeader>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="text-[12px] text-muted-foreground">
+          {members.length} {members.length === 1 ? "member" : "members"}
+        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setInviteOpen(true)}
+          className="gap-1.5"
+          data-invite-trigger
+        >
+          <UserPlus className="size-3.5" />
+          Invite
+        </Button>
+      </div>
 
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="ws-label" className="text-[12px]">
-              Workspace name
-            </Label>
-            <Input
-              id="ws-label"
-              value={draftLabel}
-              onChange={(e) => setDraftLabel(e.target.value)}
-              maxLength={60}
-              placeholder="peter's workspace"
-            />
-          </div>
+      <div className="max-h-[320px] space-y-1.5 overflow-y-auto pr-1">
+        {members.map((m) => (
+          <MemberRow
+            key={m.id}
+            member={m}
+            onRoleChange={(role) => updateMemberRole(m.id, role)}
+            onRemove={() => removeMember(m.id)}
+          />
+        ))}
+      </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="ws-initial" className="text-[12px]">
-              Sidebar initial
-            </Label>
-            <Input
-              id="ws-initial"
-              value={draftInitial}
-              onChange={(e) => setDraftInitial(e.target.value.slice(0, 1))}
-              maxLength={1}
-              className="w-16 text-center font-semibold uppercase"
-              placeholder="P"
-            />
-            <p className="text-[10.5px] text-muted-foreground">
-              The single letter shown on the sidebar workspace badge.
-            </p>
-          </div>
-
-          <div className="border-t border-border-subtle pt-3">
-            <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-              Storage
-            </div>
-            <div className="flex items-center justify-between text-[12.5px]">
-              <span className="text-muted-foreground">Used</span>
-              <span className="tabular-nums font-medium">2.1 / 10 GB</span>
-            </div>
-            <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full bg-primary"
-                style={{ width: "21%" }}
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Invite member</DialogTitle>
+            <DialogDescription className="text-[12px]">
+              Add a person to this workspace (mock — no email is sent yet).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="invite-name" className="text-[12px]">
+                Name
+              </Label>
+              <Input
+                id="invite-name"
+                autoFocus
+                value={draftName}
+                onChange={(e) => setDraftName(e.target.value)}
+                placeholder="e.g. Sora Han"
               />
             </div>
-            <p className="mt-2 text-[10.5px] text-muted-foreground">
-              Storage tracking is currently a placeholder.
-            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="invite-email" className="text-[12px]">
+                Email
+              </Label>
+              <Input
+                id="invite-email"
+                value={draftEmail}
+                onChange={(e) => setDraftEmail(e.target.value)}
+                placeholder="sora@example.com"
+                type="email"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[12px]">Role</Label>
+              <Select
+                value={draftRole}
+                onValueChange={(v) => setDraftRole(v as MemberRole)}
+              >
+                <SelectTrigger data-invite-role>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="viewer">Viewer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setInviteOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={submitInvite} data-invite-submit>
+              Invite
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
 
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={save}>Save</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+function MemberRow({
+  member,
+  onRoleChange,
+  onRemove,
+}: {
+  member: WorkspaceMember
+  onRoleChange: (role: MemberRole) => void
+  onRemove: () => void
+}) {
+  const isOwner = member.role === "owner"
+
+  return (
+    <div
+      data-member-id={member.id}
+      className="flex items-center gap-3 rounded-md border border-border-subtle bg-card px-3 py-2"
+    >
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[12.5px] font-semibold text-primary">
+        {member.initial}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[12.5px] font-medium">{member.name}</div>
+        <div className="truncate text-[10.5px] text-muted-foreground">
+          {member.email}
+        </div>
+      </div>
+      {isOwner ? (
+        <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10.5px] font-semibold text-amber-700 dark:text-amber-300">
+          Owner
+        </span>
+      ) : (
+        <>
+          <Select
+            value={member.role}
+            onValueChange={(v) => onRoleChange(v as MemberRole)}
+          >
+            <SelectTrigger className="h-7 w-[100px] text-[11.5px]" data-member-role>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="member">Member</SelectItem>
+              <SelectItem value="viewer">Viewer</SelectItem>
+            </SelectContent>
+          </Select>
+          <button
+            type="button"
+            title="Remove member"
+            onClick={onRemove}
+            data-member-remove
+            className="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
+          >
+            <Trash2 className="size-3.5" strokeWidth={1.75} />
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ─── Appearance ────────────────────────────────────
+function AppearanceTab() {
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  // mount 전엔 theme=undefined — placeholder만
+  const current = mounted ? (theme ?? "system") : "system"
+
+  return (
+    <div className="space-y-3">
+      <div className="text-[12px] text-muted-foreground">
+        Theme applies to the whole workspace. Match system follows your OS
+        preference.
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <ThemeCard
+          id="light"
+          label="Light"
+          icon={<Sun className="size-4" />}
+          active={current === "light"}
+          onClick={() => setTheme("light")}
+        />
+        <ThemeCard
+          id="dark"
+          label="Dark"
+          icon={<Moon className="size-4" />}
+          active={current === "dark"}
+          onClick={() => setTheme("dark")}
+        />
+        <ThemeCard
+          id="system"
+          label="System"
+          icon={<Monitor className="size-4" />}
+          active={current === "system"}
+          onClick={() => setTheme("system")}
+        />
+      </div>
+      <p className="text-[10.5px] text-muted-foreground">
+        Accent color presets are coming soon.
+      </p>
+    </div>
+  )
+}
+
+function ThemeCard({
+  id,
+  label,
+  icon,
+  active,
+  onClick,
+}: {
+  id: string
+  label: string
+  icon: React.ReactNode
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-theme-card={id}
+      className={cn(
+        "relative flex flex-col items-center gap-1.5 rounded-md border bg-card px-3 py-3.5 transition-colors",
+        active
+          ? "border-primary"
+          : "border-border-subtle hover:border-border",
+      )}
+    >
+      <div
+        className={cn(
+          "flex size-9 items-center justify-center rounded-md",
+          active
+            ? "bg-primary/15 text-primary"
+            : "bg-muted text-muted-foreground",
+        )}
+      >
+        {icon}
+      </div>
+      <span className="text-[12.5px] font-medium">{label}</span>
+      {active && (
+        <Check
+          className="absolute right-1.5 top-1.5 size-3.5 text-primary"
+          strokeWidth={2.5}
+        />
+      )}
+    </button>
+  )
+}
+
+// ─── Data ──────────────────────────────────────────
+function DataTab() {
+  const exportData = useFlowBase((s) => s.exportData)
+  const anchorRef = useRef<HTMLAnchorElement>(null)
+
+  const handleExport = () => {
+    try {
+      const json = exportData()
+      const blob = new Blob([json], { type: "application/json" })
+      const url = URL.createObjectURL(blob)
+      const a = anchorRef.current
+      if (!a) return
+      a.href = url
+      const date = new Date().toISOString().slice(0, 10).replace(/-/g, "")
+      a.download = `flowbase-export-${date}.json`
+      a.click()
+      // 다음 tick에 revoke (Safari 호환)
+      setTimeout(() => URL.revokeObjectURL(url), 0)
+      toast.success("Export downloaded")
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error"
+      toast.error(`Export failed — ${msg}`)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-md border border-border-subtle bg-card p-3">
+        <div className="mb-1 text-[12.5px] font-medium">Export workspace</div>
+        <p className="mb-2.5 text-[11.5px] text-muted-foreground">
+          Download a snapshot of all boards, library assets, automations, wiki
+          pages, and settings as a JSON file. Useful for backups.
+        </p>
+        <Button
+          size="sm"
+          onClick={handleExport}
+          className="gap-1.5"
+          data-export-trigger
+        >
+          <Download className="size-3.5" />
+          Export JSON
+        </Button>
+      </div>
+
+      <div className="rounded-md border border-border-subtle bg-muted/30 p-3">
+        <div className="mb-1 text-[12.5px] font-medium text-muted-foreground">
+          Import
+        </div>
+        <p className="text-[11.5px] text-muted-foreground">
+          Importing a previously exported file is coming soon. For now you can
+          restore from a per-row Trash for 30 days.
+        </p>
+      </div>
+
+      {/* 다운로드 트리거용 숨김 앵커 */}
+      <a ref={anchorRef} className="hidden" aria-hidden="true" />
+    </div>
   )
 }

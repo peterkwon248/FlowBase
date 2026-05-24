@@ -29,6 +29,15 @@ export default function Home() {
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     setMounted(true)
+    // Trash 30일 만료 자동 정리 — Trash 다이얼로그 안 열어도 mount 한 번에 cleanup.
+    // hydrate 비동기 race 회피: hasHydrated 시 즉시, 아직이면 finishHydration 콜백.
+    const run = () => useFlowBase.getState().cleanupExpiredTrash()
+    if (useFlowBase.persist.hasHydrated()) {
+      run()
+      return
+    }
+    const unsub = useFlowBase.persist.onFinishHydration(run)
+    return unsub
   }, [])
 
   const activityMode = useFlowBase((s) => s.activityMode)

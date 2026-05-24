@@ -4,8 +4,9 @@
 
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Send } from "lucide-react"
+import { useFlowBase } from "@/lib/flowbase-store"
 
 interface AiComposerProps {
   busy: boolean
@@ -14,6 +15,15 @@ interface AiComposerProps {
 
 export function AiComposer({ busy, onSend }: AiComposerProps) {
   const [input, setInput] = useState("")
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Ask AI 진입 요청 — 헤더 버튼/⌘J가 token 갱신. 0 = 초기, 무시.
+  const focusToken = useFlowBase((s) => s.askAiFocusToken)
+  useEffect(() => {
+    if (focusToken === 0) return
+    inputRef.current?.focus()
+    inputRef.current?.select()
+  }, [focusToken])
 
   const submit = () => {
     const text = input.trim()
@@ -25,6 +35,7 @@ export function AiComposer({ busy, onSend }: AiComposerProps) {
   return (
     <div className="rounded-lg border border-border bg-card p-2">
       <input
+        ref={inputRef}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={(e) => {
@@ -34,6 +45,7 @@ export function AiComposer({ busy, onSend }: AiComposerProps) {
           }
         }}
         placeholder="Ask AI…"
+        data-ai-composer-input
         className="w-full bg-transparent px-1 py-0.5 text-[12.5px] outline-none placeholder:text-muted-foreground"
       />
       <div className="mt-1 flex items-center gap-1.5">

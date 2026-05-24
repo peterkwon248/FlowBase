@@ -17,7 +17,11 @@ import {
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { useFlowBase } from "@/lib/flowbase-store"
-import type { TrashedBoard, TrashedRow } from "@/types/flowbase"
+import type {
+  TrashedBoard,
+  TrashedRow,
+  TrashedWikiPage,
+} from "@/types/flowbase"
 
 function relativeTime(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime()
@@ -36,7 +40,7 @@ function daysUntilExpiry(iso: string): number {
   return Math.max(0, Math.ceil(30 - elapsed / 86_400_000))
 }
 
-type Tab = "boards" | "rows"
+type Tab = "boards" | "rows" | "wiki"
 
 export function TrashDialog({
   open,
@@ -47,10 +51,15 @@ export function TrashDialog({
 }) {
   const trashedBoards = useFlowBase((s) => s.trashedBoards)
   const trashedRows = useFlowBase((s) => s.trashedRows)
+  const trashedWikiPages = useFlowBase((s) => s.trashedWikiPages)
   const restoreBoard = useFlowBase((s) => s.restoreBoard)
   const permanentDeleteBoard = useFlowBase((s) => s.permanentDeleteBoard)
   const restoreRow = useFlowBase((s) => s.restoreRow)
   const permanentDeleteRow = useFlowBase((s) => s.permanentDeleteRow)
+  const restoreWikiPage = useFlowBase((s) => s.restoreWikiPage)
+  const permanentDeleteWikiPage = useFlowBase(
+    (s) => s.permanentDeleteWikiPage,
+  )
   const emptyTrash = useFlowBase((s) => s.emptyTrash)
   const cleanupExpiredTrash = useFlowBase((s) => s.cleanupExpiredTrash)
 
@@ -61,18 +70,27 @@ export function TrashDialog({
 
   const [tab, setTab] = useState<Tab>("boards")
 
-  const total = trashedBoards.length + trashedRows.length
+  const total =
+    trashedBoards.length + trashedRows.length + trashedWikiPages.length
 
-  // Auto-pick tab with content on open
+  // Auto-pick tab with content on open (priority: boards → rows → wiki)
   useEffect(() => {
-    if (open) {
-      if (trashedBoards.length === 0 && trashedRows.length > 0) {
-        setTab("rows")
-      } else {
-        setTab("boards")
-      }
+    if (!open) return
+    if (trashedBoards.length > 0) {
+      setTab("boards")
+    } else if (trashedRows.length > 0) {
+      setTab("rows")
+    } else if (trashedWikiPages.length > 0) {
+      setTab("wiki")
+    } else {
+      setTab("boards")
     }
-  }, [open, trashedBoards.length, trashedRows.length])
+  }, [
+    open,
+    trashedBoards.length,
+    trashedRows.length,
+    trashedWikiPages.length,
+  ])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -100,19 +118,34 @@ export function TrashDialog({
             active={tab === "rows"}
             onClick={setTab}
           />
+          <TabButton
+            id="wiki"
+            label="Wiki pages"
+            count={trashedWikiPages.length}
+            active={tab === "wiki"}
+            onClick={setTab}
+          />
         </div>
 
-        {tab === "boards" ? (
+        {tab === "boards" && (
           <BoardsList
             items={trashedBoards}
             onRestore={restoreBoard}
             onDelete={permanentDeleteBoard}
           />
-        ) : (
+        )}
+        {tab === "rows" && (
           <RowsList
             items={trashedRows}
             onRestore={restoreRow}
             onDelete={permanentDeleteRow}
+          />
+        )}
+        {tab === "wiki" && (
+          <WikiList
+            items={trashedWikiPages}
+            onRestore={restoreWikiPage}
+            onDelete={permanentDeleteWikiPage}
           />
         )}
 
@@ -263,6 +296,65 @@ function RowsList({
                 <ActionButtons
                   onRestore={() => onRestore(t.row.id)}
                   onDelete={() => onDelete(t.row.id)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function WikiList({
+  items,
+  onRestore,
+  onDelete,
+}: {
+  items: TrashedWikiPage[]
+  onRestore: (id: string) => void
+  onDelete: (id: string) => void
+}) {
+  // 카테고리별 그룹화 — RowsList(보드별)와 동형. hook은 early return 전 항상 호출.
+  const grouped = useMemo(() => {
+    const m = new Map<string, TrashedWikiPage[]>()
+    for (const t of items) {
+      const cat = t.page.category || "Uncategorized"
+      const arr = m.get(cat) ?? []
+      arr.push(t)
+      m.set(cat, arr)
+    }
+    return Array.from(m.entries())
+  }, [items])
+
+  if (items.length === 0) return <EmptyState kind="wiki pages" />
+
+  return (
+    <div className="max-h-[360px] space-y-2.5 overflow-y-auto pr-1">
+      {grouped.map(([category, pages]) => (
+        <div key={category}>
+          <div className="mb-1 px-1 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+            {category} · {pages.length}
+          </div>
+          <div className="space-y-1.5">
+            {pages.map((t) => (
+              <div
+                key={t.page.id}
+                data-trashed-wiki={t.page.id}
+                className="flex items-center gap-3 rounded-md border border-border-subtle bg-card px-3 py-2"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[12.5px] font-medium">
+                    {t.page.title}
+                  </div>
+                  <div className="text-[10.5px] text-muted-foreground">
+                    deleted {relativeTime(t.deletedAt)} · expires in{" "}
+                    {daysUntilExpiry(t.deletedAt)}d
+                  </div>
+                </div>
+                <ActionButtons
+                  onRestore={() => onRestore(t.page.id)}
+                  onDelete={() => onDelete(t.page.id)}
                 />
               </div>
             ))}

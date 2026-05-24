@@ -13,6 +13,7 @@ import { BarChart } from "@/components/charts/bar-chart"
 import { CategoryBar, type CategoryBarItem } from "@/components/charts/category-bar"
 import { ChartCard } from "@/components/charts/chart-card"
 import { DonutChart } from "@/components/charts/donut-chart"
+import { HeatmapChart } from "@/components/charts/heatmap-chart"
 import { KpiTile } from "@/components/charts/kpi-tile"
 import { LineChart, type LinePoint } from "@/components/charts/line-chart"
 import { StackedBarChart } from "@/components/charts/stacked-bar-chart"
@@ -424,6 +425,16 @@ function renderChartBody(
   if (chart.type === "stacked-bar" && chart.groupByCol) {
     return (
       <StackedBarChart
+        rows={rows}
+        categoryField={sourceCol.name}
+        groupField={chart.groupByCol}
+      />
+    )
+  }
+
+  if (chart.type === "heatmap" && chart.groupByCol) {
+    return (
+      <HeatmapChart
         rows={rows}
         categoryField={sourceCol.name}
         groupField={chart.groupByCol}
