@@ -709,6 +709,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           })
           // 자동화 firedKeys 중 이 boardId 포함된 dueDate 키 cleanup
           // (key 형식: `${ruleId}:${boardId}:${rowId}` — daily는 영향 ❌)
+          // 변경 후 automation-runtime의 in-memory ref도 sync 필요 → CustomEvent dispatch.
           try {
             const raw = localStorage.getItem(
               "flowbase-automation-firedKeys-v1",
@@ -725,6 +726,12 @@ export const useFlowBase = create<FlowBaseStore>()(
                 "flowbase-automation-firedKeys-v1",
                 JSON.stringify(filtered),
               )
+              // runtime ref 즉시 reload — 다음 1분 tick 기다림 ❌
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(
+                  new CustomEvent("flowbase-firedkeys-changed"),
+                )
+              }
             }
           } catch {
             // silent — quota 등

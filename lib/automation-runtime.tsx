@@ -548,10 +548,23 @@ export function AutomationRuntime() {
   useEffect(() => {
     // mount 시 localStorage에서 firedKeys 복원 (30일 이전 daily 자동 cleanup).
     firedKeysRef.current = loadFiredKeys()
-    const firedKeys = firedKeysRef.current
-    checkTimeTriggers(firedKeys)
-    const id = setInterval(() => checkTimeTriggers(firedKeys), TIME_TICK_MS)
-    return () => clearInterval(id)
+    checkTimeTriggers(firedKeysRef.current)
+    const id = setInterval(
+      () => checkTimeTriggers(firedKeysRef.current),
+      TIME_TICK_MS,
+    )
+
+    // 외부에서 firedKeys 변경 시 (permanentDeleteBoard cleanup 등) — ref 즉시 reload.
+    // 다음 1분 tick 기다리지 않고 stale ref 해소.
+    const onChanged = () => {
+      firedKeysRef.current = loadFiredKeys()
+    }
+    window.addEventListener("flowbase-firedkeys-changed", onChanged)
+
+    return () => {
+      clearInterval(id)
+      window.removeEventListener("flowbase-firedkeys-changed", onChanged)
+    }
   }, [])
 
   return null
