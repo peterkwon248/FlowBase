@@ -4,6 +4,48 @@
 
 ---
 
+## 2026-05-24 (kkh94 머신, 폴리시 #8) — Members enforcement 전체 · firedKeys dueDate cleanup · Data Import 메타 확장
+
+### 완료 (1 commit `951e82e`)
+**3 폴리시.** NEXT-ACTION 우선순위 중간 1~4 묶음. Filter And/Or + Gallery/Timeline 후속은 다음 세션.
+
+1. **Members enforcement 전체 mutation 확장**
+   - store에 `ensureCanEdit(s, action?)` helper + sonner toast (id='viewer-readonly' 폭주 방지).
+   - 핵심 mutation 14개 가드:
+     - 행: addRow · addRowToBoard · duplicateRow · updateRow · deleteRows
+     - 컬럼: addColumn · deleteColumn · renameColumn · updateColumn
+     - 차트: addChart · removeChart · updateChart · moveChart
+     - 보드: createBoard · deleteBoard
+     - Wiki: addWikiPage · updateWikiPage · deleteWikiPage
+   - UI 단 disable은 후속 (지금은 시도 시 toast 알림).
+2. **firedKeys dueDate cleanup** — permanentDeleteBoard에서 dueDate firedKeys (3-part key `${ruleId}:${boardId}:${rowId}`) 정리. daily는 영향 ❌.
+3. **Data Import 메타 포함** — `importBoards` → `importWorkspace(snapshot)` 확장.
+   - types.ExportedSnapshot 정의.
+   - 충돌 정책: boards 항상 새 id / library/wiki/automations id 일치 skip.
+   - Settings ImportSection 카운트 4 종 표시 + 자세한 confirm dialog.
+   - importWorkspace 자체에 ensureCanEdit 가드.
+
+### 큰 결정
+- **viewer 가드는 핵심 14개만** — 모든 50+ mutation 가드는 너무 큼. row/column/chart/board/wiki 5 카테고리 핵심만 우선. AI/automation/settings 등 후속.
+- **UI 단 disable 후속** — 지금은 store 가드 + toast만. button disabled 처리는 별도 폴리시 (모든 컴포넌트 영향).
+- **toast 폭주 방지** — sonner id로 같은 ID 토스트 update (새로 추가 안 함).
+- **importWorkspace 충돌 정책** — boards 새 id (안전, 절대 덮어쓰기 ❌) vs library/wiki/automations id 일치 skip (사용자 데이터 보존 우선). overwrite 옵션은 후속.
+- **firedKeys cleanup은 localStorage 직접 조작** — store action 외부 (automation-runtime ref와 동기 어려움). 다음 1분 tick 시 ref가 재계산.
+
+### 검증
+- tsc 0 · vitest 44/44.
+- 브라우저 검증은 다음 세션에서 (변경량 적당하지만 시간 효율).
+
+### Watch Out
+- **firedKeys cleanup은 자동화 런타임 ref와 별도** — 다음 1분 tick에서 stale ref. 큰 영향 ❌ (다음 tick 후 정상). 동기 원하면 ref reset signal 필요.
+- **Members enforcement 14개만** — addRow 외 나머지 30+ mutation은 통과. 다음 폴리시에서 (commitAiCell/dismissAiCell/promote/attach/updateSettings/addMember/removeMember/automation 액션 등).
+- **Data Import id 충돌 skip은 silent** — 사용자가 어떤 항목 skip됐는지 모름. 다음 폴리시 — summary toast에 "X skipped" 추가.
+
+### 머신
+kkh94. main 머지·푸시 자동.
+
+---
+
 ## 2026-05-24 (kkh94 머신, 폴리시 #7) — Filter cascade 복원 · firedKeys persist · Theme accent · Data Import · Members 깊이
 
 ### 완료 (1 commit `568526d`)

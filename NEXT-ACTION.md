@@ -1,19 +1,19 @@
 # NEXT-ACTION
 
 > 다음 세션 시작 시 이 파일부터 읽으세요.
-> 마지막 갱신: 2026-05-24 (kkh94 머신, 폴리시 #7 — Filter cascade 복원 · firedKeys persist · Theme accent · Data Import · Members 깊이)
+> 마지막 갱신: 2026-05-24 (kkh94 머신, 폴리시 #8 — Members enforcement 전체 · firedKeys dueDate cleanup · Data Import 메타 확장)
 
 ---
 
 ## 한 줄 요약
 
-**폴리시 7건 모두 완료(Filter cascade hover 복원 + legacy 액션 정리 + viewSettings cleanup + firedKeys persist + Theme accent + Data Import + Members 깊이 minimum). 다음: Members enforcement 확장 · Theme accent oklch 검증 · Data Import 메타 포함 · 나머지 우선순위 낮음.**
+**Members enforcement 핵심 14개 mutation 가드 + firedKeys dueDate cleanup + Data Import 메타 4종 확장 완료. 다음: 남은 mutation enforcement + Filter And/Or operators + Gallery/Timeline 후속 + UI 단 disable.**
 
 ---
 
 ## ✅ 머지 완료
 
-- `origin/main = 568526d` — 이번 세션 1 commit 머지 대기 (push 후 머지).
+- `origin/main = 951e82e` (push 후 머지).
 - 다른 머신: `git fetch && git checkout main && git pull && npm install`.
 
 ---
@@ -23,11 +23,11 @@
 ### 우선순위 높음
 1. **AI_CLASSIFY 자동 실행** — ⚠ **사용자 명시 룰**: 사용자가 직접 요청할 때만 시작. 메모리 `feedback-ai-classify-user-triggered-only.md` 참조. Claude 자율 진행 ❌.
 
-### 우선순위 중간 (#7 잔여)
-2. **Members enforcement 확장** — 현재 addRow만 demo 가드. 나머지 mutation(updateRow/deleteRows/commitAiCell/addColumn/deleteColumn/renameColumn/updateColumn/addChart/removeChart/moveChart 등)에도 viewer 가드. Toast 알림.
-3. **Theme accent oklch 검증** — light/dark 4 accent 시각 튜닝 (브라우저 확인 후).
-4. **Data Import 메타 포함** — viewSettings/schemaPositions/library/wiki 등도 머지 옵션 (id 충돌 정책).
-5. **firedKeys dueDate cleanup** — 보드 영구 삭제 시 dangling dueDate key 정리.
+### 우선순위 중간 (#8 잔여)
+2. **남은 mutation enforcement** — #8에서 핵심 14개만. 나머지(commitAiCell/dismissAiCell/promote/attach/updateSettings/addMember/removeMember/automation 액션/setSchemaPosition 등 30+) viewer 가드.
+3. **UI 단 disable** — viewer일 때 button disabled / readonly 표시 (현재는 시도 시 toast만).
+4. **Theme accent oklch 시각 튜닝** — light/dark 4 accent 브라우저 검증 후.
+5. **Data Import skip summary** — id 충돌 skip된 항목 카운트 표시.
 
 ### 우선순위 낮음
 6. **Filter And/Or multi-condition per column** — 현재 in/range/date-range 각 단일. ≥/≤/contains 등 추가.
@@ -36,6 +36,7 @@
 9. **MATCH_FROM_DROPDOWN sourceField 명시 선택**.
 10. **Chart toolbar 터치 UX** — group-hover 한계.
 11. **Wiki body diff/version history**.
+12. **firedKeys cleanup runtime ref sync** — permanentDeleteBoard 후 즉시 ref reset (현재 다음 1분 tick).
 
 ### B4 (가장 마지막, 사용자 명시)
 - 컬럼 ↔ Library 자산 링크 → Promote/Attach 일부 진행. 남은 건 "Use in table" (Library asset에서 시작).
@@ -44,14 +45,13 @@
 
 ## ✅ 이번 세션 완료 (1 commit)
 
-### `568526d` — 폴리시 일괄 #7
-1. **Filter cascade hover 복원** (사용자 보고 fix) — Linear 정확 답습. DropdownMenu Sub + kind별 widget.
-2. **Legacy filter 액션 제거** — setColumnFilter/toggleColumnFilter 삭제.
-3. **permanentDeleteBoard dangling cleanup** — viewSettings/schemaPositions/viewByBoardId.
-4. **시간 트리거 firedKeys persist** — localStorage + 30일 daily key cleanup.
-5. **Theme accent color 프리셋** — purple(default)/blue/emerald/amber 4종.
-6. **Data Import** — 보드만 머지 (id 충돌 시 새 id).
-7. **Members 깊이 minimum** — currentUserId/lastSeenAt/roleCanEdit + Settings UI You 배지·last seen, addRow demo 가드.
+### `951e82e` — 폴리시 일괄 #8
+1. **Members enforcement 전체 mutation 확장** — ensureCanEdit helper + 14개 mutation 가드.
+2. **firedKeys dueDate cleanup** — permanentDeleteBoard에서 3-part key 정리.
+3. **Data Import 메타 확장** — importBoards → importWorkspace(boards/library/wiki/automations).
+
+### 직전 `568526d` — 폴리시 일괄 #7 (이전 세션, 같은 날)
+- Filter cascade hover 복원, legacy 제거, permanentDeleteBoard dangling cleanup, firedKeys persist, Theme accent 4 프리셋, Data Import boards-only, Members 깊이 minimum.
 
 ---
 

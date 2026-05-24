@@ -69,18 +69,25 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 - [x] **Data Import** (Settings Data 짝 · 보드만 머지)
 - [x] **Members 깊이 minimum** (currentUserId/lastSeenAt/UI · addRow demo 가드)
 
+## P2 — 폴리시 일괄 #8 (2026-05-24 — `951e82e` 모두 완료)
+
+- [x] **Members enforcement** (핵심 14 mutation 가드)
+- [x] **firedKeys dueDate cleanup** (permanentDeleteBoard)
+- [x] **Data Import 메타 포함** (importWorkspace · library/wiki/automations)
+
 ## P2 — 남은 폴리시
 
-- [ ] **Members enforcement 확장** — addRow 외 모든 mutation에 viewer 가드 + toast.
+- [ ] **남은 mutation enforcement** — commitAi/promote/attach/automation/settings/등 30+ 추가.
+- [ ] **UI 단 viewer disable** — button disabled / readonly 표시.
 - [ ] **Theme accent oklch 시각 튜닝** — light/dark 4 accent 브라우저 검증 후.
-- [ ] **Data Import 메타 포함** — viewSettings/schemaPositions/library/wiki 충돌 정책.
-- [ ] **firedKeys dueDate cleanup** — 보드 영구 삭제 시 dangling key.
-- [ ] **Chart toolbar 터치 UX** — group-hover 한계.
+- [ ] **Data Import skip summary** — id 충돌 skip 카운트 표시.
 - [ ] **Filter And/Or multi-condition per column** — ≥/≤/contains 등.
 - [ ] **Gallery/Timeline 커스터마이즈 후속** (카드 컬럼 reorder · Gantt 주 단위 group · zoom).
 - [ ] **Schema pinch-zoom 트랙패드** + 멀티 테이블 → N개 보드.
 - [ ] **MATCH_FROM_DROPDOWN sourceField 명시 선택**.
+- [ ] **Chart toolbar 터치 UX** — group-hover 한계.
 - [ ] **Wiki body diff/version history**.
+- [ ] **firedKeys runtime ref sync** — permanentDeleteBoard 후 즉시.
 
 ---
 
