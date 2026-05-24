@@ -12,6 +12,7 @@ import type {
   ActivityMode,
   AIHistoryEntry,
   Board,
+  ChangeEvent,
   ColumnDef,
   FlowBaseState,
   LibraryCategoryId,
@@ -89,6 +90,8 @@ export interface FlowBaseActions {
 
   // Rows — active board 대상. 변경 전 undo 스냅샷 push.
   addRow: (row?: Partial<TableRow>) => string
+  // 명시 boardId 대상 — 자동화 런타임이 cross-board 행 추가 시 사용.
+  addRowToBoard: (boardId: string, row?: Partial<TableRow>) => string | null
   updateRow: (rowId: string, patch: Partial<TableRow>) => void
   deleteRows: (rowIds: string[]) => void
   commitAiCell: (rowId: string, col: "theme" | "sentiment", value: string) => void
@@ -160,7 +163,15 @@ function createInitialState(): FlowBaseState {
     searchOpen: false,
     navStack: [],
     navIndex: -1,
+    lastChange: null,
   }
+}
+
+function publishChange(
+  set: (partial: Partial<FlowBaseState>) => void,
+  event: Omit<ChangeEvent, "timestamp">,
+): void {
+  set({ lastChange: { ...event, timestamp: Date.now() } })
 }
 
 // 현재 store 상태에서 NavEntry를 만들어 돌려준다 (push 직전 호출).
@@ -615,18 +626,64 @@ export const useFlowBase = create<FlowBaseStore>()(
             ...row,
           }
           setRows([...b.rows, newRow])
+          publishChange(set, {
+            kind: "row_added",
+            boardId: b.id,
+            rowId: id,
+            next: newRow,
+          })
+          return id
+        },
+
+        // 명시 boardId — 자동화 "Add row to Tasks" 처리용. activeBoard 우회.
+        addRowToBoard: (boardId, row) => {
+          const s = get()
+          const b = s.boards[boardId]
+          if (!b) return null
+          const ts = nowIso()
+          const id = row?.id ?? nextRowId(b)
+          const newRow: TableRow = {
+            id,
+            themeConfirmed: true,
+            sentimentConfirmed: true,
+            createdAt: ts,
+            updatedAt: ts,
+            ...row,
+          }
+          set({
+            boards: {
+              ...s.boards,
+              [boardId]: {
+                ...b,
+                rows: [...b.rows, newRow],
+                updatedAt: ts,
+              },
+            },
+          })
+          publishChange(set, {
+            kind: "row_added",
+            boardId,
+            rowId: id,
+            next: newRow,
+          })
           return id
         },
 
         updateRow: (rowId, patch) => {
           const b = activeBoard()
           if (!b) return
+          const prev = b.rows.find((r) => r.id === rowId)
+          if (!prev) return
           pushUndo()
-          setRows(
-            b.rows.map((r) =>
-              r.id === rowId ? { ...r, ...patch, updatedAt: nowIso() } : r,
-            ),
-          )
+          const next: TableRow = { ...prev, ...patch, updatedAt: nowIso() }
+          setRows(b.rows.map((r) => (r.id === rowId ? next : r)))
+          publishChange(set, {
+            kind: "row_updated",
+            boardId: b.id,
+            rowId,
+            prev,
+            next,
+          })
         },
 
         deleteRows: (rowIds) => {
@@ -644,16 +701,25 @@ export const useFlowBase = create<FlowBaseStore>()(
         commitAiCell: (rowId, col, value) => {
           const b = activeBoard()
           if (!b) return
+          const prev = b.rows.find((r) => r.id === rowId)
+          if (!prev) return
           pushUndo()
           const confirmKey =
             col === "theme" ? "themeConfirmed" : "sentimentConfirmed"
-          setRows(
-            b.rows.map((r) =>
-              r.id === rowId
-                ? { ...r, [col]: value, [confirmKey]: true, updatedAt: nowIso() }
-                : r,
-            ),
-          )
+          const next: TableRow = {
+            ...prev,
+            [col]: value,
+            [confirmKey]: true,
+            updatedAt: nowIso(),
+          }
+          setRows(b.rows.map((r) => (r.id === rowId ? next : r)))
+          publishChange(set, {
+            kind: "row_updated",
+            boardId: b.id,
+            rowId,
+            prev,
+            next,
+          })
         },
 
         // AI 추천 거부 — 값은 그대로 두고 confirmed만 true (프로토타입 onDismissAi)

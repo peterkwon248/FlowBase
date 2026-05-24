@@ -18,6 +18,7 @@ import { SearchMode } from "@/components/search/search-mode"
 import { SearchPalette } from "@/components/search/search-palette"
 import { Toaster } from "@/components/ui/sonner"
 import { WikiMode } from "@/components/wiki/wiki-mode"
+import { AutomationRuntime } from "@/lib/automation-runtime"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { useKeyboardShortcuts } from "@/lib/keyboard-shortcuts"
 
@@ -61,6 +62,7 @@ export default function Home() {
 
       <StatusBar />
       <SearchPalette />
+      <AutomationRuntime />
       <Toaster />
     </div>
   )

@@ -265,6 +265,18 @@ export interface WorkspaceSettings {
   workspaceInitial: string // 1글자 — 사이드바 아이콘 표시
 }
 
+// 자동화 런타임이 listen하는 데이터 변경 이벤트 (ephemeral, persist ❌).
+// addRow/updateRow/commitAiCell가 끝에 publish. lib/automation-runtime이
+// useEffect로 받아 active rule 매칭 후 발화.
+export interface ChangeEvent {
+  kind: "row_added" | "row_updated"
+  boardId: string
+  rowId: string
+  prev?: TableRow // row_updated일 때만
+  next: TableRow
+  timestamp: number // 같은 이벤트 중복 처리 방지
+}
+
 // 인메모리 nav-history 엔트리 — 헤더 시계/‹/› 버튼이 이 스택을 탐색.
 // 출처: design-ref/prototype/nav-history.jsx
 export interface NavEntry {
@@ -335,4 +347,7 @@ export interface FlowBaseState {
   // 인메모리 nav-history (persist ❌ — 세션 한정 ⏰‹›)
   navStack: NavEntry[]
   navIndex: number // 현재 entry의 navStack 인덱스 (-1 = 비어있음)
+
+  // 자동화 런타임이 구독하는 마지막 데이터 변경 (persist ❌)
+  lastChange: ChangeEvent | null
 }
