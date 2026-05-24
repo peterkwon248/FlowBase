@@ -6,7 +6,12 @@
 
 ## Current Features (Completed — 최근 우선)
 
-1. **일관성 + 깊이 #3 — 사이드바 추가/통일 · Automation log · Wiki 우클릭 · Trash 행 · Promote/Attach** (2026-05-24, `fb79379`+`8909ec2`, **main 머지 완료**) —
+1. **깊이 #4 — Dashboard builder · 시간 트리거 · Attached function 실행** (2026-05-24, `bb5a0cc`+`5db2376`, **main 머지 완료**) —
+   - **Dashboard builder** (`components/sections/add-chart-dialog.tsx` + `stacked-bar-chart.tsx`) — 사용자 차트 추가/삭제. 5종(KPI/Bar/Donut/Line/Stacked) + width 4종 + 12-col grid.
+   - **시간 트리거** (`lib/automation-runtime.tsx`) — daily HH:MM + dueDate+statusEquals. setInterval 1분 tick + firedKeys dedupe.
+   - **Attached function 실행** — MATCH_FROM_DROPDOWN 실 구현 + AI_CLASSIFY/EXTRACT_REGEX hint.
+
+2. **일관성 + 깊이 #3 — 사이드바 추가/통일 · Automation log · Wiki 우클릭 · Trash 행 · Promote/Attach** (2026-05-24, `fb79379`+`8909ec2`, **main 머지 완료**) —
    - **Workspace/Inbox 사이드바** — 일관성 결함 해소. 5 모드 모두 사이드바.
    - **사이드바 너비 통일** 240px 전체.
    - **Automation 실행 로그** AI Activity panel timeline에 fire 기록.

@@ -34,11 +34,13 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 - [x] **Bulk edit + ⌘D 단축** (2026-05-24 — `f6044e1`)
 - [x] **Wiki**: 새 페이지 + 사이드바 검색 (2026-05-24 — `44d5003`)
 
-## P1 — 남은 시급 (부분 완료)
+## P1 — 남은 시급 (모두 완료)
 
 - [x] **Schema pan/zoom + drag + New table from template 모달** (2026-05-24 — `2bdee40`)
-- [~] **Dashboard builder** + 차트 종류 — Line/Area 추가, Dashboard 영어화 (2026-05-24 — `57fadb6`). Builder full(사용자 차트 추가 카탈로그)은 후속.
-- [~] **컬럼 헤더 확장 메뉴**: Change type 완료. Promote to Library / Attach function은 후속 (B4 인접).
+- [x] **Dashboard builder + Stacked bar** (2026-05-24 — `bb5a0cc`)
+- [x] **컬럼 헤더 확장 메뉴**: Change type · Promote to Library · Attach function (2026-05-24 — `57fadb6`, `8909ec2`)
+- [x] **Automations 시간 기반 트리거** (2026-05-24 — `5db2376`)
+- [x] **Attached function 자동 실행** (2026-05-24 — `5db2376`)
 
 ---
 
@@ -89,6 +91,8 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## 완료
 
+- [x] **시간 기반 트리거 + Attached function 실 실행** (2026-05-24 — `5db2376`): parseTimeTrigger(daily HH:MM, dueDate+status) · shouldFireDaily/DueDate 순수 함수 + 14 신규 단위 테스트. AutomationRuntime setInterval 1분 tick + firedKeys dedupe. runAttachedFunctions(MATCH_FROM_DROPDOWN 실 구현, AI_CLASSIFY/EXTRACT_REGEX hint). vitest 30 → 44.
+- [x] **Dashboard builder full + Stacked bar** (2026-05-24 — `bb5a0cc`): ChartConfig types + Board.charts? + addChart/removeChart/updateChart/clearCustomCharts · stacked-bar-chart.tsx 신규(SVG, 의존성 0) · add-chart-dialog.tsx (5종 카드 + source/group/title/width) · dashboard-view 재구성 (custom charts hero 12-col grid + hover X 삭제 + Reset to auto + Add chart 버튼 + empty state도 Add).
 - [x] **일관성 + 깊이 5건** (2026-05-24 — `8909ec2`): 사이드바 너비 통일(Library/Wiki 260→240) · Automation 실행 로그(executeRule이 aiHistory에 pushAi) · Wiki 페이지 우클릭(Rename/Move/Delete) · Trash 행 단위 + 30일 만료(types.TrashedRow + store v8→v9 + deleteRows trash로 이동 + 두 탭 다이얼로그) · Promote to Library + Attach function(column-header-menu에 Sparkles/Sigma submenu, types.ColumnDef.libraryFieldId/functionId).
 - [x] **Workspace + Inbox 좌측 사이드바** (2026-05-24 — `fb79379`): 사용자 지적 일관성 결함 해소. WorkspaceSidebar(Schema/Automations) · InboxSidebar(7 필터). workspace-mode 상단 탭 제거. inbox-view 상단 chips 제거. 헤더가 활성 필터 라벨. 모두 panels.sidebar 토글 공유.
 - [x] **Dashboard 영어화 + Line/Area trend + 컬럼 Change type** (2026-05-24 — `57fadb6`): dashboard-view 모든 라벨 영어화 · components/charts/line-chart.tsx(SVG path + area, 의존성 0) · buildWeeklyTrend 8주 버킷 · selectVisibleRows columnFilters deps 누락 버그 fix · column-header-menu에 Change type submenu(Basic 7 type, 행 데이터 보존).

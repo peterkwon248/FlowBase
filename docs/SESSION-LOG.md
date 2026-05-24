@@ -4,6 +4,54 @@
 
 ---
 
+## 2026-05-24 (kkh94 머신, 깊이 #4) — Dashboard builder · 시간 트리거 · Attached function 실행
+
+### 완료 (2 커밋)
+1. **Dashboard builder full** (`bb5a0cc`) — 사용자 차트 추가/삭제 + Stacked bar.
+   - types.ChartConfig {id, type, title, sourceCol, groupByCol?, width} + Board.charts? (옵션, 없으면 auto-derive).
+   - store: addChart / removeChart / updateChart / clearCustomCharts (active board 대상).
+   - `components/charts/stacked-bar-chart.tsx` (신규) — SVG/div 기반 category × group cross-tab + 5색 palette + 범례. 외부 lib ❌.
+   - `components/sections/add-chart-dialog.tsx` (신규) — 5종 차트 카드(KPI/Bar/Donut/Line/Stacked bar) + source column Select(타입 호환 필터) + groupBy + title + width(1/4·1/2·2/3·Full).
+   - dashboard-view 재구성 — board.charts 있으면 hero 그리드 우선(12 col), CustomChartCard with hover X 삭제 + Reset to auto. 빈 보드 empty state에도 Add chart 버튼.
+2. **시간 트리거 + Attached function** (`5db2376`)
+   - 시간 트리거: parseTimeTrigger(daily HH:MM, dueDate + statusEquals). shouldFireDaily / shouldFireDueDate 순수 함수. AutomationRuntime setInterval 1분 tick + firedKeys dedupe(daily=`${ruleId}:${YYYY-MM-DD}`, dueDate=`${ruleId}:${boardId}:${rowId}`).
+   - Attached function: runAttachedFunctions(change) → MATCH_FROM_DROPDOWN 실 구현(findSourceField + options substring match + updateRow/setState patch). AI_CLASSIFY/EXTRACT_REGEX는 row_added 시 hint toast.
+   - row useEffect 안에서 attached function을 rule scan 전에 실행 → auto-fill 값이 룰 트리거 됨.
+   - 14 신규 단위 테스트 (parseTimeTrigger 5 + shouldFireDaily 3 + shouldFireDueDate 6).
+
+### 큰 결정
+- **Dashboard charts는 보드별 persist** — Board.charts 옵션. 보드 trash로 이동 시에도 charts 함께 보존.
+- **board.charts 비어 있으면 auto-derive 폴백** — 신규 보드/리셋 후 즉시 의미 있는 dashboard. 사용자가 명시 추가하면 그것만 hero, 나머지 auto는 계속 노출(KPI/donut/bar/trend/category bars/numeric).
+- **시간 트리거 dedupe는 in-memory** — 페이지 새로고침 시 firedKeys 초기화 → 같은 daily가 다시 발화 가능. 백엔드 도입 후 persist 검토.
+- **Attached function 실행은 1순위** — row change useEffect에서 attached function 먼저 실행 후 rule scan. function이 채운 값이 룰 트리거가 될 수 있음.
+- **MATCH_FROM_DROPDOWN의 source field 결정**: 같은 행에서 첫 text/select 컬럼 (id 제외). 휴리스틱. 향후 function params에서 명시 선택.
+
+### 검증
+- tsc 0 · vitest 44/44 (이전 30 + 신규 14).
+- 시간 트리거는 1분 tick이라 빠른 검증 어려움. 단위 테스트가 핵심.
+- Attached function MATCH_FROM_DROPDOWN — column.options에 "Pricing pushback" 등이 있을 때 sentence "이거 Pricing 너무 비싸요" → "Pricing pushback" 자동 set 가능.
+
+### 다음
+- AI_CLASSIFY 실 자동 실행 (현재 hint만).
+- Chart reorder (drag) · inline edit.
+- Heatmap 차트.
+- 시간 트리거 persist (페이지 새로고침 dedupe 유지).
+- Ask AI ⌘J 톱바 버튼.
+- Settings 멤버/권한 탭.
+- Wiki 삭제 → trashedWikiPages.
+- AppShell mount 시 cleanupExpiredTrash 자동 호출.
+
+### Watch Out
+- **시간 트리거 setInterval 1분** — 페이지 sleep 동안 미발화 윈도우 지나치면 그날 daily는 skip. 의도된 동작이지만 모바일/탭 inactive 시 누적 가능.
+- **Attached function MATCH_FROM_DROPDOWN은 sourceField=첫 text/select** — 사용자가 다른 컬럼을 원하면 현재 UI에선 표현 ❌. function params 편집 UI 필요.
+- **dashboard 사용자 차트 + auto-derive 동시 노출** — 화면 길어질 수 있음. 사용자가 Reset to auto로 비우거나, 향후 toggle 추가 검토.
+- **시간 트리거 fire 시 합성 ChangeEvent boardId=""** — Notify 외 액션(Set/Add row to)이 정상 동작 안 할 수 있음. 시간 트리거의 then은 "Generate"/"Email to" 같은 글로벌 액션에 한정 권장.
+
+### 머신
+kkh94. main 머지·푸시 자동.
+
+---
+
 ## 2026-05-24 (kkh94 머신, 일관성 + 깊이 #3) — 사이드바 일관성 · Workspace/Inbox 사이드바 · 너비 통일 · Automation log · Wiki 우클릭 · Trash 행 · Promote/Attach
 
 ### 완료 (2 커밋)
