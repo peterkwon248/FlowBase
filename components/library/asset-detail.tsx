@@ -7,6 +7,7 @@
 import type { ReactNode } from "react"
 import {
   ArrowLeft,
+  ArrowUpRight,
   BarChart3,
   Box,
   Link as LinkIcon,
@@ -15,6 +16,7 @@ import {
   Sigma,
   Type,
 } from "lucide-react"
+import { toast } from "sonner"
 import { LIBRARY_CATEGORIES } from "@/lib/flowbase-library-seed"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
@@ -103,6 +105,13 @@ export function AssetDetail() {
   }
 }
 
+// "BoardLabel.columnName" — 첫 점 기준 분할. (board.label에 점 있으면 first-match 휴리스틱)
+function parseUsedIn(s: string): { boardLabel: string; colName: string } | null {
+  const idx = s.indexOf(".")
+  if (idx <= 0) return null
+  return { boardLabel: s.slice(0, idx), colName: s.slice(idx + 1) }
+}
+
 // ─── Shell ───
 function Shell({
   asset,
@@ -113,8 +122,48 @@ function Shell({
 }) {
   const libCategory = useFlowBase((s) => s.libCategory)
   const setLibAsset = useFlowBase((s) => s.setLibAsset)
+  const boards = useFlowBase((s) => s.boards)
+  const switchBoard = useFlowBase((s) => s.switchBoard)
+  const setActivityMode = useFlowBase((s) => s.setActivityMode)
+  const setFocused = useFlowBase((s) => s.setFocused)
+  const setSelected = useFlowBase((s) => s.setSelected)
   const meta = LIBRARY_CATEGORIES.find((c) => c.id === libCategory)
   if (!meta) return null
+
+  // usedIn 문자열을 분해 → 매칭되는 board/column 찾아 점프.
+  const jump = (used: string) => {
+    const parsed = parseUsedIn(used)
+    if (!parsed) {
+      toast.error(`Cannot parse "${used}"`)
+      return
+    }
+    const board = Object.values(boards).find(
+      (b) => b.label === parsed.boardLabel,
+    )
+    if (!board) {
+      toast.error(`Board "${parsed.boardLabel}" not found`)
+      return
+    }
+    // 컬럼 매칭 — 이름 또는 라벨로
+    const col = board.columns.find(
+      (c) => c.name === parsed.colName || c.label === parsed.colName,
+    )
+    switchBoard(board.id)
+    setActivityMode("tables")
+    if (col && board.rows.length > 0) {
+      setSelected([board.rows[0].id])
+      setFocused({ row: board.rows[0].id, col: col.name })
+      toast.success(`Jumped to ${parsed.boardLabel} · ${col.label || col.name}`)
+    } else if (!col) {
+      toast.warning(`Column "${parsed.colName}" missing — opened board only`)
+    }
+  }
+
+  const canJump = (used: string): boolean => {
+    const parsed = parseUsedIn(used)
+    if (!parsed) return false
+    return Object.values(boards).some((b) => b.label === parsed.boardLabel)
+  }
 
   const Icon = CATEGORY_ICON[libCategory]
   const tint = CATEGORY_TINT[libCategory]
@@ -169,19 +218,38 @@ function Shell({
         </div>
       </div>
 
-      {/* Used in */}
+      {/* Used in — 각 항목 클릭 시 해당 보드/컬럼으로 점프 */}
       <div className="px-6 pb-1">
         <Section title="Used in" count={asset.usedIn.length}>
           {asset.usedIn.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
-              {asset.usedIn.map((u) => (
-                <span
-                  key={u}
-                  className="rounded-full bg-primary/15 px-2.5 py-0.5 font-mono text-[11.5px] font-medium text-primary"
-                >
-                  {u}
-                </span>
-              ))}
+              {asset.usedIn.map((u) => {
+                const jumpable = canJump(u)
+                return (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => jump(u)}
+                    disabled={!jumpable}
+                    data-library-jump={u}
+                    title={jumpable ? "Jump to source column" : "Source board not found"}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-[11.5px] font-medium transition-colors",
+                      jumpable
+                        ? "cursor-pointer bg-primary/15 text-primary hover:bg-primary/25"
+                        : "cursor-not-allowed bg-muted text-muted-foreground/60",
+                    )}
+                  >
+                    <span>{u}</span>
+                    {jumpable && (
+                      <ArrowUpRight
+                        className="size-2.5"
+                        strokeWidth={2.25}
+                      />
+                    )}
+                  </button>
+                )
+              })}
             </div>
           ) : (
             <p className="text-[12.5px] text-muted-foreground">

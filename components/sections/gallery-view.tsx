@@ -34,22 +34,37 @@ export function GalleryView() {
   const setSelected = useFlowBase((s) => s.setSelected)
   const togglePanel = useFlowBase((s) => s.togglePanel)
   const panels = useFlowBase((s) => s.panels)
+  // Display 옵션 — cover/cardFields/columns
+  const settings = useFlowBase(
+    (s) => s.viewSettings[s.activeBoardId]?.gallery,
+  )
 
-  // 카드 컬럼 선택: 첫 avatar/text 컬럼이 헤더, 그 다음 status/select/date 4개.
+  // 카드 컬럼 선택: settings 우선, 없으면 휴리스틱 (avatar/text 헤더 + status/select/date/num 4개).
   const layout = useMemo(() => {
     if (!board) return { headerCol: null as ColumnDef | null, bodyCols: [] as ColumnDef[] }
     const cols = board.columns.filter((c) => c.name !== "id")
-    const headerCol =
-      cols.find((c) => c.type === "avatar") ??
-      cols.find((c) => c.type === "text") ??
-      cols[0] ??
-      null
-    const bodyCols = cols
-      .filter((c) => c !== headerCol)
-      .filter((c) => ["status", "select", "date", "num"].includes(c.type))
-      .slice(0, 4)
+    const headerCol = settings?.coverField
+      ? (cols.find((c) => c.name === settings.coverField) ?? null)
+      : (cols.find((c) => c.type === "avatar") ??
+          cols.find((c) => c.type === "text") ??
+          cols[0] ??
+          null)
+    const bodyCols =
+      settings?.cardFields && settings.cardFields.length > 0
+        ? settings.cardFields
+            .map((n) => cols.find((c) => c.name === n))
+            .filter((c): c is ColumnDef => !!c)
+        : cols
+            .filter((c) => c !== headerCol)
+            .filter((c) => ["status", "select", "date", "num"].includes(c.type))
+            .slice(0, 4)
     return { headerCol, bodyCols }
-  }, [board])
+  }, [board, settings])
+
+  // Grid columns — settings 명시면 고정 N, 없으면 auto-fill
+  const gridTemplate = settings?.columns
+    ? `repeat(${settings.columns}, minmax(0, 1fr))`
+    : "repeat(auto-fill, minmax(240px, 1fr))"
 
   if (!board) return null
 
@@ -73,7 +88,10 @@ export function GalleryView() {
           No items match the current filters.
         </div>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
+        <div
+          className="grid gap-3"
+          style={{ gridTemplateColumns: gridTemplate }}
+        >
           {rows.map((row) => {
             const selected = selectedRowIds.includes(row.id)
             return (

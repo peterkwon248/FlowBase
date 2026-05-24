@@ -29,10 +29,11 @@ export function SheetView() {
   const search = useFlowBase((s) => s.search)
   const filter = useFlowBase((s) => s.filter)
   const sort = useFlowBase((s) => s.sort)
+  const columnFilters = useFlowBase((s) => s.columnFilters)
   const rows = useMemo(
     () => selectVisibleRows(useFlowBase.getState()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [board, search, filter, sort],
+    [board, search, filter, sort, columnFilters],
   )
 
   const selectedRowIds = useFlowBase((s) => s.selectedRowIds)
@@ -48,7 +49,17 @@ export function SheetView() {
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const columns: ColumnDef[] = board?.columns ?? []
+  // Display 옵션 — hiddenColumns 적용. id 컬럼은 항상 표시.
+  // 셀렉터는 raw value 반환 (new array 매번 ❌). 컴포넌트에서 default 처리.
+  const hiddenColumns = useFlowBase(
+    (s) => s.viewSettings[s.activeBoardId]?.sheet?.hiddenColumns,
+  )
+  const columns: ColumnDef[] = useMemo(() => {
+    const all = board?.columns ?? []
+    if (!hiddenColumns || hiddenColumns.length === 0) return all
+    const hide = new Set(hiddenColumns)
+    return all.filter((c) => c.name === "id" || !hide.has(c.name))
+  }, [board, hiddenColumns])
 
   const stopEdit = () => {
     setEditingCell(null)

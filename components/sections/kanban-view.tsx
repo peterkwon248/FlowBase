@@ -61,17 +61,45 @@ export function KanbanView() {
   const search = useFlowBase((s) => s.search)
   const filter = useFlowBase((s) => s.filter)
   const sort = useFlowBase((s) => s.sort)
+  const columnFilters = useFlowBase((s) => s.columnFilters)
   const rows = useMemo(
     () => selectVisibleRows(useFlowBase.getState()),
-    [board, search, filter, sort],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [board, search, filter, sort, columnFilters],
   )
   const updateRow = useFlowBase((s) => s.updateRow)
   const selectedRowIds = useFlowBase((s) => s.selectedRowIds)
   const setSelected = useFlowBase((s) => s.setSelected)
+  // Display: groupBy. 기본 status (있는 보드만).
+  const groupByOpt = useFlowBase(
+    (s) => s.viewSettings[s.activeBoardId]?.kanban?.groupBy,
+  )
 
   if (!board) return null
 
   const cfg = deriveCardConfig(board.columns)
+
+  // groupBy 컬럼 결정 — 옵션 우선, fallback first status col.
+  const groupCol =
+    board.columns.find((c) => c.name === groupByOpt && (c.type === "status" || c.type === "select")) ??
+    board.columns.find((c) => c.type === "status") ??
+    null
+  const groupName = groupCol?.name ?? "status"
+  const isStatusGroup = groupCol?.type === "status"
+
+  // group values: status면 STATUS_OPTIONS (LOCK), select면 options 또는 unique
+  const groupValues: string[] = isStatusGroup
+    ? [...STATUS_OPTIONS]
+    : groupCol
+      ? Array.from(
+          new Set([
+            ...(groupCol.options ?? []),
+            ...rows
+              .map((r) => r[groupName])
+              .filter((v): v is string => typeof v === "string" && !!v),
+          ]),
+        )
+      : [...STATUS_OPTIONS]
 
   const toggleSelect = (id: string) => {
     setSelected(
@@ -83,17 +111,25 @@ export function KanbanView() {
 
   return (
     <div className="grid flex-1 auto-cols-[minmax(260px,1fr)] grid-flow-col gap-3 overflow-auto bg-background p-4">
-      {STATUS_OPTIONS.map((status) => {
-        const items = rows.filter((r) => r.status === status)
+      {groupValues.map((value) => {
+        const items = rows.filter((r) => r[groupName] === value)
+        const label = isStatusGroup
+          ? STATUS_LABELS[value as TicketStatus] ?? value
+          : value
         return (
           <div
-            key={status}
+            key={value}
+            data-kanban-col={value}
             className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface"
           >
             {/* 칸 헤더 */}
             <div className="flex items-center gap-1.5 border-b border-border-subtle px-3 py-2.5">
-              {statusIcon(status)}
-              <span className="text-[13px] font-semibold">{STATUS_LABELS[status]}</span>
+              {isStatusGroup ? (
+                statusIcon(value as TicketStatus)
+              ) : (
+                <span className="size-2 rounded-full bg-chart-1" aria-hidden="true" />
+              )}
+              <span className="text-[13px] font-semibold">{label}</span>
               <span className="tabular-nums text-[11.5px] text-muted-foreground">
                 {items.length}
               </span>
@@ -105,11 +141,14 @@ export function KanbanView() {
                 <KanbanCard
                   key={row.id}
                   row={row}
-                  status={status}
+                  groupName={groupName}
+                  groupValue={value}
+                  groupValues={groupValues}
+                  isStatusGroup={!!isStatusGroup}
                   cfg={cfg}
                   selected={selectedRowIds.includes(row.id)}
                   onToggleSelect={() => toggleSelect(row.id)}
-                  onMove={(to) => updateRow(row.id, { status: to })}
+                  onMove={(to) => updateRow(row.id, { [groupName]: to })}
                 />
               ))}
               {items.length === 0 && (
@@ -128,16 +167,22 @@ export function KanbanView() {
 // ── 카드 ──────────────────────────────────────────────────────────
 interface KanbanCardProps {
   row: TableRow
-  status: TicketStatus
+  groupName: string
+  groupValue: string
+  groupValues: string[]
+  isStatusGroup: boolean
   cfg: CardConfig
   selected: boolean
   onToggleSelect: () => void
-  onMove: (to: TicketStatus) => void
+  onMove: (to: string) => void
 }
 
 function KanbanCard({
   row,
-  status,
+  groupName: _gn,
+  groupValue,
+  groupValues,
+  isStatusGroup,
   cfg,
   selected,
   onToggleSelect,
@@ -208,24 +253,31 @@ function KanbanCard({
       )}
 
       {/* 이동 버튼 (D1 — DnD ❌) */}
-      <div className="mt-1 flex gap-1 border-t border-border-subtle pt-1.5">
-        {STATUS_OPTIONS.filter((o) => o !== status).map((to) => (
-          <button
-            key={to}
-            type="button"
-            title={`Move to ${STATUS_LABELS[to]}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              onMove(to)
-            }}
-            className={cn(
-              "flex-1 rounded border border-border py-0.5 text-[10.5px] text-muted-foreground hover:bg-foreground/[0.05]",
-              statusColorClass(to),
-            )}
-          >
-            → {STATUS_LABELS[to]}
-          </button>
-        ))}
+      <div className="mt-1 flex flex-wrap gap-1 border-t border-border-subtle pt-1.5">
+        {groupValues
+          .filter((o) => o !== groupValue)
+          .map((to) => {
+            const label = isStatusGroup
+              ? STATUS_LABELS[to as TicketStatus] ?? to
+              : to
+            return (
+              <button
+                key={to}
+                type="button"
+                title={`Move to ${label}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onMove(to)
+                }}
+                className={cn(
+                  "flex-1 rounded border border-border py-0.5 text-[10.5px] text-muted-foreground hover:bg-foreground/[0.05]",
+                  isStatusGroup && statusColorClass(to as TicketStatus),
+                )}
+              >
+                → {label}
+              </button>
+            )
+          })}
       </div>
     </div>
   )

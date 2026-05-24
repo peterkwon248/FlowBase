@@ -15,6 +15,7 @@ import type {
   ChangeEvent,
   ChartConfig,
   ColumnDef,
+  FilterCondition,
   FlowBaseState,
   LibraryCategoryId,
   NavEntry,
@@ -26,6 +27,7 @@ import type {
   TrashedRow,
   TrashedWikiPage,
   ViewMode,
+  ViewSettings,
   WikiPage,
   WorkspaceMember,
   WorkspaceSettings,
@@ -41,7 +43,7 @@ import {
 import { undoStack } from "@/lib/undo-stack"
 
 const STORE_KEY = "flowbase-state-v4"
-const STORE_VERSION = 11 // v11: settings.members 추가 (멤버/권한 mock — Phase 2 W11에서 실 분리)
+const STORE_VERSION = 12 // v12: viewSettings 추가 (Display 버튼 view별 옵션)
 
 // 초기 시드 멤버 — 데모용 4명. 사용자는 Owner.
 function createSeedMembers(): WorkspaceMember[] {
@@ -111,6 +113,14 @@ export interface FlowBaseActions {
   setSchemaPosition: (boardId: string, pos: { x: number; y: number }) => void
   resetSchemaPositions: () => void
 
+  // View Display 옵션 — active board + 특정 view section 부분 patch.
+  // patch = undefined인 키는 유지. view 키 자체 reset은 명시 빈 객체 전달.
+  setViewOption: <K extends keyof ViewSettings>(
+    view: K,
+    patch: Partial<NonNullable<ViewSettings[K]>>,
+  ) => void
+  resetViewOption: (view: keyof ViewSettings) => void
+
   // Automations — rule 토글/삭제 + suggestion accept/dismiss + 테스트 실행
   toggleAutomationStatus: (id: string) => void
   deleteAutomation: (id: string) => void
@@ -128,6 +138,7 @@ export interface FlowBaseActions {
   addChart: (chart: Omit<ChartConfig, "id">) => string
   removeChart: (chartId: string) => void
   updateChart: (chartId: string, patch: Partial<ChartConfig>) => void
+  moveChart: (chartId: string, direction: "up" | "down") => void
   clearCustomCharts: () => void
   // Library promotion: 현재 active board의 컬럼을 LibraryField로 승격.
   promoteColumnToLibraryField: (colName: string) => string | null
@@ -171,6 +182,11 @@ export interface FlowBaseActions {
   jumpToNavEntry: (index: number) => void
   setSearch: (s: string) => void
   setFilter: (f: TicketStatus[]) => void
+  // 다중 필드 필터 — discriminated union (FilterCondition).
+  setColumnCondition: (col: string, cond: FilterCondition | null) => void
+  // 'in' 전용 편의 액션 (FilterMenu 체크박스 토글).
+  toggleColumnInValue: (col: string, value: string) => void
+  // 후방호환 (legacy 호출처 — 점진 삭제). values [] → clear.
   setColumnFilter: (col: string, values: string[]) => void
   toggleColumnFilter: (col: string, value: string) => void
   clearAllFilters: () => void
@@ -209,6 +225,7 @@ function createInitialState(): FlowBaseState {
       members: createSeedMembers(),
     },
     schemaPositions: {},
+    viewSettings: {},
     panels: { activityBar: true, sidebar: true, aiPanel: true, detailBar: false },
     viewByBoardId: { [interviews.id]: "sheet", [tasks.id]: "sheet" },
     activityMode: "tables",
@@ -621,6 +638,32 @@ export const useFlowBase = create<FlowBaseStore>()(
           })),
         resetSchemaPositions: () => set({ schemaPositions: {} }),
 
+        setViewOption: (view, patch) => {
+          const s = get()
+          const boardId = s.activeBoardId
+          const cur = s.viewSettings[boardId] ?? {}
+          const curView = (cur[view] ?? {}) as Record<string, unknown>
+          set({
+            viewSettings: {
+              ...s.viewSettings,
+              [boardId]: {
+                ...cur,
+                [view]: { ...curView, ...patch },
+              },
+            },
+          })
+        },
+        resetViewOption: (view) => {
+          const s = get()
+          const boardId = s.activeBoardId
+          const cur = s.viewSettings[boardId] ?? {}
+          const next: ViewSettings = { ...cur }
+          delete next[view]
+          set({
+            viewSettings: { ...s.viewSettings, [boardId]: next },
+          })
+        },
+
         // Automations — rule 토글: active ↔ paused. draft는 따로 명시적 변경.
         toggleAutomationStatus: (id) =>
           set((s) => ({
@@ -870,6 +913,23 @@ export const useFlowBase = create<FlowBaseStore>()(
                 ),
                 updatedAt: nowIso(),
               },
+            },
+          })
+        },
+        moveChart: (chartId, direction) => {
+          const s = get()
+          const b = s.boards[s.activeBoardId]
+          if (!b || !b.charts) return
+          const idx = b.charts.findIndex((c) => c.id === chartId)
+          if (idx < 0) return
+          const next = direction === "up" ? idx - 1 : idx + 1
+          if (next < 0 || next >= b.charts.length) return // 양 끝 no-op
+          const newCharts = [...b.charts]
+          ;[newCharts[idx], newCharts[next]] = [newCharts[next], newCharts[idx]]
+          set({
+            boards: {
+              ...s.boards,
+              [b.id]: { ...b, charts: newCharts, updatedAt: nowIso() },
             },
           })
         },
@@ -1286,31 +1346,47 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
         setSearch: (search) => set({ search }),
         setFilter: (filter) => set({ filter }),
-        setColumnFilter: (col, values) =>
+        setColumnCondition: (col, cond) =>
           set((s) => {
             const next = { ...s.columnFilters }
-            if (values.length === 0) {
+            if (
+              cond === null ||
+              (cond.kind === "in" && cond.values.length === 0) ||
+              (cond.kind === "range" &&
+                cond.min === undefined &&
+                cond.max === undefined) ||
+              (cond.kind === "date-range" && !cond.from && !cond.to)
+            ) {
               delete next[col]
             } else {
-              next[col] = values
+              next[col] = cond
             }
             return { columnFilters: next }
           }),
-        toggleColumnFilter: (col, value) =>
+        toggleColumnInValue: (col, value) =>
           set((s) => {
-            const cur = s.columnFilters[col] ?? []
-            const has = cur.includes(value)
+            const cur = s.columnFilters[col]
+            const curValues =
+              cur && cur.kind === "in" ? cur.values : ([] as string[])
+            const has = curValues.includes(value)
             const nextVals = has
-              ? cur.filter((v) => v !== value)
-              : [...cur, value]
+              ? curValues.filter((v) => v !== value)
+              : [...curValues, value]
             const next = { ...s.columnFilters }
             if (nextVals.length === 0) {
               delete next[col]
             } else {
-              next[col] = nextVals
+              next[col] = { kind: "in", values: nextVals }
             }
             return { columnFilters: next }
           }),
+        // ── 후방호환 (legacy) ──────────────────────────────
+        setColumnFilter: (col, values) => {
+          get().setColumnCondition(col, { kind: "in", values })
+        },
+        toggleColumnFilter: (col, value) => {
+          get().toggleColumnInValue(col, value)
+        },
         clearAllFilters: () => set({ filter: [], columnFilters: {} }),
         setSort: (sort) => set({ sort }),
         setSelected: (selectedRowIds) => set({ selectedRowIds }),
@@ -1360,6 +1436,7 @@ export const useFlowBase = create<FlowBaseStore>()(
       //   v8 → v9: trashedRows
       //   v9 → v10: trashedWikiPages
       //   v10 → v11: settings.members
+      //   v11 → v12: viewSettings (보드별 view별 Display 옵션)
       migrate: (persistedState, version) => {
         const s = (persistedState ?? {}) as Partial<FlowBaseState>
         if (version < 5) {
@@ -1410,6 +1487,9 @@ export const useFlowBase = create<FlowBaseStore>()(
               createSeedMembers(),
           }
         }
+        if (version < 12) {
+          s.viewSettings = s.viewSettings ?? {}
+        }
         return s as FlowBaseState
       },
       partialize: (s) => ({
@@ -1425,6 +1505,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         trashedWikiPages: s.trashedWikiPages,
         settings: s.settings,
         schemaPositions: s.schemaPositions,
+        viewSettings: s.viewSettings,
         panels: s.panels,
         viewByBoardId: s.viewByBoardId,
         activityMode: s.activityMode,
@@ -1494,11 +1575,34 @@ export function selectVisibleRows(state: FlowBaseState): TableRow[] {
     rows = rows.filter((r) => allowed.has(String(r.status ?? "")))
   }
 
-  // 다중 필드 필터 (columnFilters)
-  for (const [col, values] of Object.entries(state.columnFilters)) {
-    if (values.length === 0) continue
-    const allowed = new Set(values)
-    rows = rows.filter((r) => allowed.has(String(r[col] ?? "")))
+  // 다중 필드 필터 (columnFilters — discriminated union)
+  for (const [col, cond] of Object.entries(state.columnFilters)) {
+    if (!cond) continue
+    if (cond.kind === "in") {
+      if (cond.values.length === 0) continue
+      const allowed = new Set(cond.values)
+      rows = rows.filter((r) => allowed.has(String(r[col] ?? "")))
+    } else if (cond.kind === "range") {
+      const { min, max } = cond
+      if (min === undefined && max === undefined) continue
+      rows = rows.filter((r) => {
+        const n = Number(r[col])
+        if (!Number.isFinite(n)) return false
+        if (min !== undefined && n < min) return false
+        if (max !== undefined && n > max) return false
+        return true
+      })
+    } else if (cond.kind === "date-range") {
+      const { from, to } = cond
+      if (!from && !to) continue
+      rows = rows.filter((r) => {
+        const v = String(r[col] ?? "")
+        if (!v) return false
+        if (from && v < from) return false
+        if (to && v > to) return false
+        return true
+      })
+    }
   }
 
   const q = state.search.trim().toLowerCase()

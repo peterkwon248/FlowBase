@@ -268,6 +268,42 @@ export interface SuggestedAutomation {
 // 보드 뷰 집합 — Tables 모드 안에서 전환. Schema는 Workspace 모드 소속이라 여기 없음.
 export type ViewMode = "sheet" | "kanban" | "chart" | "grid" | "timeline"
 
+// ─── View-specific Display Options (Linear "Display" 버튼 패턴) ───
+// view마다 의미 있는 옵션이 다르므로 view별 인터페이스. 보드별 + view별 persist.
+
+export interface SheetViewSettings {
+  hiddenColumns?: string[]  // name list — 숨겨질 컬럼
+  density?: "compact" | "normal"
+}
+
+export interface KanbanViewSettings {
+  groupBy?: string          // 컬럼 name (status/select). 미설정 시 status 자동.
+  cardFields?: string[]     // 카드에 표시할 추가 필드 (id/title 외)
+}
+
+export interface GalleryViewSettings {
+  coverField?: string       // avatar/text 컬럼 — 카드 헤더
+  cardFields?: string[]     // 카드 본문 필드
+  columns?: 2 | 3 | 4       // grid 컬럼 수
+}
+
+export interface TimelineViewSettings {
+  dateField?: string        // 정렬·bar 기준 date 컬럼
+  scale?: "day" | "week"    // colWidth 조절 (day=34px, week=14px)
+}
+
+export interface DashboardViewSettings {
+  density?: "compact" | "normal"
+}
+
+export interface ViewSettings {
+  sheet?: SheetViewSettings
+  kanban?: KanbanViewSettings
+  gallery?: GalleryViewSettings
+  timeline?: TimelineViewSettings
+  dashboard?: DashboardViewSettings
+}
+
 // 액티비티 바 모드 — 앱 최상위 내비게이션 (프로토타입 InteractiveActivityBar 6모드).
 export type ActivityMode =
   | "tables"
@@ -351,6 +387,12 @@ export interface NavEntry {
   wikiPageId?: string | null
 }
 
+// FilterMenu condition — 컬럼 type별 다른 형태.
+export type FilterCondition =
+  | { kind: "in"; values: string[] } // status / select
+  | { kind: "range"; min?: number; max?: number } // num
+  | { kind: "date-range"; from?: string; to?: string } // date (YYYY-MM-DD)
+
 export type SortDir = "asc" | "desc"
 
 export type SortState = { key: string; dir: SortDir } | null
@@ -391,6 +433,9 @@ export interface FlowBaseState {
   // Schema ER 카드 수동 위치 (persist) — 없으면 auto-layout
   schemaPositions: Record<string, { x: number; y: number }>
 
+  // View Display 옵션 (persist) — 보드별 + view별. Display 버튼에서 편집.
+  viewSettings: Record<string, ViewSettings>
+
   // 전역 UI (persist)
   panels: PanelState
   viewByBoardId: Record<string, ViewMode>
@@ -403,7 +448,11 @@ export interface FlowBaseState {
   // 세션 ephemeral (persist ❌ — 보드 전환 시 초기화)
   search: string
   filter: TicketStatus[] // legacy: status chips (filter-chips.tsx)
-  columnFilters: Record<string, string[]> // 다중 필드 필터 (FilterMenu)
+  // 다중 필드 필터 (FilterMenu) — discriminated union
+  //   status/select → in (values)
+  //   num            → range (min/max)
+  //   date           → date-range (from/to ISO YYYY-MM-DD)
+  columnFilters: Record<string, FilterCondition>
   sort: SortState
   selectedRowIds: string[]
   focusedCell: CellCoord | null

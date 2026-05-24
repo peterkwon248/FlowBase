@@ -14,6 +14,7 @@ import { DetailBar } from "@/components/board/detail-bar"
 import { EdgeCollapse } from "@/components/board/edge-collapse"
 import { ExpandTab } from "@/components/board/expand-tab"
 import { BulkEditMenu } from "@/components/board/bulk-edit-menu"
+import { DisplayMenu } from "@/components/board/display-menu"
 import { ActiveFilterChips, FilterMenu } from "@/components/board/filter-menu"
 import { FilterChips } from "@/components/board/filter-chips"
 import { ViewSwitcher } from "@/components/board/view-switcher"
@@ -86,6 +87,7 @@ export function TablesMode() {
               {rowCount} rows · {colCount} columns
             </span>
             <FilterMenu />
+            <DisplayMenu />
             <div className="flex-1" />
             {selectedCount > 0 && (
               <>

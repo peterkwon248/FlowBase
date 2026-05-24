@@ -1,0 +1,414 @@
+// FlowBase V2 — Display 옵션 메뉴 (Linear "Display" 패턴)
+// 출처 컨셉: Linear/Notion view options popover.
+//
+// Filter 옆 헤더 버튼 → Popover → 현재 view에 맞는 옵션 섹션만 노출.
+// view별 옵션 모델: types.ViewSettings · 보드별+view별 persist.
+// 각 섹션: Sheet(hiddenColumns) · Kanban(groupBy) · Gallery(cover/cards/columns) · Timeline(date/scale).
+// Dashboard는 옵션 없음 — "No display options" placeholder.
+
+"use client"
+
+import { useMemo } from "react"
+import { Check, Settings2 } from "lucide-react"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { TYPE_ICON } from "@/components/sheet/header-cell"
+import {
+  selectActiveBoard,
+  selectActiveView,
+  useFlowBase,
+} from "@/lib/flowbase-store"
+import { cn } from "@/lib/utils"
+import type {
+  ColumnDef,
+  GalleryViewSettings,
+  KanbanViewSettings,
+  SheetViewSettings,
+  TimelineViewSettings,
+  ViewSettings,
+} from "@/types/flowbase"
+
+// 모듈 스코프 상수 — 매 셀렉터 호출에 새 빈 객체 반환 ❌ (zustand 무한 루프 방지).
+const EMPTY_VS: ViewSettings = {}
+
+export function DisplayMenu() {
+  const board = useFlowBase(selectActiveBoard)
+  const view = useFlowBase(selectActiveView)
+  const viewSettings = useFlowBase(
+    (s) => s.viewSettings[s.activeBoardId] ?? EMPTY_VS,
+  )
+
+  // 현재 view의 옵션 활성 개수 (배지용)
+  const activeCount = useMemo(() => {
+    if (!board) return 0
+    if (view === "sheet") {
+      return viewSettings.sheet?.hiddenColumns?.length ?? 0
+    }
+    if (view === "kanban") {
+      return viewSettings.kanban?.groupBy ? 1 : 0
+    }
+    if (view === "grid") {
+      const g = viewSettings.gallery
+      return (g?.coverField ? 1 : 0) + (g?.cardFields?.length ?? 0)
+    }
+    if (view === "timeline") {
+      const t = viewSettings.timeline
+      return (t?.dateField ? 1 : 0) + (t?.scale && t.scale !== "day" ? 1 : 0)
+    }
+    return 0
+  }, [board, view, viewSettings])
+
+  if (!board) return null
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          title="Display options"
+          data-action="display-menu"
+          className={cn(
+            "inline-flex h-7 items-center gap-1 rounded-md border border-border-subtle px-2 text-[12px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground",
+            activeCount > 0 && "border-border bg-foreground/[0.06] text-foreground",
+          )}
+        >
+          <Settings2 className="size-3.5" strokeWidth={1.75} />
+          <span>Display</span>
+          {activeCount > 0 && (
+            <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9.5px] font-semibold text-primary-foreground tabular-nums">
+              {activeCount}
+            </span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        sideOffset={6}
+        className="w-72 p-0"
+        data-display-popover
+        data-display-view={view}
+      >
+        <div className="space-y-0.5 py-1">
+          <div className="px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            Display · {VIEW_LABEL[view]}
+          </div>
+          <div className="px-3 pb-2 pt-1">
+            {view === "sheet" && <SheetSection board={board} />}
+            {view === "kanban" && <KanbanSection board={board} />}
+            {view === "grid" && <GallerySection board={board} />}
+            {view === "timeline" && <TimelineSection board={board} />}
+            {view === "chart" && (
+              <p className="text-[12px] text-muted-foreground">
+                No display options for Dashboard. Add or arrange charts from
+                the toolbar above.
+              </p>
+            )}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+const VIEW_LABEL: Record<string, string> = {
+  sheet: "Sheet",
+  kanban: "Kanban",
+  grid: "Gallery",
+  timeline: "Timeline",
+  chart: "Dashboard",
+}
+
+// ─── Sheet — column visibility ─────────────────────────
+function SheetSection({ board }: { board: { columns: ColumnDef[] } }) {
+  const settings = useFlowBase(
+    (s) => s.viewSettings[s.activeBoardId]?.sheet,
+  ) as SheetViewSettings | undefined
+  const setViewOption = useFlowBase((s) => s.setViewOption)
+  const hidden = new Set(settings?.hiddenColumns ?? [])
+
+  const togglable = board.columns.filter((c) => c.name !== "id")
+
+  const toggle = (name: string) => {
+    const next = new Set(hidden)
+    if (next.has(name)) next.delete(name)
+    else next.add(name)
+    setViewOption("sheet", { hiddenColumns: Array.from(next) })
+  }
+
+  return (
+    <div className="space-y-1">
+      <div className="mb-1 text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
+        Shown columns
+      </div>
+      <div className="max-h-60 space-y-0.5 overflow-y-auto">
+        {togglable.map((col) => {
+          const Icon = TYPE_ICON[col.type]
+          const checked = !hidden.has(col.name)
+          return (
+            <button
+              key={col.name}
+              type="button"
+              onClick={() => toggle(col.name)}
+              data-display-col={col.name}
+              className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-1.5 py-1.5 text-left text-[12.5px] transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <span
+                className={cn(
+                  "flex size-3.5 shrink-0 items-center justify-center rounded border",
+                  checked
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border",
+                )}
+              >
+                {checked && <Check className="size-2.5" strokeWidth={3} />}
+              </span>
+              <Icon
+                className="size-3.5 shrink-0 text-muted-foreground"
+                strokeWidth={1.75}
+              />
+              <span className="flex-1 truncate">{col.label || col.name}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Kanban — group by ─────────────────────────────────
+function KanbanSection({ board }: { board: { columns: ColumnDef[] } }) {
+  const settings = useFlowBase(
+    (s) => s.viewSettings[s.activeBoardId]?.kanban,
+  ) as KanbanViewSettings | undefined
+  const setViewOption = useFlowBase((s) => s.setViewOption)
+
+  const groupable = board.columns.filter(
+    (c) => c.name !== "id" && (c.type === "status" || c.type === "select"),
+  )
+
+  const defaultGroup =
+    board.columns.find((c) => c.type === "status")?.name ??
+    groupable[0]?.name ??
+    ""
+  const current = settings?.groupBy ?? defaultGroup
+
+  return (
+    <div className="space-y-2">
+      <Row label="Group by">
+        <Select
+          value={current}
+          onValueChange={(v) => setViewOption("kanban", { groupBy: v })}
+        >
+          <SelectTrigger
+            className="h-7 w-[140px] text-[12px]"
+            data-display-kanban-group
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {groupable.map((c) => (
+              <SelectItem key={c.name} value={c.name}>
+                {c.label || c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Row>
+    </div>
+  )
+}
+
+// ─── Gallery — cover · cards · columns ─────────────────
+function GallerySection({ board }: { board: { columns: ColumnDef[] } }) {
+  const settings = useFlowBase(
+    (s) => s.viewSettings[s.activeBoardId]?.gallery,
+  ) as GalleryViewSettings | undefined
+  const setViewOption = useFlowBase((s) => s.setViewOption)
+
+  const coverCols = board.columns.filter(
+    (c) =>
+      c.name !== "id" && (c.type === "avatar" || c.type === "text"),
+  )
+  const cardCols = board.columns.filter((c) => c.name !== "id")
+  const cards = new Set(settings?.cardFields ?? [])
+  const cols = settings?.columns ?? 3
+
+  const toggleCard = (name: string) => {
+    const next = new Set(cards)
+    if (next.has(name)) next.delete(name)
+    else next.add(name)
+    setViewOption("gallery", { cardFields: Array.from(next) })
+  }
+
+  return (
+    <div className="space-y-3">
+      <Row label="Cover">
+        <Select
+          value={settings?.coverField ?? "_auto"}
+          onValueChange={(v) =>
+            setViewOption("gallery", {
+              coverField: v === "_auto" ? undefined : v,
+            })
+          }
+        >
+          <SelectTrigger
+            className="h-7 w-[140px] text-[12px]"
+            data-display-gallery-cover
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="_auto">Auto</SelectItem>
+            {coverCols.map((c) => (
+              <SelectItem key={c.name} value={c.name}>
+                {c.label || c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Row>
+      <Row label="Columns">
+        <div className="inline-flex rounded-md border border-border-subtle p-0.5">
+          {[2, 3, 4].map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() =>
+                setViewOption("gallery", { columns: n as 2 | 3 | 4 })
+              }
+              data-display-gallery-cols={n}
+              className={cn(
+                "rounded-sm px-2 py-0.5 text-[11.5px] transition-colors",
+                cols === n
+                  ? "bg-primary/15 font-semibold text-primary"
+                  : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
+              )}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      </Row>
+      <div>
+        <div className="mb-1 text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
+          Card fields
+        </div>
+        <div className="max-h-44 space-y-0.5 overflow-y-auto">
+          {cardCols.map((col) => {
+            const Icon = TYPE_ICON[col.type]
+            const checked = cards.has(col.name)
+            return (
+              <button
+                key={col.name}
+                type="button"
+                onClick={() => toggleCard(col.name)}
+                data-display-gallery-card={col.name}
+                className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-1.5 py-1 text-left text-[12px] transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                <span
+                  className={cn(
+                    "flex size-3.5 shrink-0 items-center justify-center rounded border",
+                    checked
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border",
+                  )}
+                >
+                  {checked && <Check className="size-2.5" strokeWidth={3} />}
+                </span>
+                <Icon
+                  className="size-3 shrink-0 text-muted-foreground"
+                  strokeWidth={1.75}
+                />
+                <span className="flex-1 truncate">
+                  {col.label || col.name}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Timeline — date field · scale ─────────────────────
+function TimelineSection({ board }: { board: { columns: ColumnDef[] } }) {
+  const settings = useFlowBase(
+    (s) => s.viewSettings[s.activeBoardId]?.timeline,
+  ) as TimelineViewSettings | undefined
+  const setViewOption = useFlowBase((s) => s.setViewOption)
+
+  const dateCols = board.columns.filter((c) => c.type === "date")
+  const current = settings?.dateField ?? dateCols[0]?.name ?? ""
+  const scale = settings?.scale ?? "day"
+
+  return (
+    <div className="space-y-2">
+      <Row label="Date field">
+        <Select
+          value={current}
+          onValueChange={(v) => setViewOption("timeline", { dateField: v })}
+        >
+          <SelectTrigger
+            className="h-7 w-[140px] text-[12px]"
+            data-display-timeline-date
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {dateCols.map((c) => (
+              <SelectItem key={c.name} value={c.name}>
+                {c.label || c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Row>
+      <Row label="Scale">
+        <div className="inline-flex rounded-md border border-border-subtle p-0.5">
+          {(["day", "week"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setViewOption("timeline", { scale: s })}
+              data-display-timeline-scale={s}
+              className={cn(
+                "rounded-sm px-2 py-0.5 text-[11.5px] capitalize transition-colors",
+                scale === s
+                  ? "bg-primary/15 font-semibold text-primary"
+                  : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
+              )}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </Row>
+    </div>
+  )
+}
+
+function Row({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-[12px] text-muted-foreground">{label}</span>
+      {children}
+    </div>
+  )
+}

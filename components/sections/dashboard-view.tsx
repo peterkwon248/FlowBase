@@ -7,8 +7,34 @@
 
 "use client"
 
-import { useMemo, useState } from "react"
-import { LayoutDashboard, Plus, X } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import {
+  ChevronDown,
+  ChevronUp,
+  LayoutDashboard,
+  MoreHorizontal,
+  Plus,
+  X,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { BarChart } from "@/components/charts/bar-chart"
 import { CategoryBar, type CategoryBarItem } from "@/components/charts/category-bar"
 import { ChartCard } from "@/components/charts/chart-card"
@@ -18,7 +44,6 @@ import { KpiTile } from "@/components/charts/kpi-tile"
 import { LineChart, type LinePoint } from "@/components/charts/line-chart"
 import { StackedBarChart } from "@/components/charts/stacked-bar-chart"
 import { AddChartDialog } from "@/components/sections/add-chart-dialog"
-import { Button } from "@/components/ui/button"
 import {
   selectActiveBoard,
   selectVisibleRows,
@@ -30,6 +55,14 @@ import type {
   ColumnDef,
   TableRow,
 } from "@/types/flowbase"
+import { cn } from "@/lib/utils"
+
+const WIDTH_OPTIONS: { value: ChartWidth; label: string }[] = [
+  { value: "quarter", label: "1/4" },
+  { value: "half", label: "1/2" },
+  { value: "two-thirds", label: "2/3" },
+  { value: "full", label: "Full" },
+]
 
 // status는 LOCK 색 (blue/amber/violet/emerald), 그 외는 chart 팔레트.
 const STATUS_BAR: Record<string, string> = {
@@ -125,6 +158,8 @@ export function DashboardView() {
   const sort = useFlowBase((s) => s.sort)
   const columnFilters = useFlowBase((s) => s.columnFilters)
   const removeChart = useFlowBase((s) => s.removeChart)
+  const moveChart = useFlowBase((s) => s.moveChart)
+  const updateChart = useFlowBase((s) => s.updateChart)
   const clearCustomCharts = useFlowBase((s) => s.clearCustomCharts)
   const rows = useMemo(
     () => selectVisibleRows(useFlowBase.getState()),
@@ -228,7 +263,12 @@ export function DashboardView() {
                 rows={rows}
                 board={board}
                 accent={CHART_ACCENT[i % CHART_ACCENT.length]}
+                isFirst={i === 0}
+                isLast={i === customCharts.length - 1}
                 onRemove={() => removeChart(chart.id)}
+                onMoveUp={() => moveChart(chart.id, "up")}
+                onMoveDown={() => moveChart(chart.id, "down")}
+                onUpdate={(patch) => updateChart(chart.id, patch)}
               />
             </div>
           ))}
@@ -341,19 +381,29 @@ export function DashboardView() {
   )
 }
 
-// ─── 사용자 정의 차트 카드 (X 삭제 버튼 포함) ─────────────────
+// ─── 사용자 정의 차트 카드 (호버 toolbar: ↑↓ reorder + ⋯ edit + X) ─────
 function CustomChartCard({
   chart,
   rows,
   board,
   accent,
+  isFirst,
+  isLast,
   onRemove,
+  onMoveUp,
+  onMoveDown,
+  onUpdate,
 }: {
   chart: ChartConfig
   rows: TableRow[]
   board: { columns: ColumnDef[] }
   accent: string
+  isFirst: boolean
+  isLast: boolean
   onRemove: () => void
+  onMoveUp: () => void
+  onMoveDown: () => void
+  onUpdate: (patch: Partial<ChartConfig>) => void
 }) {
   const sourceCol = board.columns.find((c) => c.name === chart.sourceCol)
   const groupCol = chart.groupByCol
@@ -365,21 +415,167 @@ function CustomChartCard({
       }`
     : ""
 
+  const [renameOpen, setRenameOpen] = useState(false)
+  const [draftTitle, setDraftTitle] = useState(chart.title)
+
+  // 외부 변경 (다른 머신 sync) 시 draft 동기화
+  useEffect(() => {
+    setDraftTitle(chart.title)
+  }, [chart.title])
+
+  const saveRename = () => {
+    const t = draftTitle.trim()
+    if (t && t !== chart.title) onUpdate({ title: t })
+    setRenameOpen(false)
+  }
+
   return (
-    <div className="group relative h-full">
-      <ChartCard title={chart.title} subtitle={subtitle} accent={accent}>
-        {renderChartBody(chart, rows, sourceCol)}
-      </ChartCard>
-      <button
-        type="button"
-        onClick={onRemove}
-        title="Remove chart"
-        data-chart-remove={chart.id}
-        className="absolute right-2 top-2 flex size-5 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-foreground/[0.08] hover:text-foreground group-hover:opacity-100"
-      >
-        <X className="size-3" strokeWidth={2.5} />
-      </button>
-    </div>
+    <>
+      <div className="group relative h-full">
+        <ChartCard title={chart.title} subtitle={subtitle} accent={accent}>
+          {renderChartBody(chart, rows, sourceCol)}
+        </ChartCard>
+        <div
+          className="absolute right-1.5 top-1.5 flex items-center gap-0.5 rounded-md bg-card/80 px-0.5 py-0.5 opacity-0 backdrop-blur transition-opacity group-hover:opacity-100"
+          data-chart-toolbar={chart.id}
+        >
+          <ToolbarBtn
+            title="Move up"
+            disabled={isFirst}
+            onClick={onMoveUp}
+            data-chart-up={chart.id}
+          >
+            <ChevronUp className="size-3" strokeWidth={2.5} />
+          </ToolbarBtn>
+          <ToolbarBtn
+            title="Move down"
+            disabled={isLast}
+            onClick={onMoveDown}
+            data-chart-down={chart.id}
+          >
+            <ChevronDown className="size-3" strokeWidth={2.5} />
+          </ToolbarBtn>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                title="More options"
+                data-chart-menu={chart.id}
+                className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.08] hover:text-foreground"
+              >
+                <MoreHorizontal className="size-3" strokeWidth={2.5} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem
+                onSelect={() => {
+                  setDraftTitle(chart.title)
+                  setRenameOpen(true)
+                }}
+                data-chart-rename={chart.id}
+              >
+                Rename…
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
+                Width
+              </DropdownMenuLabel>
+              <div className="px-2 pb-1.5">
+                <div className="flex gap-1">
+                  {WIDTH_OPTIONS.map((w) => (
+                    <button
+                      key={w.value}
+                      type="button"
+                      onClick={() => onUpdate({ width: w.value })}
+                      data-chart-width={w.value}
+                      className={cn(
+                        "flex-1 rounded border px-1 py-0.5 text-[10.5px] transition-colors",
+                        chart.width === w.value
+                          ? "border-primary bg-primary/[0.08] font-semibold"
+                          : "border-border-subtle text-muted-foreground hover:border-border",
+                      )}
+                    >
+                      {w.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <ToolbarBtn
+            title="Remove chart"
+            onClick={onRemove}
+            data-chart-remove={chart.id}
+            destructive
+          >
+            <X className="size-3" strokeWidth={2.5} />
+          </ToolbarBtn>
+        </div>
+      </div>
+
+      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Rename chart</DialogTitle>
+            <DialogDescription className="text-[12px]">
+              The chart ID and data stay the same.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="chart-rename" className="text-[12px]">
+              Title
+            </Label>
+            <Input
+              id="chart-rename"
+              autoFocus
+              value={draftTitle}
+              onChange={(e) => setDraftTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") saveRename()
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRenameOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={saveRename}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
+function ToolbarBtn({
+  children,
+  onClick,
+  title,
+  disabled,
+  destructive,
+  ...props
+}: {
+  children: React.ReactNode
+  onClick: () => void
+  title: string
+  disabled?: boolean
+  destructive?: boolean
+} & React.HTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.08] hover:text-foreground",
+        disabled && "cursor-not-allowed opacity-30 hover:bg-transparent hover:text-muted-foreground",
+        destructive && "hover:bg-destructive/15 hover:text-destructive",
+      )}
+      {...props}
+    >
+      {children}
+    </button>
   )
 }
 
