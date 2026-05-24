@@ -87,10 +87,11 @@ function buildInValues(
 
 function activeCountOf(cond: FilterCondition | undefined): number {
   if (!cond) return 0
-  if (cond.kind === "in") return cond.values.length
+  if (cond.kind === "in" || cond.kind === "not_in") return cond.values.length
   if (cond.kind === "range")
     return (cond.min !== undefined ? 1 : 0) + (cond.max !== undefined ? 1 : 0)
-  if (cond.kind === "contains") return cond.text.trim() ? 1 : 0
+  if (cond.kind === "contains" || cond.kind === "not_contains")
+    return cond.text.trim() ? 1 : 0
   return (cond.from ? 1 : 0) + (cond.to ? 1 : 0)
 }
 
@@ -228,40 +229,61 @@ function FilterColSub({
           {option.col.label || option.col.name}
         </DropdownMenuLabel>
 
-        {/* in (status/select) — 체크박스 리스트 */}
+        {/* in/not_in (status/select) — Match/Exclude toggle + 체크박스 리스트 */}
         {option.values && (
-          <div className="max-h-64 overflow-y-auto">
-            {option.values.map((v) => {
-              const checked =
-                cond?.kind === "in" ? cond.values.includes(v.id) : false
-              return (
-                <DropdownMenuItem
-                  key={v.id}
-                  onSelect={(e) => {
-                    e.preventDefault() // sub 안 닫음
-                    toggleColumnInValue(option.col.name, v.id)
-                  }}
-                  className="gap-2"
-                  data-filter-value={v.id}
-                >
-                  <span
-                    className={cn(
-                      "flex size-3.5 shrink-0 items-center justify-center rounded border",
-                      checked
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border",
-                    )}
+          <>
+            <div className="px-2 py-1.5">
+              <MatchToggle
+                kind={cond?.kind === "not_in" ? "exclude" : "include"}
+                onChange={(k) => {
+                  // 현재 values 보존, kind만 전환. 빈값이면 cleared.
+                  const curValues =
+                    cond?.kind === "in" || cond?.kind === "not_in"
+                      ? cond.values
+                      : []
+                  if (curValues.length === 0) return
+                  setColumnCondition(option.col.name, {
+                    kind: k === "exclude" ? "not_in" : "in",
+                    values: curValues,
+                  })
+                }}
+              />
+            </div>
+            <div className="max-h-60 overflow-y-auto">
+              {option.values.map((v) => {
+                const checked =
+                  cond?.kind === "in" || cond?.kind === "not_in"
+                    ? cond.values.includes(v.id)
+                    : false
+                return (
+                  <DropdownMenuItem
+                    key={v.id}
+                    onSelect={(e) => {
+                      e.preventDefault() // sub 안 닫음
+                      toggleColumnInValue(option.col.name, v.id)
+                    }}
+                    className="gap-2"
+                    data-filter-value={v.id}
                   >
-                    {checked && <Check className="size-2.5" strokeWidth={3} />}
-                  </span>
-                  <span className="flex-1 truncate">{v.label}</span>
-                  <span className="text-[10.5px] tabular-nums text-muted-foreground">
-                    {v.count}
-                  </span>
-                </DropdownMenuItem>
-              )
-            })}
-          </div>
+                    <span
+                      className={cn(
+                        "flex size-3.5 shrink-0 items-center justify-center rounded border",
+                        checked
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border",
+                      )}
+                    >
+                      {checked && <Check className="size-2.5" strokeWidth={3} />}
+                    </span>
+                    <span className="flex-1 truncate">{v.label}</span>
+                    <span className="text-[10.5px] tabular-nums text-muted-foreground">
+                      {v.count}
+                    </span>
+                  </DropdownMenuItem>
+                )
+              })}
+            </div>
+          </>
         )}
 
         {/* range (num) */}
@@ -355,7 +377,7 @@ function RangeWidget({
   )
 }
 
-// ─── text — contains (case-insensitive) ────────────────
+// ─── text — contains/not_contains (case-insensitive) + Match/Exclude toggle ────────────────
 function ContainsWidget({
   cond,
   onSet,
@@ -363,20 +385,69 @@ function ContainsWidget({
   cond: FilterCondition | undefined
   onSet: (c: FilterCondition) => void
 }) {
-  const text = cond?.kind === "contains" ? cond.text : ""
+  const isNot = cond?.kind === "not_contains"
+  const text =
+    cond?.kind === "contains" || cond?.kind === "not_contains" ? cond.text : ""
   return (
     <div className="space-y-2 px-2 pb-1.5 pt-1">
+      <MatchToggle
+        kind={isNot ? "exclude" : "include"}
+        onChange={(k) => {
+          if (!text.trim()) return
+          onSet({
+            kind: k === "exclude" ? "not_contains" : "contains",
+            text,
+          })
+        }}
+      />
       <Input
         type="text"
-        placeholder="Contains…"
+        placeholder={isNot ? "Excludes…" : "Contains…"}
         value={text}
         onChange={(e) =>
-          onSet({ kind: "contains", text: e.target.value })
+          onSet({
+            kind: isNot ? "not_contains" : "contains",
+            text: e.target.value,
+          })
         }
         onClick={(e) => e.stopPropagation()}
         data-filter-contains
         className="h-7 text-[12px]"
       />
+    </div>
+  )
+}
+
+// ─── Match/Exclude segmented toggle (in↔not_in, contains↔not_contains) ────
+function MatchToggle({
+  kind,
+  onChange,
+}: {
+  kind: "include" | "exclude"
+  onChange: (k: "include" | "exclude") => void
+}) {
+  return (
+    <div className="inline-flex rounded-md border border-border-subtle p-0.5 text-[10.5px]">
+      {(["include", "exclude"] as const).map((k) => (
+        <button
+          key={k}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onChange(k)
+          }}
+          data-filter-match={k}
+          className={cn(
+            "rounded-sm px-2 py-0.5 transition-colors",
+            kind === k
+              ? "bg-primary/15 font-semibold text-primary"
+              : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
+          )}
+        >
+          {k === "include" ? "Match" : "Exclude"}
+        </button>
+      ))}
     </div>
   )
 }
@@ -448,7 +519,8 @@ export function ActiveFilterChips() {
       {entries.flatMap(([col, cond]) => {
         const c = colByName(col)
         const colLabel = c?.label || col
-        if (cond.kind === "in") {
+        if (cond.kind === "in" || cond.kind === "not_in") {
+          const prefix = cond.kind === "not_in" ? "≠ " : ""
           return cond.values.map((v) => {
             const label =
               c?.type === "status"
@@ -456,9 +528,9 @@ export function ActiveFilterChips() {
                 : v
             return (
               <Chip
-                key={`${col}:${v}`}
+                key={`${col}:${cond.kind}:${v}`}
                 colLabel={colLabel}
-                valueLabel={label}
+                valueLabel={`${prefix}${label}`}
                 onRemove={() => toggleColumnInValue(col, v)}
                 dataAttr={`${col}:${v}`}
               />
@@ -482,14 +554,15 @@ export function ActiveFilterChips() {
             />,
           ]
         }
-        if (cond.kind === "contains") {
+        if (cond.kind === "contains" || cond.kind === "not_contains") {
+          const prefix = cond.kind === "not_contains" ? "≠ " : ""
           return [
             <Chip
-              key={`${col}:contains`}
+              key={`${col}:${cond.kind}`}
               colLabel={colLabel}
-              valueLabel={`"${cond.text}"`}
+              valueLabel={`${prefix}"${cond.text}"`}
               onRemove={() => setColumnCondition(col, null)}
-              dataAttr={`${col}:contains`}
+              dataAttr={`${col}:${cond.kind}`}
             />,
           ]
         }

@@ -445,12 +445,14 @@ export interface NavEntry {
   wikiPageId?: string | null
 }
 
-// FilterMenu condition — 컬럼 type별 다른 형태.
+// FilterMenu condition — 컬럼 type별 다른 형태. negation operator(not_in/not_contains) 포함.
 export type FilterCondition =
-  | { kind: "in"; values: string[] } // status / select
+  | { kind: "in"; values: string[] } // status / select — 포함
+  | { kind: "not_in"; values: string[] } // status / select — 제외
   | { kind: "range"; min?: number; max?: number } // num
   | { kind: "date-range"; from?: string; to?: string } // date (YYYY-MM-DD)
   | { kind: "contains"; text: string } // text / email — 부분 match (case-insensitive)
+  | { kind: "not_contains"; text: string } // text / email — 부분 미일치
 
 export type SortDir = "asc" | "desc"
 

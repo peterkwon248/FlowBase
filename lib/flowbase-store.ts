@@ -1841,11 +1841,14 @@ export const useFlowBase = create<FlowBaseStore>()(
             const next = { ...s.columnFilters }
             if (
               cond === null ||
-              (cond.kind === "in" && cond.values.length === 0) ||
+              ((cond.kind === "in" || cond.kind === "not_in") &&
+                cond.values.length === 0) ||
               (cond.kind === "range" &&
                 cond.min === undefined &&
                 cond.max === undefined) ||
-              (cond.kind === "date-range" && !cond.from && !cond.to)
+              (cond.kind === "date-range" && !cond.from && !cond.to) ||
+              ((cond.kind === "contains" || cond.kind === "not_contains") &&
+                !cond.text.trim())
             ) {
               delete next[col]
             } else {
@@ -1853,11 +1856,15 @@ export const useFlowBase = create<FlowBaseStore>()(
             }
             return { columnFilters: next }
           }),
+        // values 토글 — 현재 kind(in 또는 not_in) 보존. kind 변경은 setColumnCondition 사용.
         toggleColumnInValue: (col, value) =>
           set((s) => {
             const cur = s.columnFilters[col]
+            const isNot = cur?.kind === "not_in"
             const curValues =
-              cur && cur.kind === "in" ? cur.values : ([] as string[])
+              cur && (cur.kind === "in" || cur.kind === "not_in")
+                ? cur.values
+                : ([] as string[])
             const has = curValues.includes(value)
             const nextVals = has
               ? curValues.filter((v) => v !== value)
@@ -1866,7 +1873,9 @@ export const useFlowBase = create<FlowBaseStore>()(
             if (nextVals.length === 0) {
               delete next[col]
             } else {
-              next[col] = { kind: "in", values: nextVals }
+              next[col] = isNot
+                ? { kind: "not_in", values: nextVals }
+                : { kind: "in", values: nextVals }
             }
             return { columnFilters: next }
           }),
@@ -2159,6 +2168,10 @@ export function selectVisibleRows(state: FlowBaseState): TableRow[] {
       if (cond.values.length === 0) continue
       const allowed = new Set(cond.values)
       rows = rows.filter((r) => allowed.has(String(r[col] ?? "")))
+    } else if (cond.kind === "not_in") {
+      if (cond.values.length === 0) continue
+      const excluded = new Set(cond.values)
+      rows = rows.filter((r) => !excluded.has(String(r[col] ?? "")))
     } else if (cond.kind === "range") {
       const { min, max } = cond
       if (min === undefined && max === undefined) continue
@@ -2185,6 +2198,13 @@ export function selectVisibleRows(state: FlowBaseState): TableRow[] {
       rows = rows.filter((r) => {
         const v = r[col]
         return typeof v === "string" && v.toLowerCase().includes(q)
+      })
+    } else if (cond.kind === "not_contains") {
+      const q = cond.text.trim().toLowerCase()
+      if (!q) continue
+      rows = rows.filter((r) => {
+        const v = r[col]
+        return !(typeof v === "string" && v.toLowerCase().includes(q))
       })
     }
   }
