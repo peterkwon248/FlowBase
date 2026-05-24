@@ -9,7 +9,16 @@
 "use client"
 
 import { useMemo } from "react"
-import { Check, ChevronDown, ChevronUp, Settings2 } from "lucide-react"
+import {
+  ArrowDown,
+  ArrowUp,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Settings2,
+  X,
+} from "lucide-react"
 import {
   Popover,
   PopoverContent,
@@ -34,6 +43,7 @@ import type {
   GalleryViewSettings,
   KanbanViewSettings,
   SheetViewSettings,
+  SortDir,
   TimelineViewSettings,
   ViewSettings,
 } from "@/types/flowbase"
@@ -52,7 +62,12 @@ export function DisplayMenu() {
   const activeCount = useMemo(() => {
     if (!board) return 0
     if (view === "sheet") {
-      return viewSettings.sheet?.hiddenColumns?.length ?? 0
+      const s = viewSettings.sheet
+      return (
+        (s?.hiddenColumns?.length ?? 0) +
+        (s?.groupBy ? 1 : 0) +
+        (s?.sorts?.length ?? 0)
+      )
     }
     if (view === "kanban") {
       return viewSettings.kanban?.groupBy ? 1 : 0
@@ -130,58 +145,220 @@ const VIEW_LABEL: Record<string, string> = {
   chart: "Dashboard",
 }
 
-// ─── Sheet — column visibility ─────────────────────────
+// ─── Sheet — column visibility · group by · multi-sort ────────
 function SheetSection({ board }: { board: { columns: ColumnDef[] } }) {
   const settings = useFlowBase(
     (s) => s.viewSettings[s.activeBoardId]?.sheet,
   ) as SheetViewSettings | undefined
   const setViewOption = useFlowBase((s) => s.setViewOption)
-  const hidden = new Set(settings?.hiddenColumns ?? [])
 
+  const hidden = new Set(settings?.hiddenColumns ?? [])
   const togglable = board.columns.filter((c) => c.name !== "id")
 
-  const toggle = (name: string) => {
+  const toggleHidden = (name: string) => {
     const next = new Set(hidden)
     if (next.has(name)) next.delete(name)
     else next.add(name)
     setViewOption("sheet", { hiddenColumns: Array.from(next) })
   }
 
+  // GroupBy — status/select 컬럼만 (Kanban 패턴 답습)
+  const groupable = board.columns.filter(
+    (c) => c.name !== "id" && (c.type === "status" || c.type === "select"),
+  )
+  const groupBy = settings?.groupBy ?? "_none"
+
+  // Sorts — 다중 (Linear "Ordering" 패턴)
+  const sorts = settings?.sorts ?? []
+  const sortableCols = togglable
+  const usedSortKeys = new Set(sorts.map((s) => s.key))
+  const addableSortCols = sortableCols.filter((c) => !usedSortKeys.has(c.name))
+
+  const addSort = (key: string) => {
+    setViewOption("sheet", { sorts: [...sorts, { key, dir: "asc" as SortDir }] })
+  }
+  const removeSort = (key: string) => {
+    setViewOption("sheet", { sorts: sorts.filter((s) => s.key !== key) })
+  }
+  const toggleSortDir = (key: string) => {
+    setViewOption("sheet", {
+      sorts: sorts.map((s) =>
+        s.key === key
+          ? { ...s, dir: (s.dir === "asc" ? "desc" : "asc") as SortDir }
+          : s,
+      ),
+    })
+  }
+  const moveSort = (i: number, dir: "up" | "down") => {
+    const next = sorts.slice()
+    const swap = dir === "up" ? i - 1 : i + 1
+    if (swap < 0 || swap >= next.length) return
+    ;[next[i], next[swap]] = [next[swap], next[i]]
+    setViewOption("sheet", { sorts: next })
+  }
+
   return (
-    <div className="space-y-1">
-      <div className="mb-1 text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
-        Shown columns
-      </div>
-      <div className="max-h-60 space-y-0.5 overflow-y-auto">
-        {togglable.map((col) => {
-          const Icon = TYPE_ICON[col.type]
-          const checked = !hidden.has(col.name)
-          return (
-            <button
-              key={col.name}
-              type="button"
-              onClick={() => toggle(col.name)}
-              data-display-col={col.name}
-              className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-1.5 py-1.5 text-left text-[12.5px] transition-colors hover:bg-accent hover:text-accent-foreground"
+    <div className="space-y-3">
+      {/* Group by */}
+      {groupable.length > 0 && (
+        <Row label="Group by">
+          <Select
+            value={groupBy}
+            onValueChange={(v) =>
+              setViewOption("sheet", {
+                groupBy: v === "_none" ? undefined : v,
+              })
+            }
+          >
+            <SelectTrigger
+              className="h-7 w-[140px] text-[12px]"
+              data-display-sheet-group
             >
-              <span
-                className={cn(
-                  "flex size-3.5 shrink-0 items-center justify-center rounded border",
-                  checked
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border",
-                )}
-              >
-                {checked && <Check className="size-2.5" strokeWidth={3} />}
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none">No grouping</SelectItem>
+              {groupable.map((c) => (
+                <SelectItem key={c.name} value={c.name}>
+                  {c.label || c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Row>
+      )}
+
+      {/* Sorts (다중) */}
+      <div>
+        <div className="mb-1 text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
+          Ordering
+        </div>
+        {sorts.length === 0 ? (
+          <p className="text-[11.5px] text-muted-foreground">
+            No sort. Click + to add.
+          </p>
+        ) : (
+          <ul className="space-y-0.5">
+            {sorts.map((s, i, arr) => {
+              const col = sortableCols.find((c) => c.name === s.key)
+              if (!col) return null
+              const Icon = TYPE_ICON[col.type]
+              return (
+                <li
+                  key={s.key}
+                  className="flex items-center gap-1 rounded-sm px-1.5 py-1 text-[12px] hover:bg-accent"
+                  data-display-sheet-sort={s.key}
+                >
+                  <Icon
+                    className="size-3 shrink-0 text-muted-foreground"
+                    strokeWidth={1.75}
+                  />
+                  <span className="min-w-0 flex-1 truncate">
+                    {col.label || col.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => toggleSortDir(s.key)}
+                    title={
+                      s.dir === "asc" ? "Ascending (toggle)" : "Descending (toggle)"
+                    }
+                    className="inline-flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-foreground/[0.08] hover:text-foreground"
+                  >
+                    {s.dir === "asc" ? (
+                      <ArrowUp className="size-3" strokeWidth={2} />
+                    ) : (
+                      <ArrowDown className="size-3" strokeWidth={2} />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveSort(i, "up")}
+                    disabled={i === 0}
+                    title="Move up"
+                    className="inline-flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.08] disabled:opacity-30"
+                  >
+                    <ChevronUp className="size-3" strokeWidth={2.5} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveSort(i, "down")}
+                    disabled={i === arr.length - 1}
+                    title="Move down"
+                    className="inline-flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.08] disabled:opacity-30"
+                  >
+                    <ChevronDown className="size-3" strokeWidth={2.5} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeSort(s.key)}
+                    title="Remove"
+                    className="inline-flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-foreground/[0.08] hover:text-destructive"
+                  >
+                    <X className="size-3" strokeWidth={2} />
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+        {addableSortCols.length > 0 && (
+          <Select value="" onValueChange={(v) => v && addSort(v)}>
+            <SelectTrigger
+              className="mt-1 h-7 w-full text-[11.5px] text-muted-foreground"
+              data-display-sheet-sort-add
+            >
+              <span className="inline-flex items-center gap-1">
+                <Plus className="size-3" strokeWidth={2} />
+                Add sort
               </span>
-              <Icon
-                className="size-3.5 shrink-0 text-muted-foreground"
-                strokeWidth={1.75}
-              />
-              <span className="flex-1 truncate">{col.label || col.name}</span>
-            </button>
-          )
-        })}
+            </SelectTrigger>
+            <SelectContent>
+              {addableSortCols.map((c) => (
+                <SelectItem key={c.name} value={c.name}>
+                  {c.label || c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+
+      {/* Shown columns (기존) */}
+      <div>
+        <div className="mb-1 text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
+          Shown columns
+        </div>
+        <div className="max-h-48 space-y-0.5 overflow-y-auto">
+          {togglable.map((col) => {
+            const Icon = TYPE_ICON[col.type]
+            const checked = !hidden.has(col.name)
+            return (
+              <button
+                key={col.name}
+                type="button"
+                onClick={() => toggleHidden(col.name)}
+                data-display-col={col.name}
+                className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-1.5 py-1.5 text-left text-[12.5px] transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                <span
+                  className={cn(
+                    "flex size-3.5 shrink-0 items-center justify-center rounded border",
+                    checked
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border",
+                  )}
+                >
+                  {checked && <Check className="size-2.5" strokeWidth={3} />}
+                </span>
+                <Icon
+                  className="size-3.5 shrink-0 text-muted-foreground"
+                  strokeWidth={1.75}
+                />
+                <span className="flex-1 truncate">{col.label || col.name}</span>
+              </button>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

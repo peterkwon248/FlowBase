@@ -1988,7 +1988,22 @@ export function selectVisibleRows(state: FlowBaseState): TableRow[] {
     )
   }
 
-  if (state.sort) {
+  // Sheet view 한정 다중 sort — viewSettings.sheet.sorts 있으면 우선 (state.sort 무시).
+  // 다른 view(Kanban/Gallery/Timeline/Dashboard)는 state.sort 그대로.
+  const activeView = state.viewByBoardId[state.activeBoardId] ?? "sheet"
+  const sheetSorts =
+    activeView === "sheet"
+      ? state.viewSettings[state.activeBoardId]?.sheet?.sorts
+      : undefined
+  if (sheetSorts && sheetSorts.length > 0) {
+    rows = [...rows].sort((a, b) => {
+      for (const s of sheetSorts) {
+        const c = compareRows(a, b, s.key, s.dir)
+        if (c !== 0) return c
+      }
+      return 0
+    })
+  } else if (state.sort) {
     const { key, dir } = state.sort
     rows = [...rows].sort((a, b) => compareRows(a, b, key, dir))
   }

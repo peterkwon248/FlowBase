@@ -275,6 +275,10 @@ export interface SheetViewSettings {
   hiddenColumns?: string[]  // name list — 숨겨질 컬럼
   density?: "compact" | "normal"
   columnWidths?: Record<string, number>  // column name → width(px). 사용자 조정값. 미설정 시 ColumnDef.width fallback.
+  // GroupBy — status/select 컬럼 name. 있으면 Sheet 뷰가 그룹 헤더로 행을 묶음.
+  groupBy?: string
+  // 다중 sort — Linear "Ordering" 패턴. 있으면 state.sort 무시(Sheet view 한정). 우선순위 = 배열 순서.
+  sorts?: { key: string; dir: SortDir }[]
 }
 
 export interface KanbanViewSettings {

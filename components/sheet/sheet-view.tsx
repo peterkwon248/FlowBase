@@ -7,13 +7,14 @@
 
 "use client"
 
-import { useMemo, useRef, useState } from "react"
+import { Fragment, useMemo, useRef, useState } from "react"
 import {
   selectActiveBoard,
   selectVisibleRows,
   useFlowBase,
 } from "@/lib/flowbase-store"
-import type { ColumnDef, SortDir } from "@/types/flowbase"
+import type { ColumnDef, SortDir, TableRow } from "@/types/flowbase"
+import { STATUS_LABELS, type TicketStatus } from "@/types/flowbase"
 import { cn } from "@/lib/utils"
 import { AddColumnMenu } from "./add-column-menu"
 import { ColumnResizer } from "./column-resizer"
@@ -31,10 +32,17 @@ export function SheetView() {
   const filter = useFlowBase((s) => s.filter)
   const sort = useFlowBase((s) => s.sort)
   const columnFilters = useFlowBase((s) => s.columnFilters)
+  // Sheet 다중 sort + groupBy — viewSettings.sheet에서 raw 구독
+  const sheetSorts = useFlowBase(
+    (s) => s.viewSettings[s.activeBoardId]?.sheet?.sorts,
+  )
+  const sheetGroupBy = useFlowBase(
+    (s) => s.viewSettings[s.activeBoardId]?.sheet?.groupBy,
+  )
   const rows = useMemo(
     () => selectVisibleRows(useFlowBase.getState()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [board, search, filter, sort, columnFilters],
+    [board, search, filter, sort, columnFilters, sheetSorts],
   )
 
   const selectedRowIds = useFlowBase((s) => s.selectedRowIds)
@@ -186,75 +194,124 @@ export function SheetView() {
         </thead>
 
         <tbody>
-          {rows.map((row, idx) => {
-            const isSelected = selectedRowIds.includes(row.id)
-            return (
-              <RowContextMenu key={row.id} rowId={row.id}>
-              <tr
-                className={cn("h-12", isSelected && "bg-primary/[0.07]")}
-              >
-                <td className="border-b border-border-subtle px-2.5 py-2 text-center">
-                  <input
-                    type="checkbox"
-                    className="block mx-auto size-3.5"
-                    checked={isSelected}
-                    onChange={() =>
-                      setSelected(
-                        isSelected
-                          ? selectedRowIds.filter((id) => id !== row.id)
-                          : [...selectedRowIds, row.id],
-                      )
-                    }
-                    aria-label={`${row.id} 선택`}
-                  />
-                </td>
-                <td className="border-b border-border-subtle px-2.5 py-2 text-right font-mono text-[11px] text-muted-foreground">
-                  {idx + 1}
-                </td>
-                {columns.map((c) => {
-                  const isFocused =
-                    focusedCell?.row === row.id && focusedCell.col === c.name
-                  const isEditing =
-                    editingCell?.row === row.id && editingCell.col === c.name
-                  return (
-                    <td
-                      key={c.name}
-                      data-column={c.name}
-                      onClick={() => {
-                        setFocused({ row: row.id, col: c.name })
-                        containerRef.current?.focus()
-                      }}
-                      className={cn(
-                        "relative border-b border-r border-border-subtle px-2.5 py-2 align-middle",
-                        isFocused && "z-[1] ring-2 ring-inset ring-primary",
-                      )}
-                    >
-                      <EditableCell
-                        col={c}
-                        row={row}
-                        editing={isEditing}
-                        initialDraft={
-                          isEditing ? editingCell?.initialDraft : undefined
+          {(() => {
+            // groupBy 있을 때만 grouped render. row index는 전체에서 일관(1, 2, ...).
+            const renderRow = (row: TableRow, idx: number) => {
+              const isSelected = selectedRowIds.includes(row.id)
+              return (
+                <RowContextMenu key={row.id} rowId={row.id}>
+                  <tr
+                    className={cn("h-12", isSelected && "bg-primary/[0.07]")}
+                  >
+                    <td className="border-b border-border-subtle px-2.5 py-2 text-center">
+                      <input
+                        type="checkbox"
+                        className="block mx-auto size-3.5"
+                        checked={isSelected}
+                        onChange={() =>
+                          setSelected(
+                            isSelected
+                              ? selectedRowIds.filter((id) => id !== row.id)
+                              : [...selectedRowIds, row.id],
+                          )
                         }
-                        onStartEdit={() =>
-                          setEditingCell({ row: row.id, col: c.name })
-                        }
-                        onStopEdit={stopEdit}
-                        onUpdate={(patch) => updateRow(row.id, patch)}
-                        onCommitAi={(aiCol, value) =>
-                          commitAiCell(row.id, aiCol, value)
-                        }
-                        onDismissAi={(aiCol) => dismissAiCell(row.id, aiCol)}
-                        onButtonAction={handleButtonAction}
+                        aria-label={`${row.id} 선택`}
                       />
                     </td>
-                  )
-                })}
-                <td className="border-b border-border-subtle" />
-              </tr>
-              </RowContextMenu>
-            )
-          })}
+                    <td className="border-b border-border-subtle px-2.5 py-2 text-right font-mono text-[11px] text-muted-foreground">
+                      {idx + 1}
+                    </td>
+                    {columns.map((c) => {
+                      const isFocused =
+                        focusedCell?.row === row.id &&
+                        focusedCell.col === c.name
+                      const isEditing =
+                        editingCell?.row === row.id &&
+                        editingCell.col === c.name
+                      return (
+                        <td
+                          key={c.name}
+                          data-column={c.name}
+                          onClick={() => {
+                            setFocused({ row: row.id, col: c.name })
+                            containerRef.current?.focus()
+                          }}
+                          className={cn(
+                            "relative border-b border-r border-border-subtle px-2.5 py-2 align-middle",
+                            isFocused &&
+                              "z-[1] ring-2 ring-inset ring-primary",
+                          )}
+                        >
+                          <EditableCell
+                            col={c}
+                            row={row}
+                            editing={isEditing}
+                            initialDraft={
+                              isEditing ? editingCell?.initialDraft : undefined
+                            }
+                            onStartEdit={() =>
+                              setEditingCell({ row: row.id, col: c.name })
+                            }
+                            onStopEdit={stopEdit}
+                            onUpdate={(patch) => updateRow(row.id, patch)}
+                            onCommitAi={(aiCol, value) =>
+                              commitAiCell(row.id, aiCol, value)
+                            }
+                            onDismissAi={(aiCol) =>
+                              dismissAiCell(row.id, aiCol)
+                            }
+                            onButtonAction={handleButtonAction}
+                          />
+                        </td>
+                      )
+                    })}
+                    <td className="border-b border-border-subtle" />
+                  </tr>
+                </RowContextMenu>
+              )
+            }
+
+            if (sheetGroupBy) {
+              // groupBy 적용 — rows 이미 sort된 상태 유지. 같은 값끼리 묶음.
+              const groups = new Map<string, { rows: TableRow[]; start: number }>()
+              rows.forEach((r, idx) => {
+                const raw = r[sheetGroupBy]
+                const key = raw == null || raw === "" ? "—" : String(raw)
+                const entry = groups.get(key) ?? { rows: [], start: idx }
+                entry.rows.push(r)
+                groups.set(key, entry)
+              })
+              const colSpan = columns.length + 3
+              return Array.from(groups.entries()).map(([key, entry]) => {
+                // status 컬럼이면 한→영 매핑(STATUS_LABELS), 그 외는 원본 키
+                const isStatus = sheetGroupBy === "status"
+                const label = isStatus
+                  ? STATUS_LABELS[key as TicketStatus] ?? key
+                  : key
+                return (
+                  <Fragment key={`group-${key}`}>
+                    <tr
+                      className="bg-foreground/[0.03]"
+                      data-group-header={key}
+                    >
+                      <td
+                        colSpan={colSpan}
+                        className="border-b border-border-subtle px-3 py-1.5 text-[11.5px] font-semibold uppercase tracking-[0.04em] text-muted-foreground"
+                      >
+                        {label}{" "}
+                        <span className="ml-1 font-normal text-muted-foreground/70 tabular-nums">
+                          {entry.rows.length}
+                        </span>
+                      </td>
+                    </tr>
+                    {entry.rows.map((row, i) => renderRow(row, entry.start + i))}
+                  </Fragment>
+                )
+              })
+            }
+
+            return rows.map((row, idx) => renderRow(row, idx))
+          })()}
 
           {rows.length > 0 ? (
             <NewRowStub colSpan={columns.length + 3} onAdd={() => addRow()} />
