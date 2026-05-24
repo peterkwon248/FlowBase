@@ -343,6 +343,8 @@ function publishChange(
 const MEMORY_EXPIRE_MS = 30 * 24 * 60 * 60 * 1000 // 30일
 const MEMORY_CAP_PER_SCOPE = 50
 const MEMORY_LEARN_TYPES = new Set<ColumnType>(["text", "select", "status"])
+// B1-3: frequency 도달 시 Library promote bridge toast 권유. LOCK: 자동 등록 ❌, 명시 click 시만.
+const PROMOTE_BRIDGE_COUNT = 5
 
 function memoryScopeKey(col: ColumnDef): string {
   return `${col.name}::${col.libraryFieldId ?? "_"}`
@@ -369,13 +371,16 @@ function learnFromPatch(
     const scope = memoryScopeKey(col)
     const list = byScope[scope] ? [...byScope[scope]] : []
     const idx = list.findIndex((e) => e.value === value)
+    let nextCount: number
     if (idx >= 0) {
+      nextCount = list[idx].count + 1
       list[idx] = {
         ...list[idx],
-        count: list[idx].count + 1,
+        count: nextCount,
         lastUsedTs: now,
       }
     } else {
+      nextCount = 1
       list.push({ value, count: 1, lastUsedTs: now })
     }
     // expire + cap: 30일 이전 제거 + lastUsed 기준 상위 N개
@@ -384,6 +389,57 @@ function learnFromPatch(
       .sort((a, b) => b.lastUsedTs - a.lastUsedTs)
       .slice(0, MEMORY_CAP_PER_SCOPE)
     byScope[scope] = filtered
+
+    // B1-3: promote bridge toast — frequency 정확 5 도달 시 + col.options에 없으면 권유.
+    // toast click 시 col.options에 추가 (A3-1과 같은 동작, "Save as option" 자동 진입점).
+    // LOCK: 자동 등록 ❌, 명시 click 시만. dedupe = toast id로 같은 (scope,value) 중복 ❌.
+    if (
+      nextCount === PROMOTE_BRIDGE_COUNT &&
+      !(col.options ?? []).includes(value)
+    ) {
+      const colName_ = col.name
+      const colLabel = col.label || col.name
+      const boardId_ = boardId
+      toast(`"${value}" used ${PROMOTE_BRIDGE_COUNT} times`, {
+        id: `promote-${scope}-${value}`,
+        description: `Save to ${colLabel} options?`,
+        action: {
+          label: "Save",
+          onClick: () => {
+            const s = useFlowBase.getState()
+            const b = s.boards[boardId_]
+            const c = b?.columns.find((x) => x.name === colName_)
+            if (!c) return
+            const existing = c.options ?? []
+            if (existing.includes(value)) {
+              toast.info(`Already in ${colLabel} options.`)
+              return
+            }
+            // updateColumn은 activeBoard 기준이라 boardId 일치 확인 — 안 맞으면 직접 set
+            if (s.activeBoardId === boardId_) {
+              s.updateColumn(colName_, { options: [...existing, value] })
+            } else {
+              // 다른 보드 — 직접 patch (드문 케이스, ensureCanEdit 우회)
+              useFlowBase.setState({
+                boards: {
+                  ...s.boards,
+                  [boardId_]: {
+                    ...b!,
+                    columns: b!.columns.map((x) =>
+                      x.name === colName_
+                        ? { ...x, options: [...existing, value] }
+                        : x,
+                    ),
+                    updatedAt: new Date().toISOString(),
+                  },
+                },
+              })
+            }
+            toast.success(`Saved "${value}" to ${colLabel}`)
+          },
+        },
+      })
+    }
   }
   return { byScope }
 }
