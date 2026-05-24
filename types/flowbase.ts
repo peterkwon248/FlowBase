@@ -338,7 +338,8 @@ export interface FlowBaseState {
 
   // 세션 ephemeral (persist ❌ — 보드 전환 시 초기화)
   search: string
-  filter: TicketStatus[]
+  filter: TicketStatus[] // legacy: status chips (filter-chips.tsx)
+  columnFilters: Record<string, string[]> // 다중 필드 필터 (FilterMenu)
   sort: SortState
   selectedRowIds: string[]
   focusedCell: CellCoord | null

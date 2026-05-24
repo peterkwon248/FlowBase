@@ -13,6 +13,7 @@ import { BoardSidebar } from "@/components/board/board-sidebar"
 import { DetailBar } from "@/components/board/detail-bar"
 import { EdgeCollapse } from "@/components/board/edge-collapse"
 import { ExpandTab } from "@/components/board/expand-tab"
+import { ActiveFilterChips, FilterMenu } from "@/components/board/filter-menu"
 import { FilterChips } from "@/components/board/filter-chips"
 import { ViewSwitcher } from "@/components/board/view-switcher"
 import { ImportDialog } from "@/components/import/import-dialog"
@@ -75,6 +76,7 @@ export function TablesMode() {
             <span className="text-xs tabular-nums text-muted-foreground">
               {rowCount} rows · {colCount} columns
             </span>
+            <FilterMenu />
             <div className="flex-1" />
             {selectedCount > 0 && (
               <button
@@ -116,6 +118,9 @@ export function TablesMode() {
               <FilterChips />
             </div>
           )}
+          <div className="mt-2 pl-[38px]">
+            <ActiveFilterChips />
+          </div>
         </div>
 
         {/* 뷰 — Sheet / Kanban / Dashboard */}

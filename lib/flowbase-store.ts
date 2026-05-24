@@ -123,6 +123,9 @@ export interface FlowBaseActions {
   jumpToNavEntry: (index: number) => void
   setSearch: (s: string) => void
   setFilter: (f: TicketStatus[]) => void
+  setColumnFilter: (col: string, values: string[]) => void
+  toggleColumnFilter: (col: string, value: string) => void
+  clearAllFilters: () => void
   setSort: (s: FlowBaseState["sort"]) => void
   setSelected: (ids: string[]) => void
   setFocused: (cell: FlowBaseState["focusedCell"]) => void
@@ -157,6 +160,7 @@ function createInitialState(): FlowBaseState {
     libView: "cards",
     search: "",
     filter: [],
+    columnFilters: {},
     sort: { key: "date", dir: "desc" },
     selectedRowIds: [],
     focusedCell: null,
@@ -872,6 +876,32 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
         setSearch: (search) => set({ search }),
         setFilter: (filter) => set({ filter }),
+        setColumnFilter: (col, values) =>
+          set((s) => {
+            const next = { ...s.columnFilters }
+            if (values.length === 0) {
+              delete next[col]
+            } else {
+              next[col] = values
+            }
+            return { columnFilters: next }
+          }),
+        toggleColumnFilter: (col, value) =>
+          set((s) => {
+            const cur = s.columnFilters[col] ?? []
+            const has = cur.includes(value)
+            const nextVals = has
+              ? cur.filter((v) => v !== value)
+              : [...cur, value]
+            const next = { ...s.columnFilters }
+            if (nextVals.length === 0) {
+              delete next[col]
+            } else {
+              next[col] = nextVals
+            }
+            return { columnFilters: next }
+          }),
+        clearAllFilters: () => set({ filter: [], columnFilters: {} }),
         setSort: (sort) => set({ sort }),
         setSelected: (selectedRowIds) => set({ selectedRowIds }),
         setFocused: (focusedCell) => set({ focusedCell }),
@@ -1012,9 +1042,17 @@ export function selectVisibleRows(state: FlowBaseState): TableRow[] {
   if (!board) return []
   let rows = board.rows
 
+  // Legacy status chips
   if (state.filter.length > 0) {
     const allowed = new Set<string>(state.filter)
     rows = rows.filter((r) => allowed.has(String(r.status ?? "")))
+  }
+
+  // 다중 필드 필터 (columnFilters)
+  for (const [col, values] of Object.entries(state.columnFilters)) {
+    if (values.length === 0) continue
+    const allowed = new Set(values)
+    rows = rows.filter((r) => allowed.has(String(r[col] ?? "")))
   }
 
   const q = state.search.trim().toLowerCase()
