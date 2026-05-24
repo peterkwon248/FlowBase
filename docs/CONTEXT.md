@@ -6,7 +6,15 @@
 
 ## Current Features (Completed — 최근 우선)
 
-1. **깊이 일괄 #2 — Schema pan/zoom + New table + Dashboard 영어/Line + 컬럼 Change type** (2026-05-24, `2bdee40`+`57fadb6`, **main 머지 완료**) —
+1. **일관성 + 깊이 #3 — 사이드바 추가/통일 · Automation log · Wiki 우클릭 · Trash 행 · Promote/Attach** (2026-05-24, `fb79379`+`8909ec2`, **main 머지 완료**) —
+   - **Workspace/Inbox 사이드바** — 일관성 결함 해소. 5 모드 모두 사이드바.
+   - **사이드바 너비 통일** 240px 전체.
+   - **Automation 실행 로그** AI Activity panel timeline에 fire 기록.
+   - **Wiki 페이지 우클릭** Rename/Move/Delete.
+   - **Trash 행 단위 + 30일 만료** — 두 탭 다이얼로그.
+   - **Promote to Library + Attach function** — 컬럼 → LibraryField/LibraryFunction 링크.
+
+2. **깊이 일괄 #2 — Schema pan/zoom + New table + Dashboard 영어/Line + 컬럼 Change type** (2026-05-24, `2bdee40`+`57fadb6`, **main 머지 완료**) —
    - **Schema ER 인터랙션** (`schema-er-diagram.tsx` + `schema-new-table-modal.tsx`) — 카드 헤더 드래그 reposition, ⌘+wheel zoom, 빈 영역 pan, 우상단 zoom/Reset toolbar, New table 모달 (Library template 또는 Blank).
    - **Dashboard 영어화 + Line/Area trend** (`components/charts/line-chart.tsx`) — 8주 버킷 trend chart 추가. 모든 한국어 라벨 영어.
    - **컬럼 Change type submenu** (`column-header-menu.tsx`) — Rename/Delete 사이에 Change type submenu. Basic 7 type.

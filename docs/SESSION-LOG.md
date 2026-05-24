@@ -4,6 +4,53 @@
 
 ---
 
+## 2026-05-24 (kkh94 머신, 일관성 + 깊이 #3) — 사이드바 일관성 · Workspace/Inbox 사이드바 · 너비 통일 · Automation log · Wiki 우클릭 · Trash 행 · Promote/Attach
+
+### 완료 (2 커밋)
+1. **Workspace/Inbox 사이드바 추가** (`fb79379`) — 사용자 지적 "왜 인박스/워크스페이스는 사이드바 없고 탭이지?" 의도 아님. 프로토타입엔 둘 다 사이드바 있음.
+   - `components/workspace/workspace-sidebar.tsx` (신규) — 240px aside · Schema/Automations 두 항목(icon + label + desc) · active 강조.
+   - `components/inbox/inbox-sidebar.tsx` (신규) — 240px aside · All/Alerts/Warnings/AI/Info/Tips/Activity log 7 필터 · 카운트.
+   - workspace-mode 재구성: 상단 탭 제거 → 사이드바 + 메인.
+   - inbox-view 재구성: 상단 filter chips 제거 → 사이드바. 헤더 타이틀이 활성 필터 라벨 ("All", "Alerts" 등). "Show all" reset.
+   - 모두 panels.sidebar 토글 공유 → hide-all UX 일관.
+2. **일관성 + 깊이 5건 묶음** (`8909ec2`):
+   - **사이드바 너비 통일**: Library/Wiki 260→240. 5 모드 모두 동일.
+   - **Automation 실행 로그**: executeRule이 active board의 aiHistory에 pushAi entry. AI Activity panel timeline 자동 표시.
+   - **Wiki 페이지 우클릭** (`components/wiki/wiki-page-context-menu.tsx`) — Rename Dialog · Move to category submenu · Delete AlertDialog. 페이지 항목을 ContextMenu로 래핑.
+   - **Trash 행 단위 + 30일 만료**: types.TrashedRow + store v8→v9 + deleteRows를 trashedRows로 push + restoreRow/permanentDeleteRow/cleanupExpiredTrash(30일). trash-dialog 두 탭(Boards/Rows). Rows는 보드별 그룹화 + firstReadableField 미리보기 + "expires in Nd" 표시.
+   - **Promote to Library + Attach function**: types.ColumnDef.libraryFieldId/functionId. store.promoteColumnToLibraryField(LibraryField 생성 + usedIn 트래킹 + column.libraryFieldId 저장) · attachFunctionToColumn. column-header-menu에 Sparkles "Promote to Library"(이미 linked면 Check) + Sigma "Attach function" submenu(None + library.functions 3종).
+
+### 큰 결정
+- **사이드바 패턴 = 모든 navigation 모드의 기본** — Tables/Library/Wiki/Workspace/Inbox 다 동일. Search만 풀페이지 검색 특성으로 예외.
+- **Automation log는 active board만** — cross-board fire 시 다른 보드 timeline 노이즈 방지. 향후 통합 activity log 검토.
+- **Trash 30일 만료 = mount 시 자동 cleanup** — 별도 cron 없음. 다이얼로그 열 때마다 검증. 사용자가 Trash 안 열어도 다음 mount 시 정리됨 (다이얼로그 안 열면 누적).
+- **Promote는 idempotent** — 이미 promoted 컬럼은 기존 fieldId 반환, 중복 생성 ❌. UI에 "Linked to Library" 표시.
+- **Attach function은 metadata만** — 실제 실행은 별도 (functionId만 column에 저장). 향후 row mutation 시 자동 실행 후크.
+- **Workspace/Inbox 사이드바도 prototype 답습** — width 240px (Library/Wiki 260 → 240 unification에 맞춤).
+
+### 검증
+- tsc 0 · vitest 30/30 · 브라우저 (Workspace/Inbox 사이드바 렌더 확인).
+
+### 다음
+- Dashboard builder full (사용자 차트 추가/제거 + Stacked/heatmap).
+- Automations 시간 기반 트리거 (cron-like).
+- Attached function의 실제 실행 후크.
+- Ask AI ⌘J 톱바 버튼.
+- Settings 멤버/권한 탭.
+- Library에서 promoted field → 원본 컬럼 점프 (역참조).
+- Wiki 삭제도 trashedWikiPages로 이동.
+
+### Watch Out
+- **Wiki 페이지 삭제는 영구** — Wiki도 Trash 통합은 후속. AlertDialog에 명시.
+- **Trash 30일 cleanup은 mount 트리거** — 사용자가 Trash 다이얼로그 안 열면 누적. AppShell mount 시 한 번 호출하는 패턴 검토.
+- **Promote 후 컬럼 type 변경**: libraryFieldId는 그대로 유지. 의도된 동작(컬럼이 LibraryField의 derivative이지만 독립 진화 가능)이지만 향후 sync 정책 필요.
+- **attached function**: row 추가 시 자동 실행 안 함. AutomationRuntime처럼 별도 useEffect 후크 필요.
+
+### 머신
+kkh94. main 머지·푸시 자동.
+
+---
+
 ## 2026-05-24 (kkh94 머신, 깊이 일괄 #2) — Schema pan/zoom · New table · Dashboard 영어/Line · Change type
 
 ### 완료 (2 커밋)

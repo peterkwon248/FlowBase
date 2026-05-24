@@ -1,19 +1,19 @@
 # NEXT-ACTION
 
 > 다음 세션 시작 시 이 파일부터 읽으세요.
-> 마지막 갱신: 2026-05-24 (kkh94 머신, 깊이 일괄 #2 — Schema 인터랙션 + Dashboard 개선)
+> 마지막 갱신: 2026-05-24 (kkh94 머신, 일관성 + 깊이 #3)
 
 ---
 
 ## 한 줄 요약
 
-**Schema가 진짜 드래그/줌 가능. New table 모달로 보드 생성. Dashboard 영어화 + Line trend. 컬럼 Change type. 다음: Dashboard builder full · 자동화 시간 트리거 · Promote to Library.**
+**모든 모드 사이드바 일관 + Trash 행 단위/30일 + Promote/Attach + Automation log. 다음: Dashboard builder full · 자동화 시간 트리거 · attached function 자동 실행.**
 
 ---
 
-## ✅ 머지 완료 (예정)
+## ✅ 머지 완료
 
-- 8 신규 커밋 (1차 6개 + 2차 2개) 모두 main으로.
+- 10 신규 커밋 (1차 6개 + Schema 2개 + 일관성 1개 + 깊이 #3 1개) 모두 main.
 - 다른 머신: `git fetch && git checkout main && git pull && npm install`.
 
 ---
@@ -23,28 +23,26 @@
 ### 우선순위 높음
 1. **Dashboard builder full** — 사용자가 차트 추가/제거. board별 chart config 저장. Stacked bar/heatmap 차트 추가.
 2. **Automations 시간 기반 트리거** — "every day at 09:00", "due date passes" cron-like. setInterval 또는 background tick.
-3. **Promote to Library** — sheet column → Library Field. column-header-menu에 추가. addLibraryField 액션 + 다이얼로그.
+3. **Attached function 자동 실행** — column.functionId 설정된 컬럼에 row 추가/변경 시 function 실행 → 값 계산. AutomationRuntime처럼 useEffect 후크.
 
 ### 우선순위 중간
-4. **Attach function** — column에 Library Function 연결. updateColumn에 functionId 필드 + 자동 실행 후크.
-5. **자동화 실행 로그** — Activity panel timeline에 trigger fire 기록.
-6. **Wiki sidebar 페이지 우클릭** — Rename · Move category · Delete.
-7. **Trash 깊이**: 행 단위 deletedRows · 30일 자동 만료.
-8. **Settings 깊이**: 멤버/권한 탭 · 테마 프리셋 · 데이터 export.
+4. **Ask AI ⌘J 톱바 버튼** — composer는 AI 패널 안에만.
+5. **Settings 깊이**: 멤버/권한 탭 · 테마 프리셋 · 데이터 export.
+6. **Library에서 promoted field → 원본 컬럼 점프** (역참조 네비).
+7. **Wiki 삭제도 Trash로** — trashedWikiPages 신규 (현재 영구 삭제).
+8. **Trash cleanup AppShell mount 트리거** — 다이얼로그 안 열어도 만료 정리.
 
 ### 우선순위 낮음
-9. **Ask AI ⌘J 톱바 버튼**.
-10. **Schema 깊이**: pinch-zoom 트랙패드 · 멀티 테이블 템플릿 → N개 보드 한 번에.
-11. **Gallery/Timeline 커스터마이즈** — 카드 컬럼 선택 · Timeline 가로 Gantt.
-12. **range/numeric/date 필터** — 현재 status/select만.
+9. **Gallery/Timeline 커스터마이즈** — 카드 컬럼 선택 · Timeline 가로 Gantt.
+10. **range/numeric/date 필터** — 현재 status/select만.
+11. **Schema pinch-zoom 트랙패드** + 멀티 테이블 템플릿 → N개 보드 한 번에.
 
 ### B4 (가장 마지막, 사용자 명시)
-- 컬럼 ↔ Library 자산 링크 · "Use in table" 흐름 · 템플릿으로 보드 생성.
-- (참고: Promote to Library 일부는 이미 위 #3에 포함.)
+- 컬럼 ↔ Library 자산 링크 → 이번에 Promote/Attach 일부 진행됨. 남은 건 "Use in table" (Library asset에서 시작) · 템플릿으로 보드 생성(이미 New table 모달).
 
 ---
 
-## ✅ 이번 세션 완료 (깊이 일괄 8 커밋)
+## ✅ 이번 세션 완료 (대규모 — 10+ 커밋)
 
 ### 1차 (6 커밋)
 1. **Automations 실제 트리거 엔진** (`12a65d3`) + 15 단위 테스트.
@@ -58,6 +56,10 @@
 7. **Schema pan/zoom + drag + New table 모달** (`2bdee40`).
 8. **Dashboard Line chart + 영어화 + 컬럼 Change type** (`57fadb6`).
 
+### 3차 (2 커밋)
+9. **Workspace + Inbox 사이드바 추가 (일관성 결함 해소)** (`fb79379`).
+10. **너비 통일 + Automation log + Wiki 우클릭 + Trash 행 + Promote/Attach** (`8909ec2`).
+
 ---
 
 ## 코드/디자인 컨벤션 (LOCK + 추가)
@@ -65,18 +67,22 @@
 - **Status 키 LOCK 한국어 + `STATUS_LABELS` 맵 영어 디스플레이**.
 - **`selectAsset(category, id)` 원자 액션** — Library cross-category.
 - **셸 푸터 status bar 영구** — Trash/Settings는 패널 ❌.
+- **모든 navigation 모드는 사이드바 가짐** — Tables/Library/Wiki/Workspace/Inbox. Search만 예외(풀페이지 검색).
+- **사이드바 너비 240px 통일**.
 - **컬럼 변경 = undo 비대상**.
-- **deleteBoard → trashedBoards** — permanentDeleteBoard만 진짜 삭제.
-- **acceptSuggestion = draft 상태 룰** — 자동 active ❌.
-- **publishChange in store actions** — middleware ❌. timestamp + handledRef.
-- **columnFilters와 filter는 병존** — 둘 다 selectVisibleRows에 AND.
+- **deleteBoard → trashedBoards · deleteRows → trashedRows · 30일 만료**.
+- **acceptSuggestion = draft 상태 룰**.
+- **publishChange in store actions**.
+- **columnFilters와 filter는 병존**.
 - **Gallery/Timeline은 RowContextMenu 공유**.
-- **selectVisibleRows useMemo deps 일관** — 새 ephemeral state 추가 시 모든 view(Dashboard/Gallery/Timeline/Kanban) deps 갱신 필요.
-- **Change type은 행 데이터 보존** — type만 바뀜.
-- **schemaPositions persist** — 보드 삭제 후 복원 시에도 위치 보존(의도).
+- **selectVisibleRows useMemo deps 일관**.
+- **Change type은 행 데이터 보존**.
+- **schemaPositions persist**.
+- **promoteColumnToLibraryField는 idempotent** — 이미 promoted 컬럼은 기존 fieldId.
+- **Automation log는 active board만 push**.
 - **외부 lib 도입 신중** — 모든 chart(SVG path)·Wiki 마크다운·Search·ER·Filter·Context 의존성 0 또는 이미 있는 Radix.
-- **시드 추가 시 store version bump + migrate** — v4→v5(Tasks), v5→v6(Wiki), v6→v7(Trash/Settings), v7→v8(schemaPositions).
-- **NavStack는 ephemeral** — persist ❌.
+- **시드 추가 시 store version bump + migrate** — v4→v5(Tasks), v5→v6(Wiki), v6→v7(Trash/Settings), v7→v8(schemaPositions), v8→v9(trashedRows).
+- **NavStack는 ephemeral**.
 
 ---
 

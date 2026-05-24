@@ -89,6 +89,8 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## 완료
 
+- [x] **일관성 + 깊이 5건** (2026-05-24 — `8909ec2`): 사이드바 너비 통일(Library/Wiki 260→240) · Automation 실행 로그(executeRule이 aiHistory에 pushAi) · Wiki 페이지 우클릭(Rename/Move/Delete) · Trash 행 단위 + 30일 만료(types.TrashedRow + store v8→v9 + deleteRows trash로 이동 + 두 탭 다이얼로그) · Promote to Library + Attach function(column-header-menu에 Sparkles/Sigma submenu, types.ColumnDef.libraryFieldId/functionId).
+- [x] **Workspace + Inbox 좌측 사이드바** (2026-05-24 — `fb79379`): 사용자 지적 일관성 결함 해소. WorkspaceSidebar(Schema/Automations) · InboxSidebar(7 필터). workspace-mode 상단 탭 제거. inbox-view 상단 chips 제거. 헤더가 활성 필터 라벨. 모두 panels.sidebar 토글 공유.
 - [x] **Dashboard 영어화 + Line/Area trend + 컬럼 Change type** (2026-05-24 — `57fadb6`): dashboard-view 모든 라벨 영어화 · components/charts/line-chart.tsx(SVG path + area, 의존성 0) · buildWeeklyTrend 8주 버킷 · selectVisibleRows columnFilters deps 누락 버그 fix · column-header-menu에 Change type submenu(Basic 7 type, 행 데이터 보존).
 - [x] **Schema pan/zoom + drag + New table 모달** (2026-05-24 — `2bdee40`): schemaPositions persist + setSchemaPosition · ⌘+wheel zoom · 빈 영역 pan · 카드 헤더 드래그 reposition(zoom 보정) · 우상단 -/100%/+ Reset toolbar · NewTableModal(Library template 카드 그리드 + Blank, templateToColumns resolver).
 - [x] **Wiki 새 페이지 + 사이드바 검색** (2026-05-24 — `44d5003`): addWikiPage(init?) draft + deleteWikiPage 액션. 사이드바 헤더 + 버튼. 검색 input 활성 (title/category/body 매치, X clear).
