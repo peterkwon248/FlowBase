@@ -4,6 +4,33 @@
 
 ---
 
+## 2026-05-24 (kkh94 머신, fix #1) — status pill 줄바꿈
+
+### 완료 (1 commit `a7e91c5`)
+사용자 보고 fix. Sheet의 "In progress" status pill이 좁은 cell에서 2 줄로 wrap → 다른 status(Done/Waiting/Todo)와 시각 이질감.
+
+**원인**: button/span에 `whitespace-nowrap` 없음. text가 cell width 좁을 때 자동 wrap.
+
+**Fix**: 3 파일 일관 적용:
+- `components/sheet/editable-cell.tsx` StatusCell trigger
+- `components/sections/gallery-view.tsx` GalleryCardField status
+- `components/board/filter-chips.tsx` FilterChips toggle button
+
+### 큰 결정
+- **status pill = 한 줄 유지 LOCK** — 모든 사용처에 `whitespace-nowrap`. 새 status pill 추가 시 같은 컨벤션.
+- **사용자 보고 fix 즉시 after-work** — 작은 fix지만 시각 일관성 핵심. 누적 ❌.
+
+### 검증
+- tsc 0 · vitest 44/44.
+
+### Watch Out
+- **다른 pill 패턴**에도 같은 wrap 가능성 — priority pill, library category pill 등. 후속 일괄 점검 필요.
+
+### 머신
+kkh94. main 머지·푸시 자동.
+
+---
+
 ## 2026-05-24 (kkh94 머신, 폴리시 #9) — Filter text contains · Gallery cardFields reorder · Timeline month scale
 
 ### 완료 (1 commit `1cb045e`)

@@ -81,8 +81,13 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 - [x] **Gallery cardFields reorder** (↑/↓ 버튼)
 - [x] **Timeline month scale** (COL_WIDTH_MONTH=8)
 
+## Fix #1 (2026-05-24 — `a7e91c5`)
+
+- [x] **status pill 줄바꿈** (사용자 보고) — editable-cell/gallery-view/filter-chips 3 곳 whitespace-nowrap
+
 ## P2 — 남은 폴리시
 
+- [ ] **다른 pill 일괄 점검** — priority/library category 등 wrap 가능성 nowrap.
 - [ ] **남은 mutation enforcement** — commitAi/promote/attach/automation/settings/등 30+ 추가.
 - [ ] **UI 단 viewer disable** — button disabled / readonly 표시.
 - [ ] **Theme accent oklch 시각 튜닝** — light/dark 4 accent 브라우저 검증 후.

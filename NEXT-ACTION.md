@@ -1,19 +1,19 @@
 # NEXT-ACTION
 
 > 다음 세션 시작 시 이 파일부터 읽으세요.
-> 마지막 갱신: 2026-05-24 (kkh94 머신, 폴리시 #9 — Filter text contains · Gallery cardFields reorder · Timeline month scale)
+> 마지막 갱신: 2026-05-24 (kkh94 머신, fix #1 — status pill 줄바꿈)
 
 ---
 
 ## 한 줄 요약
 
-**Filter contains operator + Gallery cardFields ↑↓ reorder + Timeline month scale 완료. 다음: 남은 mutation enforcement · UI 단 viewer disable · Filter And/Or 본격 · 우선순위 낮음 마무리 (Schema pinch-zoom · 차트 터치 UX · Wiki diff).**
+**Status pill whitespace-nowrap 3 곳 fix(사용자 보고). 다음: 다른 pill 일괄 점검 · 남은 mutation enforcement · UI 단 viewer disable · Filter And/Or 본격 · 우선순위 낮음 마무리.**
 
 ---
 
 ## ✅ 머지 완료
 
-- `origin/main = 1cb045e` (push 후 머지).
+- `origin/main = a7e91c5` (push 후 머지).
 - 다른 머신: `git fetch && git checkout main && git pull && npm install`.
 
 ---
@@ -23,11 +23,12 @@
 ### 우선순위 높음
 1. **AI_CLASSIFY 자동 실행** — ⚠ **사용자 명시 룰**: 사용자가 직접 요청할 때만 시작. 메모리 `feedback-ai-classify-user-triggered-only.md` 참조. Claude 자율 진행 ❌.
 
-### 우선순위 중간 (#8 잔여)
-2. **남은 mutation enforcement** — #8에서 핵심 14개만. 나머지(commitAiCell/dismissAiCell/promote/attach/updateSettings/addMember/removeMember/automation 액션/setSchemaPosition 등 30+) viewer 가드.
-3. **UI 단 disable** — viewer일 때 button disabled / readonly 표시 (현재는 시도 시 toast만).
-4. **Theme accent oklch 시각 튜닝** — light/dark 4 accent 브라우저 검증 후.
-5. **Data Import skip summary** — id 충돌 skip된 항목 카운트 표시.
+### 우선순위 중간
+2. **다른 pill 일괄 점검** — priority pill / library category pill 등 wrap 가능성. status pill과 같은 nowrap 컨벤션 적용.
+3. **남은 mutation enforcement** — #8에서 핵심 14개만. 나머지(commitAiCell/dismissAiCell/promote/attach/updateSettings/addMember/removeMember/automation 액션/setSchemaPosition 등 30+) viewer 가드.
+4. **UI 단 viewer disable** — button disabled / readonly 표시 (현재는 시도 시 toast만).
+5. **Theme accent oklch 시각 튜닝** — light/dark 4 accent 브라우저 검증 후.
+6. **Data Import skip summary** — id 충돌 skip된 항목 카운트 표시.
 
 ### 우선순위 낮음
 6. **Filter And/Or multi-condition per column** — 현재 in/range/date-range 각 단일. ≥/≤/contains 등 추가.
@@ -45,12 +46,13 @@
 
 ## ✅ 이번 세션 완료 (1 commit)
 
-### `1cb045e` — 폴리시 일괄 #9
-1. **Filter text/email contains operator** — FilterCondition += contains kind, ContainsWidget, chip 라벨.
-2. **Gallery cardFields reorder** — ↑/↓ 버튼, 선택순서 의미 (dnd lib ❌).
-3. **Timeline month scale** — COL_WIDTH_MONTH=8 + DisplayPopover scale segmented += month.
+### `a7e91c5` — fix(ui): status pill 줄바꿈
+- 사용자 보고 — Sheet "In progress" 2줄 wrap.
+- 3 곳 (editable-cell·gallery-view·filter-chips)에 whitespace-nowrap 일관 적용.
+- status pill = 한 줄 유지 LOCK 컨벤션 추가.
 
-### 직전 commits (이전 세션, 같은 날)
+### 직전 commits (같은 날)
+- `1cb045e` 폴리시 #9: Filter contains · Gallery cardFields ↑↓ reorder · Timeline month scale
 - `951e82e` 폴리시 #8: Members enforcement 14 mutation · firedKeys dueDate cleanup · Data Import 메타 확장
 - `568526d` 폴리시 #7: Filter cascade hover · legacy 제거 · firedKeys persist · Theme accent · Data Import 기본 · Members 깊이 minimum
 - `a818f82` 깊이 #6: Timeline Gantt · Filter 2-step · Display 옵션 · Chart reorder · Library 점프
@@ -83,6 +85,7 @@
 - **NavStack ephemeral**.
 - **Owner 보호 이중 단** — Settings Members UI 단(비노출) + store 액션 단(filter).
 - **AppShell mount = `hasHydrated` 체크 후 cleanup** — zustand persist hydrate race 회피.
+- **status pill / pill 류 = `whitespace-nowrap` 강제** — 좁은 cell에서 wrap 방지. 모든 status/priority/badge pill에 일관 적용.
 - **Ask AI 진입점 = requestAskAi 액션** — token으로 AiComposer focus 트리거.
 - **Heatmap = 단일 hue + opacity intensity** — 다색 cmap ❌. var(--chart-1) opacity 0.18~1.0.
 - **AI_CLASSIFY 자동 실행 = 사용자 명시 요청 시에만** — `feedback-ai-classify-user-triggered-only.md` 메모리 룰. Claude 자율 시작 ❌.

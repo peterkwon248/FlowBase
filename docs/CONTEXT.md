@@ -6,6 +6,12 @@
 
 ## Current Features (Completed — 최근 우선)
 
+1. **fix(ui): status pill nowrap** (2026-05-24, `a7e91c5`, **main 머지 완료**) — 사용자 보고. "In progress" 2줄 wrap → editable-cell·gallery-view·filter-chips 3 곳에 whitespace-nowrap. LOCK 컨벤션 추가.
+
+1. **폴리시 #9 — Filter text contains · Gallery cardFields reorder · Timeline month scale** (2026-05-24, `1cb045e`, **main 머지 완료**)
+
+1. **폴리시 #8 — Members enforcement 전체 · firedKeys dueDate cleanup · Data Import 메타 확장** (2026-05-24, `951e82e`, **main 머지 완료**)
+
 1. **폴리시 #7 — Filter cascade 복원 · firedKeys persist · Theme accent · Data Import · Members 깊이** (2026-05-24, `568526d`, **main 머지 완료**) —
    - **Filter cascade hover 복원** (`components/board/filter-menu.tsx`) — DropdownMenu Sub + kind별 widget (Linear 정확). 직전 #6 2-step inline 폐기.
    - **Legacy filter 액션 제거** — setColumnFilter/toggleColumnFilter 삭제.
