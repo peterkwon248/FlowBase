@@ -7,7 +7,7 @@
 ## Phase Status
 
 - **Phase 0 (Plan)**: ✅ 완료
-- **Phase 1 (Beta)**: 🟢 거의 완성 — FlowBase V2. 6 액티비티 모드 모두 작동(Tables/Workspace/Library/Wiki/Inbox/Search) + 깊이 작업 일괄 완료(자동화 엔진 · 시간 트리거 · 다중 필터 · Gallery/Timeline · Dashboard builder + Heatmap · Schema ER 인터랙션 · Trash 행/Wiki 단위 · Promote/Attach function · AppShell cleanup · Ask AI ⌘J · Settings 4탭 멤버/권한 + Theme + Export). **남은 폴리시**: AI_CLASSIFY 자동 실행(사용자 명시 룰) · Chart reorder · 시간 트리거 firedKeys persist · Library promoted field 점프 · Data Import · Members 깊이.
+- **Phase 1 (Beta)**: 🟢 거의 완성 — FlowBase V2. 6 액티비티 모드 모두 작동 + 깊이 작업 일괄 완료(자동화 엔진 · 시간 트리거 · 다중 필터 + range/num/date · Gallery/Timeline(Gantt) · Dashboard builder + Heatmap + reorder/edit · Schema ER 인터랙션 · Trash 행/Wiki 단위 · Promote/Attach + Library 점프 · AppShell cleanup · Ask AI ⌘J · Settings 4탭 멤버/권한+Theme+Export · **Display 옵션 4 view**). **남은 폴리시**: AI_CLASSIFY 자동 실행(사용자 명시 룰) · 시간 트리거 firedKeys persist · Members 깊이(Viewer readonly) · Theme accent · Data Import · dangling viewSettings cleanup.
 - **Phase 2 (Team)**: ⬜ — 멤버 초대, 권한 모델, 워크스페이스 분리 (W11)
 - **Phase 3+**: ⬜ — Realtime collab, scaling, BaaS 결정 (Supabase vs bkend.ai)
 
@@ -15,9 +15,9 @@
 
 ## Current Direction (다음 우선순위)
 
-**2026-05-24 진행상태**: 6 액티비티 모드 + 일관성/깊이 + P1·P2 폴리시 5건(Wiki Trash · cleanup · Ask AI ⌘J · Settings 4탭 · Heatmap) 모두 완료. Trash 일관성(보드/행/Wiki 모두 30일 + auto-cleanup). Settings 깊이(멤버/권한/Theme/Export). Dashboard 6 차트(KPI/Bar/Donut/Line/Stacked/Heatmap).
+**2026-05-24 진행상태**: 6 액티비티 모드 + 일관성/깊이 + P1·P2 폴리시 11건 완료. #5(Wiki Trash · cleanup · Ask AI ⌘J · Settings 4탭 · Heatmap) + #6(Timeline Gantt 재작성 · Filter 2-step+range · Display 옵션 4 view · Chart reorder · Library 점프). Trash 3종 30일 보존. Settings 깊이(멤버/권한/Theme/Export). Dashboard 6 차트 + reorder/edit. Filter range/num/date. View별 Display 옵션 persist.
 
-**다음**: Chart reorder(drag) · 시간 트리거 firedKeys persist · Library promoted field 점프 · Members 깊이 등. **AI_CLASSIFY 자동 실행은 사용자 명시 요청 시에만** (메모리 룰). B4(Library asset 링크 "Use in table")는 사용자 명시 후순위.
+**다음**: 시간 트리거 firedKeys persist · Members 깊이(Viewer readonly) · Theme accent · Data Import · dangling viewSettings cleanup. **AI_CLASSIFY 자동 실행은 사용자 명시 요청 시에만** (메모리 룰). B4(Library asset 링크 "Use in table")는 사용자 명시 후순위.
 
 상세는 [../NEXT-ACTION.md](../NEXT-ACTION.md) 참조.
 
@@ -42,6 +42,7 @@
 | `fb79379`~`8909ec2` | 일관성 회복: Workspace/Inbox 사이드바 + Trash 행 단위 + Promote/Attach + Automation log | `main` 머지 (2026-05-24) | 사용자 지적("왜 사이드바가 아니라 탭?") → Workspace/Inbox 사이드바 추가 · 5 모드 너비 통일(240px) · Automation 실행 → aiHistory log · Wiki 페이지 우클릭(Rename/Move/Delete) · Trash 행 단위 + 30일 만료(2탭 다이얼로그) · Promote to Library / Attach function 컬럼 헤더 |
 | `bb5a0cc`~`5db2376` | Dashboard builder + 시간 트리거 + Attached function | `main` 머지 (2026-05-24) | Dashboard builder full(ChartConfig persist · Stacked bar · "+Add chart" 모달 · X 삭제 · Reset to auto · 5종 차트 type) · Automations 시간 트리거(daily HH:MM · dueDate+status, setInterval 1분 tick + firedKeys dedupe) + 14 신규 unit test · Attached function 실 실행(MATCH_FROM_DROPDOWN 동작, AI_CLASSIFY hint) |
 | `d98f41c` | 깊이 일괄 #5 — Wiki Trash · AppShell cleanup · Ask AI ⌘J · Settings 4탭 · Heatmap | `main` 머지 (2026-05-24) | P1·P2 폴리시 5건 단일 commit. **Wiki 삭제 → trashedWikiPages**(store v9→v10 + 3rd Trash 탭 + WikiList 카테고리 그룹) · **AppShell mount cleanupExpiredTrash**(hasHydrated 체크 + onFinishHydration 콜백) · **Ask AI ⌘J**(types.askAiFocusToken + store.requestAskAi + AiComposer ref 구독 + ⌘J 단축키 + board-header Sparkles 버튼) · **Settings 4탭**(shadcn Tabs · types.MemberRole/WorkspaceMember · store v10→v11 시드 멤버 4명 + addMember/updateMemberRole/removeMember/exportData · settings-dialog 전면 재작성 · Owner 보호 이중 단 · next-themes Light/Dark/System 카드 · Blob JSON export `flowbase-export-YYYYMMDD.json`) · **Heatmap 차트**(types.ChartType += "heatmap" + heatmap-chart.tsx 2D grid + intensity opacity 단일 hue + add-chart-dialog 6번째 카드 + dashboard-view render branch). 1008+/95− lines |
+| `a818f82` | 깊이 일괄 #6 — Timeline Gantt · Filter (2-step + range) · Display 옵션 · Chart reorder · Library 점프 | `main` 머지 (2026-05-24) | P2 폴리시 6건 + 사용자 보고 fix 2건. **Timeline Gantt 재작성**(월별 카드 폐기 → design-ref view-timeline 답습 · sticky day-column + start~due bar + OVERDUE 배지 · 필드 휴리스틱) · **Filter Popover 2-step inline**(DropdownMenu Sub 폐기 · 컬럼 hue dot · cursor-pointer · z-[60]) · **Filter range/num/date**(types.FilterCondition union · setColumnCondition/toggleColumnInValue · selectVisibleRows kind 분기 · num min-max input · date from-to) · **viewSettings 인프라**(store v11→v12 · types.ViewSettings 5종 · setViewOption/resetViewOption · display-menu.tsx 신규 view-aware popover · Sheet hiddenColumns · Kanban groupBy(status 외 select) · Gallery cover/cardFields/columns 2-4 · Timeline dateField + scale day/week) · **Chart reorder + edit**(store.moveChart · CustomChartCard 호버 toolbar ↑↓ ⋯ X · Rename Dialog · Width 4종 segmented) · **Library promoted field 점프**(asset-detail Used in chip → button · parseUsedIn · switchBoard+setActivityMode+setFocused). sheet/kanban useMemo deps columnFilters 누락 fix. 1884+/397− lines |
 
 ---
 

@@ -4,6 +4,84 @@
 
 ---
 
+## 2026-05-24 (kkh94 머신, 깊이 #6) — Timeline Gantt · Filter (2-step + range) · Display 옵션 · Chart reorder · Library 점프
+
+### 완료 (1 commit `a818f82`)
+**6 P2 폴리시 + 사용자 보고 fix 2건.** NEXT-ACTION 우선순위 중간 #2~#7.
+
+1. **Timeline Gantt 재작성** (사용자 보고 fix) — 기존 월별 카드 리스트 폐기.
+   - `design-ref/prototype/view-timeline.jsx` 충실 답습. sticky day-column header (34px/day, today/주말 highlight, 한국 요일).
+   - start ~ due Gantt bar + status 색 + 라벨, OVERDUE 배지 (due < today && status !== 완료).
+   - 필드 자동 추출 휴리스틱 (date/start/title/subtitle/status/priority/assignee).
+   - RowContextMenu · detailBar 통합 유지.
+2. **Filter Popover 2-step inline 재구현** (사용자 보고 fix) — DropdownMenu Sub 폐기.
+   - 좁은 화면에서 sub flip+가림 issue + hover delay 한계 → Popover + 자체 step state(list↔values)로 cascade 제거.
+   - 컬럼별 hue dot으로 select끼리 시각 구분 (Theme/Sentiment/Priority 동일 type icon 한계 보완).
+   - DropdownMenuSubContent **z-50→z-[60] + sideOffset 6**, SubTrigger **cursor-pointer** (다른 sub 메뉴 일괄 개선).
+3. **Filter range/numeric/date 필터 확장**
+   - `types.FilterCondition` discriminated union: `'in' | 'range' | 'date-range'`.
+   - state.columnFilters: `Record<string, string[]>` → `Record<string, FilterCondition>`.
+   - store: `setColumnCondition` · `toggleColumnInValue` 신액션 + legacy 후방호환.
+   - `selectVisibleRows`: kind 분기 처리 (in/range/date-range).
+   - FilterMenu ValuesStep: kind별 위젯 (체크박스 / min-max input / from-to date input).
+   - ActiveFilterChips: kind별 라벨.
+   - sheet/kanban view useMemo deps에 columnFilters 누락 fix (직전 잠재 버그).
+4. **viewSettings 인프라 + Display 버튼 + 4 view 옵션** — Linear "Display" 패턴.
+   - types.ViewSettings 5종 인터페이스 (Sheet/Kanban/Gallery/Timeline/Dashboard).
+   - store v11→v12 migrate · viewSettings: `Record<boardId, ViewSettings>` persist.
+   - `setViewOption` · `resetViewOption` 액션.
+   - `components/board/display-menu.tsx` (신규) — Filter 옆 Settings2 아이콘 버튼. DisplayPopover view-aware.
+   - 각 view 옵션 실 적용:
+     - **Sheet** hiddenColumns (id 제외 토글)
+     - **Kanban** groupBy (status 외 select 컬럼 지원, dynamic group values)
+     - **Gallery** cover/cardFields/columns 2-4
+     - **Timeline** dateField + scale (COL_WIDTH_DAY=34 / WEEK=14)
+   - zustand getSnapshot 무한 루프 fix — 모듈 스코프 상수 `EMPTY_VS`, hiddenColumns raw 구독.
+5. **Chart reorder + inline edit**
+   - `store.moveChart(chartId, 'up'|'down')` 액션 — 인접 swap.
+   - CustomChartCard 호버 toolbar: ↑/↓ · ⋯ menu · X.
+   - ⋯ menu: Rename Dialog · Width 4종 segmented.
+6. **Library promoted field → 원본 컬럼 점프**
+   - asset-detail "Used in" chip → button 변환.
+   - `parseUsedIn("BoardLabel.columnName")` + `canJump` 검증.
+   - 점프: `switchBoard` + `setActivityMode('tables')` + `setSelected/setFocused`.
+   - 보드 missing → disabled chip + tooltip, 컬럼 missing → warning toast.
+
+### 큰 결정
+- **DropdownMenu Sub 폐기 — Popover 2-step inline 패턴 채택** — 좁은 화면 cascade UX 한계. Linear 패턴 답습 (앞으로 nested menu 필요 시 같은 패턴).
+- **컬럼 hue dot** — type icon 시각 변별 한계 보완. 모든 컬럼 항목에 chart-{1..5} hue 안정 매핑 (id 제외 보드 위치 기준).
+- **viewSettings 보드별 + view별 persist** (store v12) — 사용자 명시 선택. 다른 머신 sync.
+- **DropdownMenu z-stacking 정책** — Sub z-[60] (main z-50 위). 좁은 화면 좌측 flip 시 main 위에 표시 보장.
+- **getSnapshot 무한 루프 fix 패턴 정착** — `(s) => s.foo ?? {}` 절대 ❌. 모듈 스코프 상수 또는 raw 구독 + 컴포넌트에서 default. Phase 1B·2·3 결정 #13(selectVisibleRows) 일반화.
+- **filter sheet/kanban deps fix** — useMemo deps에 columnFilters 빠진 직전 잠재 버그. 새 ephemeral 상태 추가 시 모든 view useMemo deps 갱신 일관성 검토 (직전 #4 Watch Out과 동일 패턴).
+- **Chart reorder는 dnd lib ❌ + ↑↓ 버튼** — 직전 Kanban 카드 이동 패턴 답습 (D1 — DnD ❌, 의존성·모션 최소).
+- **Filter 새 모델 후방호환** — 기존 `setColumnFilter`/`toggleColumnFilter` 액션 유지 (`setColumnCondition`/`toggleColumnInValue` 위임). 점진 삭제 대상.
+- **Timeline scale week**: colWidth만 변경 (14px). 주 단위 group/aggregation은 후속.
+- **6 feature 단일 commit** — 직전 #5 패턴 답습 (PR 단위 큼, 1884+/397−). 향후 분할 후보: Filter rewrite vs Display 인프라.
+
+### 검증
+- tsc 0 · vitest 44/44.
+- 브라우저 시나리오 6 feature 모두 PASS:
+  - Timeline: Tasks 8 행 모두 Gantt bar 렌더 + OVERDUE 정확(Daniel/Sarah).
+  - Filter Popover: list→values 전환 · Theme sub 정상 · date-range 적용 후 tbodyRows 11→4.
+  - Display: 4탭 popover view-aware · Sheet hide → 헤더 갱신 · Kanban groupBy priority → 4칸(Urgent/High/Med/Low) · Gallery columns=2 → 2 컬럼 grid · Timeline scale week → 14px.
+  - Chart: moveChart down → c1/c2 swap · Width quarter · Rename 적용.
+  - Library: Field detail → Used in "Tasks.received_at" 클릭 → activeBoardLabel Customer Interviews → Tasks 점프.
+  - Filter range: date from/to → 행 정확히 필터.
+
+### Watch Out
+- **Radix Tabs/Select 등 PointerDown 컴포넌트** — preview_eval native `.click()` 안 통함 (특히 React state 안 갱신). preview_click(MCP)나 dispatchEvent(PointerEvent) 사용. SelectItem click 시 안 잡으면 localStorage 우회 검증.
+- **dev session stale state** — store version bump + hot reload 시 localStorage migrate 누락 케이스. `.next` clear + dev restart로 해소.
+- **Filter columnFilters 새 model의 후방호환** — `setColumnFilter`/`toggleColumnFilter` legacy 액션을 점진 삭제 시 호출처 다 확인 필요 (현재 ActiveFilterChips 내부 + bulk-edit-menu 등).
+- **viewSettings persist는 보드별** — 보드 삭제 후 휴지통 보존 + 복원 시 viewSettings 별도 처리 안 함 (보드 id 매칭으로 자연 회복). 영구 삭제 시 dangling viewSettings 키 남음 — cleanup 후속.
+- **Chart toolbar 호버 시점** — group-hover로 표시. 모바일/터치엔 부재 — 다음 폴리시 후보.
+- **단일 commit PR diff 1884+/397−** — 너무 큰 단위. 다음 #7부터 분할 검토 (Filter rewrite vs Display vs Chart vs Library 등 4 commit).
+
+### 머신
+kkh94. main 머지·푸시 자동.
+
+---
+
 ## 2026-05-24 (kkh94 머신, 깊이 #5) — Wiki Trash · AppShell cleanup · Ask AI ⌘J · Settings 4탭 · Heatmap
 
 ### 완료 (1 commit `d98f41c`)

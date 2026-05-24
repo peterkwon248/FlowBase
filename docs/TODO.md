@@ -50,18 +50,28 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 - [x] **Settings 깊이 4탭** (General/Members/Appearance/Data + Owner 보호 + Theme + Export JSON)
 - [x] **Heatmap 차트** (Dashboard builder 6번째 종류)
 
+## P2 — 폴리시 일괄 #6 (2026-05-24 — `a818f82` 모두 완료)
+
+- [x] **Timeline Gantt 재작성** (사용자 보고 fix · 월별 카드 폐기)
+- [x] **Filter Popover 2-step inline + 컬럼 hue dot** (사용자 보고 fix · DropdownMenu Sub 폐기 · dropdown z-fix)
+- [x] **Filter range/numeric/date** (FilterCondition union · num/date picker)
+- [x] **viewSettings 인프라 + Display 버튼 + 4 view 옵션** (store v12 · Sheet/Kanban/Gallery/Timeline)
+- [x] **Chart reorder + inline edit** (moveChart · ↑↓ · ⋯ Rename · Width)
+- [x] **Library promoted field → 원본 컬럼 점프**
+
 ## P2 — 남은 폴리시
 
-- [ ] **Chart reorder (drag) + inline edit** — 현재 추가/삭제만. dnd lib 없이 grab handle 또는 ↑↓ 버튼.
 - [ ] **시간 트리거 firedKeys persist** — 페이지 새로고침 dedupe 유지.
-- [ ] **Library promoted field → 원본 컬럼 점프** (역참조 네비).
 - [ ] **Members 깊이** — 활동 로그 · last seen · Viewer readonly 차단.
 - [ ] **Theme accent color 프리셋** — Settings Appearance 자리 마련됨.
 - [ ] **Data Import** (Settings Data 탭 export 짝).
-- [ ] **range/numeric/date 필터**.
-- [ ] **Gallery/Timeline 커스터마이즈** (카드 컬럼 선택 · Gantt).
+- [ ] **dangling viewSettings cleanup** — permanentDeleteBoard에서 viewSettings 키 정리.
+- [ ] **Chart toolbar 터치 UX** — group-hover 한계.
+- [ ] **Filter And/Or multi-condition per column** — ≥/≤/contains 등 추가.
+- [ ] **Gallery/Timeline 커스터마이즈 후속** (카드 컬럼 reorder · Gantt 주 단위 group · zoom).
 - [ ] **Schema pinch-zoom 트랙패드** + 멀티 테이블 → N개 보드.
 - [ ] **MATCH_FROM_DROPDOWN sourceField 명시 선택**.
+- [ ] **legacy 액션 제거** (setColumnFilter/toggleColumnFilter → setColumnCondition/toggleColumnInValue).
 
 ---
 

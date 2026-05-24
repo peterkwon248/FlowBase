@@ -6,6 +6,15 @@
 
 ## Current Features (Completed — 최근 우선)
 
+1. **깊이 #6 — Timeline Gantt · Filter (2-step + range) · Display 옵션 · Chart reorder · Library 점프** (2026-05-24, `a818f82`, **main 머지 완료**) —
+   - **Timeline Gantt 재작성** (`components/sections/timeline-view.tsx`) — 월별 카드 리스트 폐기, sticky day-column + Gantt bar + OVERDUE.
+   - **Filter Popover 2-step inline** (`components/board/filter-menu.tsx`) — DropdownMenu Sub 폐기, 컬럼 hue dot.
+   - **Filter range/numeric/date** — `types.FilterCondition` union, num/date 컬럼 picker, kind별 chip 라벨.
+   - **viewSettings 인프라 + Display 버튼 + 4 view 옵션** (`components/board/display-menu.tsx` 신규) — Linear "Display" 패턴. Sheet hide columns · Kanban groupBy · Gallery cover/cards/columns · Timeline date/scale. store v11→v12.
+   - **Chart reorder + inline edit** (`store.moveChart` + dashboard-view 호버 toolbar) — ↑↓ swap + ⋯ menu(Rename · Width 4종).
+   - **Library promoted field 점프** (`components/library/asset-detail.tsx`) — Used in chip → button → 원본 컬럼.
+   - **DropdownMenu Sub z-fix** (`components/ui/dropdown-menu.tsx`) — z-[60] + sideOffset 6 + cursor-pointer.
+
 1. **깊이 #5 — Wiki Trash · AppShell cleanup · Ask AI ⌘J · Settings 4탭 · Heatmap** (2026-05-24, `d98f41c`, **main 머지 완료**) —
    - **Wiki 삭제 → trashedWikiPages** (store v9→v10 + trash-dialog 3탭 + 컨텍스트 메뉴 메시지)
    - **AppShell mount cleanupExpiredTrash** (`app/page.tsx` mount + zustand persist hasHydrated 체크)
