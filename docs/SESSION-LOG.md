@@ -4,6 +4,66 @@
 
 ---
 
+## 2026-05-24~25 (kkh94 머신, 대규모 폴리시 + 협업 backlog) — A2/Phase 1B/A3/B1-3/B3 F2/잔여 폴리시/multi-cond/Wiki diff/Snapshots backlog
+
+### 완료 (11 commits — `616a672`~`a7d88a3`)
+이번 세션 누적 매우 큼. 작은 단위 commit 분리 — 묶음별 정리.
+
+#### A 그룹 — Linear 식 보드 깊이
+- **A2 Sheet groupBy + 다중 sort** (`9f2adb3`) — SheetViewSettings에 `groupBy` + `sorts` array. Display 메뉴 Sheet 섹션에 GroupBy Select + Ordering multi-sort UI (↑↓ priority · asc/desc toggle · ↑↓ reorder · X 제거). selectVisibleRows에 다중 키 비교. groupBy 시 그룹 헤더 row + 카운트(status는 STATUS_LABELS 영어 매핑).
+- **Phase 1B text cell autocomplete** (`0c4701e`) — InlineInput에 `suggestions`/`onDraftChange` prop. text input 아래 popup list (workspaceMemory prefix 매치 · ↑↓/Enter/Tab/Esc · mousedown commit blur 회피). TextCell에서 raw 구독 + useMemo derive.
+- **A3 Library 자산 개별 적용** (`ed8ba72`) — column-header-menu에 "Apply OptionList" submenu (select/status만, color dot 미리보기). AddColumnMenu의 Library Field 보강 (config.optionListId 해석 + libraryFieldId 자동 link).
+
+#### B 그룹 — 스마트 메모리 Phase 2 + EventStore F2
+- **B1-3 Library promote bridge toast** (`6102983`) — frequency 5 도달 시 toast + Save 클릭으로 col.options 추가. dedupe id로 중복 권유 ❌. 다른 보드 케이스 setState 직접 patch.
+- **B3 F2 Library OptionList sync** (`616a672`) — 신규 `addOptionToLibraryField(fieldId, value)` action. config.optionListId 참조 시 OptionList sync, 인라인이면 config.options에 추가. F1 promote 버튼 + B1-3 toast onClick에서 sync 호출.
+- **B1-1/B1-2 recentFilters/recentSorts** (`c793fad`) — workspaceMemory에 recentFilters/Sorts 추가. scheduleLearnRecentFilter/Sort debounce 2s + JSON dedupe + max 10. setColumnCondition/toggleColumnInValue/setSort 끝에 schedule. FilterMenu에 "Recent" 섹션 (활성 보드 최근 5개, click 시 apply).
+
+#### 잔여 폴리시
+- **Data Import skip summary + Theme accent oklch** (`12a65d3` 이미 → `12c1593`) — ImportSummary에 skipped { library, wiki, automations } 추가, toast description에 표시. 4 accent (purple/blue/emerald/amber) L/chroma 정렬: emerald light 0.52, dark 0.66 · amber light 0.58, dark 0.68, chroma 0.18.
+- **firedKeys ref sync** (`39a9c4e`) — permanentDeleteBoard 후 window.dispatchEvent("flowbase-firedkeys-changed") · automation-runtime addEventListener로 ref 즉시 reload (다음 1분 tick 기다림 ❌).
+- **UI viewer disable 핵심 4 진입점** (`3ea0b32`) — selectIsViewer selector. BoardHeader(New row/Delete/Import) + AddColumnMenu trigger + ColumnHeaderMenu trigger + RowContextMenu items에 disabled + cursor-not-allowed + opacity + title.
+- **chart toolbar 터치 UX** (`3be855d`) — `[@media(hover:none)]:opacity-100` arbitrary variant — 데스크탑은 group-hover, 터치는 항상 visible.
+- **Schema pinch-zoom + Members "Switch to"** (`41cd262`) — handleWheel delta 비례 + ±0.3 cap (트랙패드 pinch 부드러움). Members 멤버 옆 LogIn 버튼 — viewer/admin role switching 데모 진입점.
+- **mutation enforcement 24 액션 일괄** (`725b83d`) — ensureCanEdit 추가: AI(4) · Library(2) · Automation(5) · Trash(7) · Settings/Members(4) · Schema(2). updateSettings의 currentUserId 단독 변경은 데모 "Switch to" 가드 우회.
+
+#### Filter 확장
+- **negation operators** (`738d835`) — FilterCondition union에 not_in, not_contains 추가. selectVisibleRows 분기. FilterMenu Match/Exclude segmented (MatchToggle 컴포넌트). ActiveFilterChips ≠ prefix.
+- **multi-condition per column (AND array)** (`a7d88a3`) — `columnFilters: Record<col, FilterCondition[]>` 모델 변경. setColumnCondition(col, cond, index) · addColumnCondition · removeColumnCondition · toggleColumnInValue 첫 in/not_in 자동 토글. selectVisibleRows array AND 평가. ActiveFilterChips renderCondChips helper + 각 cond별 chip. RecentFilterSnapshot.conditions 형식 변경. UI는 첫 cond만(minimum). "+Add condition" UI는 phase 2.
+
+#### Wiki
+- **body diff/version history** (`67279a0`) — WikiPage.revisions: PageRevision[] (max 20 FIFO). updateWikiPage(body/title 변경 시) prev push. WikiHistoryDialog 신규 (좌측 revisions list + 우측 line diff: 외부 lib ❌ naive line 비교 — added/removed/same). Restore 버튼 (현재 또 revisions push). 헤더 History 버튼 + 개수 배지.
+
+### 큰 결정 (이번 세션)
+- **Memory ≠ Library LOCK 강화** — F1 "+", B1-3 toast 모두 명시 click 시만 promote. workspaceMemory 자동 학습 vs Library 명시 자산 분리 일관.
+- **scheduleLearnRecentFilter/Sort = 모듈 scope timer** — store action 내부 setTimeout. zustand subscribe 패턴보다 단순 (구독 시 stale ref 위험).
+- **multi-condition UI minimum** — store 모델은 array, UI는 첫 cond만. "+Add condition" 진입점은 phase 2. ActiveFilterChips는 multi-cond를 chip 여러 개로 자연 표현.
+- **mutation enforcement = 24 액션 한 commit 일괄** — 패턴 일관(ensureCanEdit 첫 줄). 직전 #8의 14개 + 24개 = 38개 가드. 후속 추가 ❌ (view 선호 액션은 가드 ❌ 유지).
+- **선별 skip**: B1-4 (cross-board type 제안 — Library Field 중복) · MATCH_FROM_DROPDOWN sourceField (UI sub-submenu 큼) · Filter "≥/≤" operator 분리(이미 range로 표현 가능)
+
+### 큰 토론 → backlog (구현 ❌)
+- **Import/Export 5 phase** (Im-1~Im-5) — CSV/Markdown/xlsx/Notion-Airtable/PDF-OCR/URL fetch. 사용자 명시 상용화 요구. 로컬 first LOCK 호환 (Im-5만 server proxy).
+- **Snapshot 모델 (GitHub 식)** — 사용자 통찰 "실수 복원 분기"에서 도출. 워크스페이스 명시 save point · Restore + Compare · branch는 단순화(Restore 자동 새 snapshot).
+- **Slack 식 comments/threads/mentions/snooze/reactions** — EventStore kind 확장 + Detail bar/Wiki/Inbox surface. Phase 2 W11(멤버 실 분리) 선행 조건.
+
+### 검증
+- tsc 0 · vitest 44/44 (11 commits 각각 commit 전 통과)
+- 브라우저 검증은 사용자가 직접 (변경량 매우 큼)
+
+### Watch Out
+- **multi-condition UI minimum** — 사용자가 add condition UI 없어 인프라만으로 multi-cond 활용 못 함. phase 2 "+Add" 진입점 필요. ActiveFilterChips remove는 cond 단위로 가능.
+- **mutation enforcement 24개** — view 선호 액션(setSort/setColumnCondition/setViewOption 등)은 가드 ❌. 의도이지만 viewer가 sort 변경 가능 — 다른 멤버 view에 영향 ❌(단일 디바이스).
+- **firedKeys CustomEvent dispatch** — typeof window 체크. SSR/test 안전. vitest jsdom 환경에서 정상.
+- **WikiPage.revisions cap 20** — 페이지당 ~20KB. 6 페이지면 120KB. localStorage 5MB 한계 내. naive line diff는 LCS 아니라 줄 추가/삭제 정확도 ↓.
+- **Filter recentFilters JSON dedupe** — FilterCondition union의 key order 의존. JSON.stringify 결과가 객체 키 순서 보장 안 함(브라우저별). 같은 의미 다른 키 순서면 별 entry 누적. cap 10이라 영향 작음.
+- **Snapshot 모델 구현 시 주의**: deep state copy = localStorage 폭증. 10개 snapshot × 평균 500KB = 5MB → 한계 도달. compression 또는 events index + replay 옵션 필요 (option B).
+- **이번 세션 11 commits — review 단위 큼**. 분리 commit 잘 됐지만 각 commit이 mid-large. 향후 commit 단위 좀 더 작게.
+
+### 머신
+kkh94. main 머지·푸시 자동.
+
+---
+
 ## 2026-05-24 (kkh94 머신, 아키텍처 LOCK) — 로컬 first 명시 + storage placeholder 제거
 
 ### 완료 (1 commit 예정)

@@ -1,19 +1,19 @@
 # NEXT-ACTION
 
 > 다음 세션 시작 시 이 파일부터 읽으세요.
-> 마지막 갱신: 2026-05-24 (kkh94 머신, 폴리시 + 통합 인프라 commit `49a1767`)
+> 마지막 갱신: 2026-05-25 (kkh94 머신, 대규모 폴리시 + 상용화 backlog 11 commits)
 
 ---
 
 ## 한 줄 요약
 
-**컬럼 리사이즈 + 레이아웃 spill fix + pill 일괄 + 스마트 메모리 + EventStore 통합(A·C·D·E·F1) 완료. 다음: 토론 backlog A 그룹(스마트 메모리 Phase 1B · Sheet groupBy · Library 자산 개별 적용 UI) 또는 잔여 폴리시.**
+**A·B 그룹 거의 완료 + Filter multi-cond 인프라 + Wiki diff + mutation enforcement 38개 + 잔여 폴리시. 다음: Snapshots 모델(GitHub 식, 즉시) · Im-1/Im-2(CSV·xlsx) · 협업 layer는 W11 후.**
 
 ---
 
 ## ✅ 머지 완료
 
-- `origin/main = 49a1767` (이번 세션 push 후 머지).
+- `origin/main = a7d88a3` (이번 세션 push 후 머지 — 11 commits 일괄 main 푸시).
 - 다른 머신: `git fetch && git checkout main && git pull && npm install`.
 
 ---
@@ -115,6 +115,108 @@
 2. **민감 정보 누수** — password/email 패턴 자동 제외 옵션
 3. **AI 학습 씨앗 충돌** — Memory를 AI 컨텍스트 활용 시 사용자 명시 룰(AI_CLASSIFY 자율 ❌)과 충돌. 명시 click 시만 OK (Phase 2+ 후속)
 4. **localStorage 비대** — 30일 expire + 50개 cap 필수
+
+---
+
+## 🌐 상용화 backlog — Import/Export + 협업 layer (2026-05-25 토론)
+
+> 사용자 명시: 상용화 위해 거의 모든 자료 호환 + Slack식 코멘트/스누즈 + GitHub식 버전 분기.
+
+### Import/Export — 단계별 phase
+
+| Phase | 작업 | 변경 폭 | 가치 |
+|---|---|---|---|
+| **Im-1** | CSV / TSV / Markdown table 양방향 | 저 | 必 |
+| **Im-2** | Excel(.xlsx) 양방향 — `xlsx` lib dynamic import | 중 (bundle ~400KB) | 必 |
+| **Im-3** | Notion/Airtable export 흡수 (CSV + 메타) | 중 | 高 (마이그레이션) |
+| **Im-4** | PDF (텍스트) · 이미지 OCR — lazy load | 高 (lib 큼) | 차별화 |
+| **Im-5** | URL fetch (HTML 테이블) — server proxy | 高 | BaaS 후 |
+
+**로컬 first LOCK 호환**: Im-1~Im-4는 클라이언트 처리(파일 입력). Im-5만 server proxy 필요(Phase 3+).
+
+**bundle 전략**: xlsx/pdfjs/tesseract는 dynamic import + code split 필수.
+
+### 협업 layer — Slack 식 + GitHub 식
+
+**두 layer 분리**:
+- **Slack 식 (사람↔사람 소통)**: comments · threads · mentions · reactions · snooze
+- **GitHub 식 (시간↔시간 변경 관리)**: snapshots · restore · compare
+
+#### Slack 식 — EventStore 확장으로 자연
+
+```ts
+type EventKind +=
+  | "comment_added"
+  | "mention"
+  | "snooze"
+  | "reaction"
+```
+
+surface: Detail bar 하단(row/cell thread) · Wiki page 사이드 · Inbox(mention/snoozed) · History.
+snooze = Inbox item ephemeral `snoozedUntil` (automation-runtime setInterval 재사용).
+
+**선행**: Phase 2 W11 (멤버 실 분리)
+
+#### GitHub 식 — Snapshots 신규 모델 (사용자 통찰 핵심)
+
+| 컨셉 | 자동 vs 명시 | 시점 보존 |
+|---|---|---|
+| History (이미) | 자동 (모든 액션) | 시간순 timeline |
+| Trash (이미) | 자동 (delete) | 30일 cutoff |
+| Wiki revisions (이미) | 자동 (edit) | 페이지 단위 N개 |
+| **Snapshots (신규)** | **명시 click** | 워크스페이스 단위 · 무기한 |
+
+```ts
+interface Snapshot {
+  id: string
+  ts: number
+  label: string
+  description?: string
+  by: string                  // memberId
+  state: ExportedSnapshot     // deep copy (option A) — option B는 events index + replay (압축)
+}
+```
+
+UI:
+- Workspace 사이드바에 "Snapshots" 항목 (History 옆)
+- "Save snapshot" 명시 액션
+- 목록: label · ts · by · "Restore" / "Compare to current"
+- Restore = 그 state로 워크스페이스 복원 + 현재 상태는 자동 snapshot으로 저장(되돌릴 수 있게)
+- Compare = events diff (어떤 보드/행 변경됐는지)
+
+**GitHub branch** = 단순화: "Restore → 자동 새 snapshot" 패턴이 사실상 branch. 진짜 격리 branch는 추후.
+
+### 통합 모델
+
+```
+EventStore (single source)
+├─ Auto views: History · Activity log · aiHistory · workspaceMemory
+└─ Manual layer:
+   ├─ Snapshots — 사용자 명시 save point (GitHub tag/branch 식)
+   ├─ Comments/Threads/Mentions — Slack 식
+   └─ Snooze — Inbox 상태
+```
+
+### Phase 우선순위
+
+| 작업 | 변경 폭 | 가치 | 추천 시점 |
+|---|---|---|---|
+| Im-1 (CSV/MD) | 저 | 必 | 즉시 |
+| Im-2 (xlsx) | 중 | 必 | 즉시 |
+| **Snapshots (GitHub 식 minimum)** | 中 | **高** | **즉시** (선행 조건 ❌) |
+| Im-3 (Notion/Airtable) | 중 | 高 | 즉시 (마이그레이션) |
+| Comments + thread (Slack minimum) | 中 | 高 | Phase 2 W11 후 |
+| Im-4 (PDF/OCR) | 高 | 차별화 | 중기 |
+| Snooze/mention | 中 | 中 | Phase 2 W11 후 |
+| Im-5 (URL fetch) | 高 | 중 | BaaS 후 |
+
+### LOCK 후보 (구현 시 확정)
+
+- "xlsx/pdfjs/tesseract = dynamic import + code split" — bundle 크기 보호
+- "Snapshot Restore = 자동 새 snapshot 생성" — 사용자가 항상 되돌릴 수 있게
+- "Snapshot persist = deep state copy(option A)" — 단순화. 압축은 후속
+- "Comment thread = EventStore kind 확장만, 별 store ❌" — 단일 source 유지
+- "Snooze = Inbox item ephemeral 상태, automation-runtime 패턴 재사용"
 
 ---
 
