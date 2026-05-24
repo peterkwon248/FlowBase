@@ -288,8 +288,8 @@ export interface GalleryViewSettings {
 }
 
 export interface TimelineViewSettings {
-  dateField?: string        // 정렬·bar 기준 date 컬럼
-  scale?: "day" | "week"    // colWidth 조절 (day=34px, week=14px)
+  dateField?: string                      // 정렬·bar 기준 date 컬럼
+  scale?: "day" | "week" | "month"        // colWidth 조절 (day=34/week=14/month=8)
 }
 
 export interface DashboardViewSettings {
@@ -416,6 +416,7 @@ export type FilterCondition =
   | { kind: "in"; values: string[] } // status / select
   | { kind: "range"; min?: number; max?: number } // num
   | { kind: "date-range"; from?: string; to?: string } // date (YYYY-MM-DD)
+  | { kind: "contains"; text: string } // text / email — 부분 match (case-insensitive)
 
 export type SortDir = "asc" | "desc"
 

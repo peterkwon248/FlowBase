@@ -9,7 +9,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { Check, Settings2 } from "lucide-react"
+import { Check, ChevronDown, ChevronUp, Settings2 } from "lucide-react"
 import {
   Popover,
   PopoverContent,
@@ -65,6 +65,8 @@ export function DisplayMenu() {
       const t = viewSettings.timeline
       return (t?.dateField ? 1 : 0) + (t?.scale && t.scale !== "day" ? 1 : 0)
     }
+    // scale: day는 default라 count 안 함, week/month는 count
+
     return 0
   }, [board, view, viewSettings])
 
@@ -303,28 +305,34 @@ function GallerySection({ board }: { board: { columns: ColumnDef[] } }) {
         <div className="mb-1 text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
           Card fields
         </div>
+        {/* 선택된 cardFields 우선 표시 + 순서 보존, 그 다음 미선택 컬럼. */}
         <div className="max-h-44 space-y-0.5 overflow-y-auto">
-          {cardCols.map((col) => {
+          {/* 선택된 (순서 의미) — ↑/↓로 reorder */}
+          {(settings?.cardFields ?? []).map((name, i, arr) => {
+            const col = cardCols.find((c) => c.name === name)
+            if (!col) return null
             const Icon = TYPE_ICON[col.type]
-            const checked = cards.has(col.name)
+            const move = (dir: "up" | "down") => {
+              const next = arr.slice()
+              const swap = dir === "up" ? i - 1 : i + 1
+              if (swap < 0 || swap >= next.length) return
+              ;[next[i], next[swap]] = [next[swap], next[i]]
+              setViewOption("gallery", { cardFields: next })
+            }
             return (
-              <button
+              <div
                 key={col.name}
-                type="button"
-                onClick={() => toggleCard(col.name)}
                 data-display-gallery-card={col.name}
-                className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-1.5 py-1 text-left text-[12px] transition-colors hover:bg-accent hover:text-accent-foreground"
+                className="flex items-center gap-1.5 rounded-sm px-1.5 py-1 text-[12px] transition-colors hover:bg-accent"
               >
-                <span
-                  className={cn(
-                    "flex size-3.5 shrink-0 items-center justify-center rounded border",
-                    checked
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border",
-                  )}
+                <button
+                  type="button"
+                  onClick={() => toggleCard(col.name)}
+                  className="flex size-3.5 shrink-0 items-center justify-center rounded border border-primary bg-primary text-primary-foreground"
+                  title="Remove from card"
                 >
-                  {checked && <Check className="size-2.5" strokeWidth={3} />}
-                </span>
+                  <Check className="size-2.5" strokeWidth={3} />
+                </button>
                 <Icon
                   className="size-3 shrink-0 text-muted-foreground"
                   strokeWidth={1.75}
@@ -332,9 +340,53 @@ function GallerySection({ board }: { board: { columns: ColumnDef[] } }) {
                 <span className="flex-1 truncate">
                   {col.label || col.name}
                 </span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => move("up")}
+                  disabled={i === 0}
+                  className="flex size-4 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.08] disabled:opacity-30"
+                  title="Move up"
+                  data-card-up={col.name}
+                >
+                  <ChevronUp className="size-3" strokeWidth={2.5} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => move("down")}
+                  disabled={i === arr.length - 1}
+                  className="flex size-4 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.08] disabled:opacity-30"
+                  title="Move down"
+                  data-card-down={col.name}
+                >
+                  <ChevronDown className="size-3" strokeWidth={2.5} />
+                </button>
+              </div>
             )
           })}
+          {/* 미선택 — 추가만 */}
+          {cardCols
+            .filter((c) => !cards.has(c.name))
+            .map((col) => {
+              const Icon = TYPE_ICON[col.type]
+              return (
+                <button
+                  key={col.name}
+                  type="button"
+                  onClick={() => toggleCard(col.name)}
+                  data-display-gallery-add={col.name}
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-1.5 py-1 text-left text-[12px] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <span className="flex size-3.5 shrink-0 items-center justify-center rounded border border-border" />
+                  <Icon
+                    className="size-3 shrink-0"
+                    strokeWidth={1.75}
+                  />
+                  <span className="flex-1 truncate">
+                    {col.label || col.name}
+                  </span>
+                </button>
+              )
+            })}
         </div>
       </div>
     </div>
@@ -376,7 +428,7 @@ function TimelineSection({ board }: { board: { columns: ColumnDef[] } }) {
       </Row>
       <Row label="Scale">
         <div className="inline-flex rounded-md border border-border-subtle p-0.5">
-          {(["day", "week"] as const).map((s) => (
+          {(["day", "week", "month"] as const).map((s) => (
             <button
               key={s}
               type="button"

@@ -24,8 +24,9 @@ import {
 } from "@/types/flowbase"
 
 const DAY_MS = 86_400_000
-const colWidth_DAY = 34 // day scale — px per day
-const colWidth_WEEK = 14 // week scale — 더 압축
+const COL_WIDTH_DAY = 34 // day scale — px per day
+const COL_WIDTH_WEEK = 14 // week scale — 압축
+const COL_WIDTH_MONTH = 8 // month scale — 장기 timeline overview
 const LABEL_WIDTH = 280 // 좌측 item 라벨 영역
 const CHECK_WIDTH = 32 // 체크박스 영역
 const KO_WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"]
@@ -122,7 +123,12 @@ export function TimelineView() {
   const dateCol = overrideDateCol ?? picked.dateCol
   const { startCol, titleCol, subtitleCol, statusCol, priorityCol } = picked
 
-  const colWidth = settings?.scale === "week" ? colWidth_WEEK : colWidth_DAY
+  const colWidth =
+    settings?.scale === "month"
+      ? COL_WIDTH_MONTH
+      : settings?.scale === "week"
+        ? COL_WIDTH_WEEK
+        : COL_WIDTH_DAY
 
   // dated rows + date range 계산 — hooks를 항상 같은 순서로 (early return 전)
   const { datedRows, days, todayISO } = useMemo(() => {

@@ -48,7 +48,9 @@ function isFilterable(col: ColumnDef): boolean {
     col.type === "status" ||
     col.type === "select" ||
     col.type === "num" ||
-    col.type === "date"
+    col.type === "date" ||
+    col.type === "text" ||
+    col.type === "email"
   )
 }
 
@@ -88,6 +90,7 @@ function activeCountOf(cond: FilterCondition | undefined): number {
   if (cond.kind === "in") return cond.values.length
   if (cond.kind === "range")
     return (cond.min !== undefined ? 1 : 0) + (cond.max !== undefined ? 1 : 0)
+  if (cond.kind === "contains") return cond.text.trim() ? 1 : 0
   return (cond.from ? 1 : 0) + (cond.to ? 1 : 0)
 }
 
@@ -274,6 +277,14 @@ function FilterColSub({
           />
         )}
 
+        {/* contains (text/email) */}
+        {(option.col.type === "text" || option.col.type === "email") && (
+          <ContainsWidget
+            cond={cond}
+            onSet={(c) => setColumnCondition(option.col.name, c)}
+          />
+        )}
+
         {activeCount > 0 && (
           <>
             <DropdownMenuSeparator />
@@ -340,6 +351,32 @@ function RangeWidget({
           className="h-7 text-[12px]"
         />
       </div>
+    </div>
+  )
+}
+
+// ─── text — contains (case-insensitive) ────────────────
+function ContainsWidget({
+  cond,
+  onSet,
+}: {
+  cond: FilterCondition | undefined
+  onSet: (c: FilterCondition) => void
+}) {
+  const text = cond?.kind === "contains" ? cond.text : ""
+  return (
+    <div className="space-y-2 px-2 pb-1.5 pt-1">
+      <Input
+        type="text"
+        placeholder="Contains…"
+        value={text}
+        onChange={(e) =>
+          onSet({ kind: "contains", text: e.target.value })
+        }
+        onClick={(e) => e.stopPropagation()}
+        data-filter-contains
+        className="h-7 text-[12px]"
+      />
     </div>
   )
 }
@@ -445,6 +482,18 @@ export function ActiveFilterChips() {
             />,
           ]
         }
+        if (cond.kind === "contains") {
+          return [
+            <Chip
+              key={`${col}:contains`}
+              colLabel={colLabel}
+              valueLabel={`"${cond.text}"`}
+              onRemove={() => setColumnCondition(col, null)}
+              dataAttr={`${col}:contains`}
+            />,
+          ]
+        }
+        // date-range
         const text =
           cond.from && cond.to
             ? `${cond.from} ~ ${cond.to}`

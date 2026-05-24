@@ -1780,6 +1780,13 @@ export function selectVisibleRows(state: FlowBaseState): TableRow[] {
         if (to && v > to) return false
         return true
       })
+    } else if (cond.kind === "contains") {
+      const q = cond.text.trim().toLowerCase()
+      if (!q) continue
+      rows = rows.filter((r) => {
+        const v = r[col]
+        return typeof v === "string" && v.toLowerCase().includes(q)
+      })
     }
   }
 
