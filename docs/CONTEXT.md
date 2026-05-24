@@ -6,6 +6,13 @@
 
 ## Current Features (Completed — 최근 우선)
 
+1. **깊이 #5 — Wiki Trash · AppShell cleanup · Ask AI ⌘J · Settings 4탭 · Heatmap** (2026-05-24, `d98f41c`, **main 머지 완료**) —
+   - **Wiki 삭제 → trashedWikiPages** (store v9→v10 + trash-dialog 3탭 + 컨텍스트 메뉴 메시지)
+   - **AppShell mount cleanupExpiredTrash** (`app/page.tsx` mount + zustand persist hasHydrated 체크)
+   - **Ask AI ⌘J 톱바 버튼** (`board-header` Sparkles 버튼 + `keyboard-shortcuts` ⌘J + `requestAskAi` 액션 + `AiComposer` focus 구독)
+   - **Settings 깊이 4탭** (`settings-dialog` 전면 재작성 — General/Members(Owner 보호 이중 단)/Appearance(next-themes)/Data(Blob JSON export))
+   - **Heatmap 차트** (`components/charts/heatmap-chart.tsx` 신규 — 2D grid + intensity opacity, 의존성 0)
+
 1. **깊이 #4 — Dashboard builder · 시간 트리거 · Attached function 실행** (2026-05-24, `bb5a0cc`+`5db2376`, **main 머지 완료**) —
    - **Dashboard builder** (`components/sections/add-chart-dialog.tsx` + `stacked-bar-chart.tsx`) — 사용자 차트 추가/삭제. 5종(KPI/Bar/Donut/Line/Stacked) + width 4종 + 12-col grid.
    - **시간 트리거** (`lib/automation-runtime.tsx`) — daily HH:MM + dueDate+statusEquals. setInterval 1분 tick + firedKeys dedupe.

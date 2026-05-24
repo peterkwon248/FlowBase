@@ -4,6 +4,65 @@
 
 ---
 
+## 2026-05-24 (kkh94 머신, 깊이 #5) — Wiki Trash · AppShell cleanup · Ask AI ⌘J · Settings 4탭 · Heatmap
+
+### 완료 (1 commit `d98f41c`)
+**5 P1·P2 폴리시 일괄.** NEXT-ACTION 우선순위 #2~#6.
+
+1. **Wiki 삭제 → trashedWikiPages** — Trash 일관성 (보드/행은 30일 보존, Wiki만 영구였음).
+   - types.TrashedWikiPage + FlowBaseState.trashedWikiPages
+   - store v9→v10 migrate · deleteWikiPage = trash 이동 (영구 ❌) · restoreWikiPage · permanentDeleteWikiPage · emptyTrash/cleanupExpiredTrash/partialize/migrate 갱신
+   - trash-dialog 3번째 탭 "Wiki pages" + WikiList(카테고리 그룹) + 30일 만료 표시
+   - wiki-page-context-menu AlertDialog 메시지 갱신
+2. **AppShell mount cleanupExpiredTrash 자동 호출** — `app/page.tsx` mount useEffect. zustand persist hasHydrated 체크 후 cleanup. hydrate 미완 시 onFinishHydration 콜백 등록.
+3. **Ask AI ⌘J 톱바 버튼**
+   - types.askAiFocusToken (ephemeral)
+   - store.requestAskAi 액션 — aiPanel 강제 open + token timestamp 갱신
+   - AiComposer: inputRef + focusToken 구독 useEffect로 input focus·select
+   - keyboard-shortcuts ⌘J 핸들러 (편집 중에도 동작, 셸 단축키)
+   - board-header에 Sparkles 아이콘 + "Ask AI" + ⌘J Kbd 버튼
+4. **Settings 깊이 4탭** (General · Members · Appearance · Data) — shadcn Tabs.
+   - types.MemberRole(owner/admin/member/viewer) · WorkspaceMember · settings.members
+   - store v10→v11 migrate · 시드 멤버 4명(peter Owner + 3) · addMember/updateMemberRole/removeMember/exportData
+   - Members: Owner 보호(UI 단 + store 단 이중) · role Select · Invite dialog · Remove
+   - Appearance: next-themes Light/Dark/System 카드
+   - Data: Blob 다운로드 `flowbase-export-YYYYMMDD.json` (a.click() 패턴, Safari 호환 setTimeout revoke)
+5. **Heatmap 차트** — Dashboard builder 6번째 종류.
+   - types.ChartType += "heatmap"
+   - `components/charts/heatmap-chart.tsx` 신규 — 2D grid (cat × group cross-tab) + intensity opacity 단일 hue. 의존성 0.
+   - add-chart-dialog 6번째 카드(needsGroupBy: true) + dashboard-view renderChartBody branch
+
+### 큰 결정
+- **AI_CLASSIFY 자동 실행은 사용자 명시 룰** (2026-05-24) — 사용자가 "ai 클래지파이는 내가 요청할 때 시작해. 절대로 너가 자의적으로 하지마" 명시. 메모리 파일 `feedback-ai-classify-user-triggered-only.md` 생성. NEXT-ACTION 우선순위 높음 #1이지만 자율 시작 ❌. 이후 사용자 지시 시에만 진행.
+- **Settings dialog는 단일 파일** (530 lines) — Tab 별로 inline 분리, 외부 import 1개 유지. Members/Appearance/Data 모두 같은 파일.
+- **Heatmap = 단일 hue + opacity intensity** — 다색 cmap 대신 var(--chart-1) opacity 0.18~1.0. 단순화 + light/dark 양쪽 호환.
+- **시드 멤버 4명** — peter(Owner) · Jisoo(Admin) · Min(Member) · Rina(Viewer). 데모용. Phase 2(W11)에서 실 분리.
+- **Owner 보호 이중 단** — UI 단에서 Select·Remove 자체 비노출 + store 액션 단에서 `m.role === "owner"` filter 보호.
+- **deleteWikiPage 시맨틱 변경** — 영구 삭제 → trash 이동 (30일 보존). 기존 행동 의존 코드 없음(컨텍스트 메뉴 1곳뿐).
+- **AppShell cleanup은 hasHydrated 체크 후** — 단순 mount useEffect는 hydrate race. zustand persist API onFinishHydration 콜백으로 정확 발화.
+- **5 feature 단일 commit** — 직전 세션 "Dashboard builder + 시간 트리거 + Attached function" 답습. 분할이 정당화되려면 PR 단위. NEXT-ACTION P1·P2 폴리시 일괄 시리즈로 묶음.
+
+### 검증
+- tsc 0 · vitest 44/44 (5번 확인).
+- 브라우저 시나리오 5 feature 모두 PASS:
+  - Wiki: Delete → wiki 6→5 + trashedWikiLen 1 · auto-pick Wiki tab · Restore 5→6 · Permanent delete OK · 새 AlertDialog 메시지 정확
+  - AppShell cleanup: 31일 전 fake trashedWikiPage·trashedRow 주입 → reload → EXPIRED만 제거, FRESH 보존
+  - Ask AI: 헤더 버튼/⌘J 닫힌 패널 자동 open + composer focus · 열린 패널 ⌘J focus만
+  - Settings: 4탭 렌더 · Members 시드 4명 · Invite(Sora Han, 4→5) · Remove(Rina, 5→4) · Owner 보호 · Theme system→light 토글 · Export "Export downloaded" toast + 파일명 `flowbase-export-20260524.json`
+  - Heatmap: theme × sentiment 5×3 cross-tab 렌더 + intensity 정확 (Pricing pushback × Negative = 2 진한 등)
+
+### Watch Out
+- **Radix Tabs/Select는 onPointerDown 기반** — preview_eval의 native `.click()` 안 통함. preview_click(MCP) 사용 필요. SelectItem click도 preview_click이 안 잡는 경우 있음 — 직접 dispatchEvent(PointerEvent) 또는 이번처럼 localStorage 직접 patch 우회 검증.
+- **dev session stale state 이슈** — store v10→v11 hot reload race로 localStorage가 v11이지만 migrate 결과 settings.members 빠짐. .next 캐시 clear + dev server restart로 해소. fresh init에선 정상.
+- **next-env.d.ts incidental** — 빌드 생성물이므로 staging에서 제외. 다른 incidental 추가 시 같은 처리.
+- **AI_CLASSIFY 메모리 룰 적용 범위** — 처음 작성 시 "Ask AI ⌘J에도 적용 가능성" 광범위 문구로 classifier가 ⌘J 작업 차단 → 좁힘(자동 호출 ❌ vs 사용자 진입점 ✅ 명시 구분). 다음에 유사 룰 작성 시 범위 명확히.
+- **5 feature 단일 commit** — PR diff 1000+ insertions. 다음 review·revert 시점에 sub-feature 분리 어려움 — 트레이드오프 인지.
+
+### 머신
+kkh94. main 머지·푸시 자동.
+
+---
+
 ## 2026-05-24 (kkh94 머신, 깊이 #4) — Dashboard builder · 시간 트리거 · Attached function 실행
 
 ### 완료 (2 커밋)

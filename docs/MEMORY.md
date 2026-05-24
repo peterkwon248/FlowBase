@@ -7,7 +7,7 @@
 ## Phase Status
 
 - **Phase 0 (Plan)**: ✅ 완료
-- **Phase 1 (Beta)**: 🟢 거의 완성 — FlowBase V2. 6 액티비티 모드 모두 작동(Tables/Workspace/Library/Wiki/Inbox/Search) + 깊이 작업 일괄 완료(자동화 엔진 · 시간 트리거 · 다중 필터 · Gallery/Timeline · Dashboard builder · Schema ER 인터랙션 · Trash 행 단위 · Promote/Attach function). **남은 폴리시**: AI_CLASSIFY 자동 실행 · Wiki Trash 통합 · Ask AI ⌘J · Settings 멤버 탭 · Heatmap 차트 · 시간 트리거 firedKeys persist.
+- **Phase 1 (Beta)**: 🟢 거의 완성 — FlowBase V2. 6 액티비티 모드 모두 작동(Tables/Workspace/Library/Wiki/Inbox/Search) + 깊이 작업 일괄 완료(자동화 엔진 · 시간 트리거 · 다중 필터 · Gallery/Timeline · Dashboard builder + Heatmap · Schema ER 인터랙션 · Trash 행/Wiki 단위 · Promote/Attach function · AppShell cleanup · Ask AI ⌘J · Settings 4탭 멤버/권한 + Theme + Export). **남은 폴리시**: AI_CLASSIFY 자동 실행(사용자 명시 룰) · Chart reorder · 시간 트리거 firedKeys persist · Library promoted field 점프 · Data Import · Members 깊이.
 - **Phase 2 (Team)**: ⬜ — 멤버 초대, 권한 모델, 워크스페이스 분리 (W11)
 - **Phase 3+**: ⬜ — Realtime collab, scaling, BaaS 결정 (Supabase vs bkend.ai)
 
@@ -15,9 +15,9 @@
 
 ## Current Direction (다음 우선순위)
 
-**2026-05-24 진행상태**: 6 액티비티 모드 모두 작동 + 일관성/깊이 작업 광범위하게 완료. 사용자 지적("의도한 거냐?")으로 Workspace/Inbox 사이드바 추가 + 5 모드 사이드바 너비 통일(240px). 자동화 엔진 실 동작(row 변경 + 시간 트리거). Dashboard builder로 사용자 차트 추가/삭제. 컬럼 ↔ Library 양방향(Promote + Attach function).
+**2026-05-24 진행상태**: 6 액티비티 모드 + 일관성/깊이 + P1·P2 폴리시 5건(Wiki Trash · cleanup · Ask AI ⌘J · Settings 4탭 · Heatmap) 모두 완료. Trash 일관성(보드/행/Wiki 모두 30일 + auto-cleanup). Settings 깊이(멤버/권한/Theme/Export). Dashboard 6 차트(KPI/Bar/Donut/Line/Stacked/Heatmap).
 
-**다음**: 폴리시 항목들 (NEXT-ACTION 참조). B4(Library asset 링크의 마지막 절반)는 사용자 명시 후순위.
+**다음**: Chart reorder(drag) · 시간 트리거 firedKeys persist · Library promoted field 점프 · Members 깊이 등. **AI_CLASSIFY 자동 실행은 사용자 명시 요청 시에만** (메모리 룰). B4(Library asset 링크 "Use in table")는 사용자 명시 후순위.
 
 상세는 [../NEXT-ACTION.md](../NEXT-ACTION.md) 참조.
 
@@ -41,6 +41,7 @@
 | `2bdee40`~`57fadb6` | Schema 인터랙션 + Dashboard 영어/Line + Change type | `main` 머지 (2026-05-24) | Schema pan/zoom + 카드 드래그 + "New table" 모달 · Dashboard Line trend(date 컬럼 있을 때) + 모든 라벨 영어화 · 컬럼 Change type submenu |
 | `fb79379`~`8909ec2` | 일관성 회복: Workspace/Inbox 사이드바 + Trash 행 단위 + Promote/Attach + Automation log | `main` 머지 (2026-05-24) | 사용자 지적("왜 사이드바가 아니라 탭?") → Workspace/Inbox 사이드바 추가 · 5 모드 너비 통일(240px) · Automation 실행 → aiHistory log · Wiki 페이지 우클릭(Rename/Move/Delete) · Trash 행 단위 + 30일 만료(2탭 다이얼로그) · Promote to Library / Attach function 컬럼 헤더 |
 | `bb5a0cc`~`5db2376` | Dashboard builder + 시간 트리거 + Attached function | `main` 머지 (2026-05-24) | Dashboard builder full(ChartConfig persist · Stacked bar · "+Add chart" 모달 · X 삭제 · Reset to auto · 5종 차트 type) · Automations 시간 트리거(daily HH:MM · dueDate+status, setInterval 1분 tick + firedKeys dedupe) + 14 신규 unit test · Attached function 실 실행(MATCH_FROM_DROPDOWN 동작, AI_CLASSIFY hint) |
+| `d98f41c` | 깊이 일괄 #5 — Wiki Trash · AppShell cleanup · Ask AI ⌘J · Settings 4탭 · Heatmap | `main` 머지 (2026-05-24) | P1·P2 폴리시 5건 단일 commit. **Wiki 삭제 → trashedWikiPages**(store v9→v10 + 3rd Trash 탭 + WikiList 카테고리 그룹) · **AppShell mount cleanupExpiredTrash**(hasHydrated 체크 + onFinishHydration 콜백) · **Ask AI ⌘J**(types.askAiFocusToken + store.requestAskAi + AiComposer ref 구독 + ⌘J 단축키 + board-header Sparkles 버튼) · **Settings 4탭**(shadcn Tabs · types.MemberRole/WorkspaceMember · store v10→v11 시드 멤버 4명 + addMember/updateMemberRole/removeMember/exportData · settings-dialog 전면 재작성 · Owner 보호 이중 단 · next-themes Light/Dark/System 카드 · Blob JSON export `flowbase-export-YYYYMMDD.json`) · **Heatmap 차트**(types.ChartType += "heatmap" + heatmap-chart.tsx 2D grid + intensity opacity 단일 hue + add-chart-dialog 6번째 카드 + dashboard-view render branch). 1008+/95− lines |
 
 ---
 

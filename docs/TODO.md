@@ -42,6 +42,27 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 - [x] **Automations 시간 기반 트리거** (2026-05-24 — `5db2376`)
 - [x] **Attached function 자동 실행** (2026-05-24 — `5db2376`)
 
+## P2 — 폴리시 일괄 #5 (2026-05-24 — `d98f41c` 모두 완료)
+
+- [x] **Wiki 삭제 → trashedWikiPages** (Trash 일관성, store v9→v10, 3rd tab)
+- [x] **AppShell mount cleanupExpiredTrash 자동 호출** (hasHydrated 체크)
+- [x] **Ask AI ⌘J 톱바 버튼** (Sparkles + composer focus token)
+- [x] **Settings 깊이 4탭** (General/Members/Appearance/Data + Owner 보호 + Theme + Export JSON)
+- [x] **Heatmap 차트** (Dashboard builder 6번째 종류)
+
+## P2 — 남은 폴리시
+
+- [ ] **Chart reorder (drag) + inline edit** — 현재 추가/삭제만. dnd lib 없이 grab handle 또는 ↑↓ 버튼.
+- [ ] **시간 트리거 firedKeys persist** — 페이지 새로고침 dedupe 유지.
+- [ ] **Library promoted field → 원본 컬럼 점프** (역참조 네비).
+- [ ] **Members 깊이** — 활동 로그 · last seen · Viewer readonly 차단.
+- [ ] **Theme accent color 프리셋** — Settings Appearance 자리 마련됨.
+- [ ] **Data Import** (Settings Data 탭 export 짝).
+- [ ] **range/numeric/date 필터**.
+- [ ] **Gallery/Timeline 커스터마이즈** (카드 컬럼 선택 · Gantt).
+- [ ] **Schema pinch-zoom 트랙패드** + 멀티 테이블 → N개 보드.
+- [ ] **MATCH_FROM_DROPDOWN sourceField 명시 선택**.
+
 ---
 
 ## P1 (breadth 뒤)
