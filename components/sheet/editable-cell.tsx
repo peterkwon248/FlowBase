@@ -14,6 +14,7 @@ import {
   CircleHalf,
   CircleNotch,
 } from "@phosphor-icons/react"
+import { Clock } from "lucide-react"
 import { STATUS_LABELS, type ColumnDef, type TableRow, type TicketStatus } from "@/types/flowbase"
 import { toast } from "sonner"
 import { MEMORY_MIN_COUNT, useFlowBase } from "@/lib/flowbase-store"
@@ -84,6 +85,30 @@ function TextCell({
   const value = row[col.name]
   const text = value == null ? "" : String(value)
 
+  // Phase 1B: workspaceMemory prefix 매치 autocomplete.
+  // editing 중에만 의미 — draft 변화에 따라 prefix 매치된 학습값을 InlineInput에 전달.
+  // raw 구독 + useMemo derive (selector 직접 구독 시 새 배열 → 무한 루프).
+  const memoryByScope = useFlowBase((s) => s.workspaceMemory.byScope)
+  const [draft, setDraft] = useState("")
+  const suggestions = useMemo(() => {
+    if (!editing) return undefined
+    const q = draft.trim().toLowerCase()
+    if (!q) return undefined
+    const scope = `${col.name}::${col.libraryFieldId ?? "_"}`
+    const list = memoryByScope[scope] ?? []
+    const matched = list
+      .filter(
+        (e) =>
+          e.count >= MEMORY_MIN_COUNT &&
+          e.value.toLowerCase().startsWith(q) &&
+          e.value.toLowerCase() !== q, // 정확 일치는 제외 (이미 입력됨)
+      )
+      .sort((a, b) => b.count - a.count || b.lastUsedTs - a.lastUsedTs)
+      .slice(0, 5)
+      .map((e) => e.value)
+    return matched.length > 0 ? matched : undefined
+  }, [editing, draft, memoryByScope, col.name, col.libraryFieldId])
+
   if (editing) {
     return (
       <InlineInput
@@ -94,6 +119,8 @@ function TextCell({
           onStopEdit()
         }}
         onCancel={onStopEdit}
+        suggestions={suggestions}
+        onDraftChange={setDraft}
       />
     )
   }
@@ -494,11 +521,24 @@ interface InlineInputProps {
   selectAll: boolean
   onCommit: (value: string) => void
   onCancel: () => void
+  // Phase 1B: 학습된 값 prefix 매치 suggestion list. 키보드 ↑↓/Enter/Esc 지원.
+  // 부모(TextCell)가 draft 변화 받아 memoryByScope에서 prefix 매치 후 prop으로 갱신.
+  suggestions?: string[]
+  onDraftChange?: (draft: string) => void
 }
 
-function InlineInput({ initial, selectAll, onCommit, onCancel }: InlineInputProps) {
+function InlineInput({
+  initial,
+  selectAll,
+  onCommit,
+  onCancel,
+  suggestions,
+  onDraftChange,
+}: InlineInputProps) {
   const [draft, setDraft] = useState(initial)
   const [composing, setComposing] = useState(false)
+  const [activeIdx, setActiveIdx] = useState(0)
+  const [open, setOpen] = useState(true) // suggestion list 표시 토글 (Esc 한 번 시 닫고 또 누르면 cancel)
   const ref = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -512,25 +552,99 @@ function InlineInput({ initial, selectAll, onCommit, onCancel }: InlineInputProp
     }
   }, [selectAll])
 
+  // draft 변경 시 부모 통지 (prefix 매치 재계산용)
+  useEffect(() => {
+    onDraftChange?.(draft)
+  }, [draft, onDraftChange])
+
+  // suggestions 갱신될 때마다 activeIdx 0으로 reset
+  useEffect(() => {
+    setActiveIdx(0)
+  }, [suggestions])
+
+  const list = open ? suggestions ?? [] : []
+  const hasList = list.length > 0
+
+  const commit = (v: string) => {
+    onCommit(v)
+  }
+
   return (
-    <input
-      ref={ref}
-      value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      onCompositionStart={() => setComposing(true)}
-      onCompositionEnd={() => setComposing(false)}
-      onBlur={() => onCommit(draft)}
-      onKeyDown={(e) => {
-        if (composing || e.nativeEvent.isComposing) return
-        if (e.key === "Enter") {
-          e.preventDefault()
-          onCommit(draft)
-        } else if (e.key === "Escape") {
-          e.preventDefault()
-          onCancel()
-        }
-      }}
-      className="w-full rounded-sm border border-input bg-background px-1.5 py-0.5 text-[13px] outline-none focus:ring-1 focus:ring-ring"
-    />
+    <div className="relative">
+      <input
+        ref={ref}
+        value={draft}
+        onChange={(e) => {
+          setDraft(e.target.value)
+          setOpen(true)
+        }}
+        onCompositionStart={() => setComposing(true)}
+        onCompositionEnd={() => setComposing(false)}
+        onBlur={() => commit(draft)}
+        onKeyDown={(e) => {
+          if (composing || e.nativeEvent.isComposing) return
+          if (hasList && e.key === "ArrowDown") {
+            e.preventDefault()
+            setActiveIdx((i) => (i + 1) % list.length)
+            return
+          }
+          if (hasList && e.key === "ArrowUp") {
+            e.preventDefault()
+            setActiveIdx((i) => (i - 1 + list.length) % list.length)
+            return
+          }
+          if (e.key === "Enter") {
+            e.preventDefault()
+            // suggestion 있으면 그것, 없으면 draft commit
+            commit(hasList ? list[activeIdx] : draft)
+          } else if (e.key === "Escape") {
+            e.preventDefault()
+            // 1단계: list 열려있으면 닫기만. 2단계: cancel
+            if (hasList) {
+              setOpen(false)
+            } else {
+              onCancel()
+            }
+          } else if (e.key === "Tab" && hasList) {
+            // Tab → 현재 active suggestion으로 commit (Notion 패턴)
+            e.preventDefault()
+            commit(list[activeIdx])
+          }
+        }}
+        className="w-full rounded-sm border border-input bg-background px-1.5 py-0.5 text-[13px] outline-none focus:ring-1 focus:ring-ring"
+      />
+      {hasList && (
+        <ul
+          className="absolute left-0 top-full z-50 mt-1 max-h-48 w-full min-w-[160px] overflow-y-auto rounded-md border border-border-subtle bg-popover py-1 shadow-md"
+          data-text-autocomplete
+        >
+          {list.map((s, i) => (
+            <li key={s}>
+              <button
+                type="button"
+                // onMouseDown로 commit — 입력 onBlur보다 먼저 실행되어 draft commit 막음.
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  commit(s)
+                }}
+                onMouseEnter={() => setActiveIdx(i)}
+                className={cn(
+                  "flex w-full items-center gap-1.5 px-2 py-1 text-left text-[12.5px] transition-colors",
+                  i === activeIdx
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-foreground/[0.04]",
+                )}
+              >
+                <Clock
+                  className="size-3 shrink-0 text-muted-foreground/60"
+                  strokeWidth={1.75}
+                />
+                <span className="flex-1 truncate">{s}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
