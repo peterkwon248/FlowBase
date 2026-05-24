@@ -6,7 +6,12 @@
 
 ## Current Features (Completed — 최근 우선)
 
-1. **깊이 일괄 — Automations 엔진 + Filter 다중 + 우클릭 + Gallery/Timeline + Bulk edit + Wiki 페이지 생성** (2026-05-24, 6 커밋 `12a65d3`~`44d5003`, **main 머지 완료**) —
+1. **깊이 일괄 #2 — Schema pan/zoom + New table + Dashboard 영어/Line + 컬럼 Change type** (2026-05-24, `2bdee40`+`57fadb6`, **main 머지 완료**) —
+   - **Schema ER 인터랙션** (`schema-er-diagram.tsx` + `schema-new-table-modal.tsx`) — 카드 헤더 드래그 reposition, ⌘+wheel zoom, 빈 영역 pan, 우상단 zoom/Reset toolbar, New table 모달 (Library template 또는 Blank).
+   - **Dashboard 영어화 + Line/Area trend** (`components/charts/line-chart.tsx`) — 8주 버킷 trend chart 추가. 모든 한국어 라벨 영어.
+   - **컬럼 Change type submenu** (`column-header-menu.tsx`) — Rename/Delete 사이에 Change type submenu. Basic 7 type.
+
+2. **깊이 일괄 — Automations 엔진 + Filter 다중 + 우클릭 + Gallery/Timeline + Bulk edit + Wiki 페이지 생성** (2026-05-24, 6 커밋 `12a65d3`~`44d5003`, **main 머지 완료**) —
    - **Automations 트리거 엔진** (`lib/automation-runtime.tsx`) — row 변경 시 active 룰 자동 발화. Notify/Set/Add row to 액션. 15 단위 테스트.
    - **다중 필드 Filter** (`components/board/filter-menu.tsx`) — Linear 스타일 submenu. ActiveFilterChips.
    - **우클릭 컨텍스트 메뉴** (`components/sheet/row-context-menu.tsx`) — Open detail/Duplicate/Copy ID/Delete + 자동 선택.

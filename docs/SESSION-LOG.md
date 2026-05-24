@@ -4,6 +4,50 @@
 
 ---
 
+## 2026-05-24 (kkh94 머신, 깊이 일괄 #2) — Schema pan/zoom · New table · Dashboard 영어/Line · Change type
+
+### 완료 (2 커밋)
+- **Schema pan/zoom + drag + New table 모달** (`2bdee40`)
+  - types: FlowBaseState.schemaPositions: Record<boardId, {x,y}> (persist, v7→v8 migrate).
+  - store: setSchemaPosition / resetSchemaPositions. partialize 포함.
+  - schema-er-diagram.tsx 대폭 개편: 캔버스 빈 곳 드래그 = pan, 카드 헤더 드래그 = position 저장(zoom 보정), ⌘+wheel = zoom (0.4~2.0). transform translate+scale + grid bg 동기. 우상단 toolbar (-/100%/+ Reset + New table). 카드 헤더 cursor-grab.
+  - schema-new-table-modal.tsx (신규) — Library Template 카드 그리드 + Blank. templateToColumns: tpl.fields(LibraryField id resolve) + extraFields → ColumnDef[]. multiTable이면 첫 테이블만. name auto-suggest. Enter commit.
+- **Dashboard 영어화 + Line chart + 컬럼 Change type** (`57fadb6`)
+  - dashboard-view: 모든 한국어 라벨 영어화 (전체 행→Total rows, 종류→distinct, 분포→Distribution, X별→By X, 숫자 요약→Number summary, 평균→avg).
+  - components/charts/line-chart.tsx (신규) — SVG path 라인+area, 8주 버킷. 의존성 0.
+  - buildWeeklyTrend(rows, dateField) → date 컬럼 있을 때 "X trend / Rows per week, last 8 weeks" area chart hero 카드.
+  - selectVisibleRows deps에 columnFilters 추가 — 이전 누락. 다중 필터 걸어도 dashboard 재집계 안 됐던 버그 fix.
+  - column-header-menu.tsx: Rename + Delete 사이에 Change type submenu. Basic 7 type. updateColumn({type}) — 행 데이터 보존.
+
+### 큰 결정
+- **pan/zoom은 ⌘/Ctrl + wheel** — 일반 scroll은 페이지 스크롤. 트랙패드 pinch는 후속.
+- **카드 위치 persisted** (boardId별) — 다른 머신에서도 동일 레이아웃.
+- **Change type은 행 데이터 보존** — type만 바뀜. 사용자가 잘못 골라도 셀이 새 type editor로 표시 (text→status면 빈 status). 변환은 ❌.
+- **New table 모달의 multiTable 템플릿은 첫 테이블만** — N개 보드 한 번에 생성은 후속 (워크플로 더 복잡).
+- **dashboard columnFilters deps 누락 버그** — 이번에 발견하고 즉시 fix.
+
+### 검증
+- tsc 0 · vitest 30/30 · build.
+
+### 다음
+- Dashboard builder full (사용자 차트 추가 + 차트 종류 catalog).
+- 자동화 시간 트리거 (cron-like).
+- 컬럼 Promote to Library / Attach function.
+- Ask AI ⌘J 톱바 버튼.
+- Trash 행 단위 + 30일 만료.
+- Settings 멤버/권한 탭.
+- pinch-zoom 트랙패드 지원.
+
+### Watch Out
+- **schemaPositions는 boardId 키** — 보드 삭제 후 복원 시에도 position 보존됨 (보드 삭제 시 schemaPositions cleanup 안 함). 의도된 동작 — Trash에서 복원하면 원래 위치로 돌아옴.
+- **Change type 후 셀 렌더링**: 기존 값이 새 type editor 양식에 안 맞으면 빈 셀로 보일 수 있음. 사용자에게 toast로 알려주는 정책 향후 검토.
+- **selectVisibleRows useMemo deps** — 새 ephemeral state 추가 시 모든 view(Dashboard/Gallery/Timeline/Kanban) deps 갱신 필요. 일관성 검토.
+
+### 머신
+kkh94. main 머지·푸시 자동.
+
+---
+
 ## 2026-05-24 (kkh94 머신, 깊이 일괄) — Automations 엔진 · Filter · 우클릭 · Gallery/Timeline · Bulk edit · ⌘D · Wiki 페이지 생성/검색
 
 ### 완료 (6 커밋)

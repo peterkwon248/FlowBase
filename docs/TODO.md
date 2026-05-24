@@ -34,11 +34,11 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 - [x] **Bulk edit + ⌘D 단축** (2026-05-24 — `f6044e1`)
 - [x] **Wiki**: 새 페이지 + 사이드바 검색 (2026-05-24 — `44d5003`)
 
-## P1 — 남은 시급
+## P1 — 남은 시급 (부분 완료)
 
-- [ ] **Schema pan/zoom + drag + New table from template 모달**
-- [ ] **Dashboard builder** + 추가 차트 종류 (Line/Area/Stacked)
-- [ ] **컬럼 헤더 확장 메뉴**: Promote to Library · Attach function · Change type
+- [x] **Schema pan/zoom + drag + New table from template 모달** (2026-05-24 — `2bdee40`)
+- [~] **Dashboard builder** + 차트 종류 — Line/Area 추가, Dashboard 영어화 (2026-05-24 — `57fadb6`). Builder full(사용자 차트 추가 카탈로그)은 후속.
+- [~] **컬럼 헤더 확장 메뉴**: Change type 완료. Promote to Library / Attach function은 후속 (B4 인접).
 
 ---
 
@@ -89,6 +89,8 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## 완료
 
+- [x] **Dashboard 영어화 + Line/Area trend + 컬럼 Change type** (2026-05-24 — `57fadb6`): dashboard-view 모든 라벨 영어화 · components/charts/line-chart.tsx(SVG path + area, 의존성 0) · buildWeeklyTrend 8주 버킷 · selectVisibleRows columnFilters deps 누락 버그 fix · column-header-menu에 Change type submenu(Basic 7 type, 행 데이터 보존).
+- [x] **Schema pan/zoom + drag + New table 모달** (2026-05-24 — `2bdee40`): schemaPositions persist + setSchemaPosition · ⌘+wheel zoom · 빈 영역 pan · 카드 헤더 드래그 reposition(zoom 보정) · 우상단 -/100%/+ Reset toolbar · NewTableModal(Library template 카드 그리드 + Blank, templateToColumns resolver).
 - [x] **Wiki 새 페이지 + 사이드바 검색** (2026-05-24 — `44d5003`): addWikiPage(init?) draft + deleteWikiPage 액션. 사이드바 헤더 + 버튼. 검색 input 활성 (title/category/body 매치, X clear).
 - [x] **Bulk edit + ⌘D 단축키** (2026-05-24 — `f6044e1`): bulk-edit-menu submenu(status/select 컬럼 → 값) 선택 행 일괄 updateRow. ⌘D → 선택 행 duplicateRow.
 - [x] **Gallery + Timeline view** (2026-05-24 — `0bdedfd`): view-switcher에 grid·timeline 추가. gallery 카드 그리드 (avatar/text 헤더 + status/select/date/num 본문). timeline 월별 그룹화. 둘 다 RowContextMenu 공유.
