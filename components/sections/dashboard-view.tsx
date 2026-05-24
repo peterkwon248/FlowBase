@@ -7,20 +7,28 @@
 
 "use client"
 
-import { useMemo } from "react"
-import { LayoutDashboard } from "lucide-react"
+import { useMemo, useState } from "react"
+import { LayoutDashboard, Plus, X } from "lucide-react"
 import { BarChart } from "@/components/charts/bar-chart"
 import { CategoryBar, type CategoryBarItem } from "@/components/charts/category-bar"
 import { ChartCard } from "@/components/charts/chart-card"
 import { DonutChart } from "@/components/charts/donut-chart"
 import { KpiTile } from "@/components/charts/kpi-tile"
 import { LineChart, type LinePoint } from "@/components/charts/line-chart"
+import { StackedBarChart } from "@/components/charts/stacked-bar-chart"
+import { AddChartDialog } from "@/components/sections/add-chart-dialog"
+import { Button } from "@/components/ui/button"
 import {
   selectActiveBoard,
   selectVisibleRows,
   useFlowBase,
 } from "@/lib/flowbase-store"
-import type { ColumnDef, TableRow } from "@/types/flowbase"
+import type {
+  ChartConfig,
+  ChartWidth,
+  ColumnDef,
+  TableRow,
+} from "@/types/flowbase"
 
 // status는 LOCK 색 (blue/amber/violet/emerald), 그 외는 chart 팔레트.
 const STATUS_BAR: Record<string, string> = {
@@ -101,6 +109,13 @@ function buildWeeklyTrend(rows: TableRow[], dateField: string): LinePoint[] {
   return weeks
 }
 
+const WIDTH_CLASS: Record<ChartWidth, string> = {
+  quarter: "md:col-span-3",
+  half: "md:col-span-6",
+  "two-thirds": "md:col-span-8",
+  full: "md:col-span-12",
+}
+
 export function DashboardView() {
   const board = useFlowBase(selectActiveBoard)
   // selectVisibleRows는 새 배열을 반환 → 직접 구독 ❌. 의존 슬라이스 구독 후 useMemo.
@@ -108,13 +123,20 @@ export function DashboardView() {
   const filter = useFlowBase((s) => s.filter)
   const sort = useFlowBase((s) => s.sort)
   const columnFilters = useFlowBase((s) => s.columnFilters)
+  const removeChart = useFlowBase((s) => s.removeChart)
+  const clearCustomCharts = useFlowBase((s) => s.clearCustomCharts)
   const rows = useMemo(
     () => selectVisibleRows(useFlowBase.getState()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [board, search, filter, sort, columnFilters],
   )
 
+  const [addOpen, setAddOpen] = useState(false)
+
   if (!board) return null
+
+  const customCharts = board.charts ?? []
+  const hasCustomCharts = customCharts.length > 0
 
   const categorical = board.columns.filter(
     (c) => (c.type === "status" || c.type === "select") && c.name !== "id",
@@ -126,22 +148,33 @@ export function DashboardView() {
     [rows, dateCol],
   )
 
-  if (categorical.length === 0 && numeric.length === 0) {
+  if (categorical.length === 0 && numeric.length === 0 && !hasCustomCharts) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-background p-10">
-        <div className="max-w-sm rounded-lg border border-border-subtle bg-card p-7 text-center">
-          <LayoutDashboard
-            className="mx-auto mb-3 size-8 text-muted-foreground"
-            strokeWidth={1.5}
-          />
-          <div className="mb-1 text-sm font-semibold">
-            No columns to aggregate
+      <>
+        <div className="flex flex-1 items-center justify-center bg-background p-10">
+          <div className="max-w-sm rounded-lg border border-border-subtle bg-card p-7 text-center">
+            <LayoutDashboard
+              className="mx-auto mb-3 size-8 text-muted-foreground"
+              strokeWidth={1.5}
+            />
+            <div className="mb-1 text-sm font-semibold">
+              No columns to aggregate
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Add a Select/Status/Number/Date column, or click below to add a chart manually.
+            </p>
+            <Button
+              size="sm"
+              onClick={() => setAddOpen(true)}
+              className="mt-4 gap-1.5"
+              data-action="dashboard-add-chart-empty"
+            >
+              <Plus className="size-3" /> Add chart
+            </Button>
           </div>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Dashboard needs at least one Select/Status category or Number column.
-          </p>
         </div>
-      </div>
+        <AddChartDialog open={addOpen} onOpenChange={setAddOpen} />
+      </>
     )
   }
 
@@ -151,6 +184,56 @@ export function DashboardView() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-auto bg-background p-5">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          {hasCustomCharts
+            ? `Custom dashboard · ${customCharts.length} charts`
+            : "Auto-generated"}
+        </div>
+        <div className="flex items-center gap-1.5">
+          {hasCustomCharts && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => clearCustomCharts()}
+              className="h-7 px-2 text-[11.5px] text-muted-foreground"
+            >
+              Reset to auto
+            </Button>
+          )}
+          <Button
+            size="sm"
+            onClick={() => setAddOpen(true)}
+            className="h-7 gap-1.5 px-2.5 text-[11.5px]"
+            data-action="dashboard-add-chart"
+          >
+            <Plus className="size-3" strokeWidth={2.5} /> Add chart
+          </Button>
+        </div>
+      </div>
+
+      {/* 사용자 정의 차트 (있으면 우선) */}
+      {hasCustomCharts && (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+          {customCharts.map((chart, i) => (
+            <div
+              key={chart.id}
+              className={WIDTH_CLASS[chart.width]}
+              data-chart-card={chart.id}
+            >
+              <CustomChartCard
+                chart={chart}
+                rows={rows}
+                board={board}
+                accent={CHART_ACCENT[i % CHART_ACCENT.length]}
+                onRemove={() => removeChart(chart.id)}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* KPI 타일 */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3">
         <KpiTile label="Total rows" value={rows.length} />
@@ -251,6 +334,102 @@ export function DashboardView() {
           </div>
         </ChartCard>
       )}
+
+      <AddChartDialog open={addOpen} onOpenChange={setAddOpen} />
     </div>
   )
+}
+
+// ─── 사용자 정의 차트 카드 (X 삭제 버튼 포함) ─────────────────
+function CustomChartCard({
+  chart,
+  rows,
+  board,
+  accent,
+  onRemove,
+}: {
+  chart: ChartConfig
+  rows: TableRow[]
+  board: { columns: ColumnDef[] }
+  accent: string
+  onRemove: () => void
+}) {
+  const sourceCol = board.columns.find((c) => c.name === chart.sourceCol)
+  const groupCol = chart.groupByCol
+    ? board.columns.find((c) => c.name === chart.groupByCol)
+    : null
+  const subtitle = sourceCol
+    ? `${sourceCol.label || sourceCol.name}${
+        groupCol ? ` × ${groupCol.label || groupCol.name}` : ""
+      }`
+    : ""
+
+  return (
+    <div className="group relative h-full">
+      <ChartCard title={chart.title} subtitle={subtitle} accent={accent}>
+        {renderChartBody(chart, rows, sourceCol)}
+      </ChartCard>
+      <button
+        type="button"
+        onClick={onRemove}
+        title="Remove chart"
+        data-chart-remove={chart.id}
+        className="absolute right-2 top-2 flex size-5 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-foreground/[0.08] hover:text-foreground group-hover:opacity-100"
+      >
+        <X className="size-3" strokeWidth={2.5} />
+      </button>
+    </div>
+  )
+}
+
+function renderChartBody(
+  chart: ChartConfig,
+  rows: TableRow[],
+  sourceCol: ColumnDef | undefined,
+) {
+  if (!sourceCol) {
+    return (
+      <div className="py-6 text-center text-[11.5px] text-muted-foreground">
+        Source column missing.
+      </div>
+    )
+  }
+
+  if (chart.type === "kpi") {
+    const vals = rows
+      .map((r) => r[sourceCol.name])
+      .filter((v) => v != null && v !== "")
+    const distinct = new Set(vals.map(String)).size
+    return (
+      <div className="py-3 text-center">
+        <div className="text-3xl font-bold tabular-nums">{distinct}</div>
+        <div className="mt-0.5 text-[11px] text-muted-foreground">
+          distinct values
+        </div>
+      </div>
+    )
+  }
+
+  if (chart.type === "bar" || chart.type === "donut") {
+    const agg = aggregate(rows, sourceCol.name)
+    const data = agg.map((a) => ({ label: a.label, value: a.count }))
+    return chart.type === "bar" ? <BarChart data={data} /> : <DonutChart data={data} />
+  }
+
+  if (chart.type === "line") {
+    const trend = buildWeeklyTrend(rows, sourceCol.name)
+    return <LineChart data={trend} area />
+  }
+
+  if (chart.type === "stacked-bar" && chart.groupByCol) {
+    return (
+      <StackedBarChart
+        rows={rows}
+        categoryField={sourceCol.name}
+        groupField={chart.groupByCol}
+      />
+    )
+  }
+
+  return null
 }

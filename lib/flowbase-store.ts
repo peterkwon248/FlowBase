@@ -13,6 +13,7 @@ import type {
   AIHistoryEntry,
   Board,
   ChangeEvent,
+  ChartConfig,
   ColumnDef,
   FlowBaseState,
   LibraryCategoryId,
@@ -98,6 +99,12 @@ export interface FlowBaseActions {
   deleteColumn: (colName: string) => void
   renameColumn: (colName: string, newName: string, newLabel?: string) => void
   updateColumn: (colName: string, patch: Partial<ColumnDef>) => void
+
+  // Dashboard charts (active board)
+  addChart: (chart: Omit<ChartConfig, "id">) => string
+  removeChart: (chartId: string) => void
+  updateChart: (chartId: string, patch: Partial<ChartConfig>) => void
+  clearCustomCharts: () => void
   // Library promotion: 현재 active board의 컬럼을 LibraryField로 승격.
   promoteColumnToLibraryField: (colName: string) => string | null
   attachFunctionToColumn: (colName: string, functionId: string | null) => void
@@ -679,6 +686,69 @@ export const useFlowBase = create<FlowBaseStore>()(
                 ),
                 updatedAt: nowIso(),
               },
+            },
+          })
+        },
+
+        // Dashboard charts — active board 대상.
+        addChart: (chart) => {
+          const s = get()
+          const b = s.boards[s.activeBoardId]
+          if (!b) return ""
+          const id = `chart-${Date.now().toString(36).slice(-6)}`
+          const full: ChartConfig = { ...chart, id }
+          set({
+            boards: {
+              ...s.boards,
+              [b.id]: {
+                ...b,
+                charts: [...(b.charts ?? []), full],
+                updatedAt: nowIso(),
+              },
+            },
+          })
+          return id
+        },
+        removeChart: (chartId) => {
+          const s = get()
+          const b = s.boards[s.activeBoardId]
+          if (!b) return
+          set({
+            boards: {
+              ...s.boards,
+              [b.id]: {
+                ...b,
+                charts: (b.charts ?? []).filter((c) => c.id !== chartId),
+                updatedAt: nowIso(),
+              },
+            },
+          })
+        },
+        updateChart: (chartId, patch) => {
+          const s = get()
+          const b = s.boards[s.activeBoardId]
+          if (!b) return
+          set({
+            boards: {
+              ...s.boards,
+              [b.id]: {
+                ...b,
+                charts: (b.charts ?? []).map((c) =>
+                  c.id === chartId ? { ...c, ...patch } : c,
+                ),
+                updatedAt: nowIso(),
+              },
+            },
+          })
+        },
+        clearCustomCharts: () => {
+          const s = get()
+          const b = s.boards[s.activeBoardId]
+          if (!b) return
+          set({
+            boards: {
+              ...s.boards,
+              [b.id]: { ...b, charts: [], updatedAt: nowIso() },
             },
           })
         },

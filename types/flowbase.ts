@@ -78,6 +78,26 @@ export interface AIHistoryEntry {
   rowIds?: string[]
 }
 
+// 보드별 사용자 정의 대시보드 차트 — Board.charts에 저장 (옵션).
+// 비어 있으면 dashboard-view가 컬럼에서 auto-derive 폴백.
+export type ChartType =
+  | "kpi"
+  | "bar"
+  | "donut"
+  | "line"
+  | "stacked-bar"
+
+export type ChartWidth = "quarter" | "half" | "two-thirds" | "full"
+
+export interface ChartConfig {
+  id: string
+  type: ChartType
+  title: string
+  sourceCol: string // 주요 컬럼 (categorical 또는 numeric 또는 date)
+  groupByCol?: string // stacked-bar용 두 번째 categorical
+  width: ChartWidth
+}
+
 export interface Board {
   id: string
   label: string
@@ -86,6 +106,7 @@ export interface Board {
   columns: ColumnDef[]
   rows: TableRow[]
   aiHistory: AIHistoryEntry[]
+  charts?: ChartConfig[] // 사용자 정의 dashboard. 없으면 auto-derive.
   createdAt: string
   updatedAt: string
 }
