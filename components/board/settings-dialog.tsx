@@ -10,7 +10,16 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Check, Download, Monitor, Moon, Sun, Trash2, UserPlus } from "lucide-react"
+import {
+  Check,
+  Download,
+  Monitor,
+  Moon,
+  Sun,
+  Trash2,
+  Upload,
+  UserPlus,
+} from "lucide-react"
 import { useTheme } from "next-themes"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -37,6 +46,7 @@ import { cn } from "@/lib/utils"
 import {
   MEMBER_ROLE_LABELS,
   type MemberRole,
+  type ThemeAccent,
   type WorkspaceMember,
 } from "@/types/flowbase"
 
@@ -178,9 +188,24 @@ function GeneralTab({ onClose }: { onClose: () => void }) {
   )
 }
 
+// "last seen" 상대 시간
+function relativeLastSeen(iso: string | undefined): string {
+  if (!iso) return ""
+  const ms = Date.now() - new Date(iso).getTime()
+  const sec = Math.floor(ms / 1000)
+  if (sec < 60) return "just now"
+  const min = Math.floor(sec / 60)
+  if (min < 60) return `${min}m ago`
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return `${hr}h ago`
+  const day = Math.floor(hr / 24)
+  return `${day}d ago`
+}
+
 // ─── Members ───────────────────────────────────────
 function MembersTab() {
   const members = useFlowBase((s) => s.settings.members)
+  const currentUserId = useFlowBase((s) => s.settings.currentUserId)
   const updateMemberRole = useFlowBase((s) => s.updateMemberRole)
   const removeMember = useFlowBase((s) => s.removeMember)
   const addMember = useFlowBase((s) => s.addMember)
@@ -227,6 +252,7 @@ function MembersTab() {
           <MemberRow
             key={m.id}
             member={m}
+            isCurrent={m.id === currentUserId}
             onRoleChange={(role) => updateMemberRole(m.id, role)}
             onRemove={() => removeMember(m.id)}
           />
@@ -299,14 +325,17 @@ function MembersTab() {
 
 function MemberRow({
   member,
+  isCurrent,
   onRoleChange,
   onRemove,
 }: {
   member: WorkspaceMember
+  isCurrent: boolean
   onRoleChange: (role: MemberRole) => void
   onRemove: () => void
 }) {
   const isOwner = member.role === "owner"
+  const lastSeen = relativeLastSeen(member.lastSeenAt)
 
   return (
     <div
@@ -317,9 +346,22 @@ function MemberRow({
         {member.initial}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[12.5px] font-medium">{member.name}</div>
-        <div className="truncate text-[10.5px] text-muted-foreground">
-          {member.email}
+        <div className="flex items-center gap-1.5 truncate">
+          <span className="truncate text-[12.5px] font-medium">{member.name}</span>
+          {isCurrent && (
+            <span className="rounded bg-primary/15 px-1 py-0 text-[9.5px] font-semibold text-primary">
+              You
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 truncate text-[10.5px] text-muted-foreground">
+          <span className="truncate">{member.email}</span>
+          {lastSeen && (
+            <>
+              <span className="opacity-50">·</span>
+              <span>{lastSeen}</span>
+            </>
+          )}
         </div>
       </div>
       {isOwner ? (
@@ -394,9 +436,63 @@ function AppearanceTab() {
           onClick={() => setTheme("system")}
         />
       </div>
-      <p className="text-[10.5px] text-muted-foreground">
-        Accent color presets are coming soon.
-      </p>
+      <AccentSection />
+    </div>
+  )
+}
+
+// 4 accent presets — 첫 oklch는 light, 두번째는 dark approximation (시각 표시용).
+const ACCENT_PRESETS: { id: ThemeAccent; label: string; light: string; dark: string }[] = [
+  { id: "purple", label: "Purple", light: "oklch(0.50 0.16 270)", dark: "oklch(0.65 0.18 270)" },
+  { id: "blue", label: "Blue", light: "oklch(0.52 0.18 240)", dark: "oklch(0.65 0.20 240)" },
+  { id: "emerald", label: "Emerald", light: "oklch(0.50 0.16 155)", dark: "oklch(0.62 0.18 155)" },
+  { id: "amber", label: "Amber", light: "oklch(0.62 0.16 75)", dark: "oklch(0.72 0.16 75)" },
+]
+
+function AccentSection() {
+  const accent = useFlowBase((s) => s.settings.themeAccent ?? "purple")
+  const updateSettings = useFlowBase((s) => s.updateSettings)
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
+
+  return (
+    <div className="space-y-1.5 border-t border-border-subtle pt-3">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+        Accent color
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        {ACCENT_PRESETS.map((p) => {
+          const active = accent === p.id
+          const swatch = isDark ? p.dark : p.light
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => updateSettings({ themeAccent: p.id })}
+              data-accent-preset={p.id}
+              className={cn(
+                "flex flex-col items-center gap-1.5 rounded-md border bg-card px-2 py-2 transition-colors",
+                active
+                  ? "border-primary"
+                  : "border-border-subtle hover:border-border",
+              )}
+            >
+              <span
+                className="size-6 rounded-full"
+                style={{ background: swatch }}
+                aria-hidden="true"
+              />
+              <span className="text-[11px] font-medium">{p.label}</span>
+              {active && (
+                <Check
+                  className="absolute right-1 top-1 size-3 text-primary"
+                  strokeWidth={2.5}
+                />
+              )}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -491,18 +587,88 @@ function DataTab() {
         </Button>
       </div>
 
-      <div className="rounded-md border border-border-subtle bg-muted/30 p-3">
-        <div className="mb-1 text-[12.5px] font-medium text-muted-foreground">
-          Import
-        </div>
-        <p className="text-[11.5px] text-muted-foreground">
-          Importing a previously exported file is coming soon. For now you can
-          restore from a per-row Trash for 30 days.
-        </p>
-      </div>
+      <ImportSection />
 
       {/* 다운로드 트리거용 숨김 앵커 */}
       <a ref={anchorRef} className="hidden" aria-hidden="true" />
+    </div>
+  )
+}
+
+function ImportSection() {
+  const importBoards = useFlowBase((s) => s.importBoards)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const text = String(reader.result ?? "")
+        const parsed = JSON.parse(text)
+        if (
+          !parsed ||
+          typeof parsed !== "object" ||
+          !parsed.boards ||
+          typeof parsed.boards !== "object"
+        ) {
+          toast.error("Invalid export file — missing boards")
+          return
+        }
+        const boards = parsed.boards as Record<string, unknown>
+        const count = Object.keys(boards).length
+        if (count === 0) {
+          toast.warning("No boards in this file")
+          return
+        }
+        if (
+          !window.confirm(
+            `Import ${count} board${count === 1 ? "" : "s"} from this file?\n\n(Existing data is preserved. ID conflicts get a new ID.)`,
+          )
+        ) {
+          return
+        }
+        const addedIds = importBoards(boards as Record<string, never>)
+        toast.success(
+          `Imported ${addedIds.length} board${addedIds.length === 1 ? "" : "s"}`,
+        )
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error"
+        toast.error(`Import failed — ${msg}`)
+      } finally {
+        // 같은 파일 다시 선택 가능하도록 reset
+        if (fileInputRef.current) fileInputRef.current.value = ""
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  return (
+    <div className="rounded-md border border-border-subtle bg-card p-3">
+      <div className="mb-1 text-[12.5px] font-medium">Import workspace</div>
+      <p className="mb-2.5 text-[11.5px] text-muted-foreground">
+        Import boards from a previously exported JSON. Existing data is
+        preserved; ID conflicts get a new ID.
+      </p>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json,.json"
+        onChange={handleFile}
+        className="hidden"
+        data-import-input
+      />
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => fileInputRef.current?.click()}
+        className="gap-1.5"
+        data-import-trigger
+      >
+        <Upload className="size-3.5" />
+        Choose JSON…
+      </Button>
     </div>
   )
 }

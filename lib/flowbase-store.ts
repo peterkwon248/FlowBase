@@ -32,6 +32,7 @@ import type {
   WorkspaceMember,
   WorkspaceSettings,
 } from "@/types/flowbase"
+import { roleCanEdit } from "@/types/flowbase"
 import { createSeedLibrary } from "@/lib/flowbase-library-seed"
 import { createSeedBoard } from "@/lib/flowbase-seed"
 import { createSeedTasksBoard } from "@/lib/flowbase-tasks-seed"
@@ -43,16 +44,20 @@ import {
 import { undoStack } from "@/lib/undo-stack"
 
 const STORE_KEY = "flowbase-state-v4"
-const STORE_VERSION = 12 // v12: viewSettings 추가 (Display 버튼 view별 옵션)
+const STORE_VERSION = 13 // v13: settings.currentUserId 추가 (Members role enforcement)
 
-// 초기 시드 멤버 — 데모용 4명. 사용자는 Owner.
+// 초기 시드 멤버 — 데모용 4명. 사용자는 Owner. lastSeenAt mock.
 function createSeedMembers(): WorkspaceMember[] {
   const today = new Date().toISOString().slice(0, 10)
+  const nowIso = new Date().toISOString()
+  const fiveMinAgo = new Date(Date.now() - 5 * 60_000).toISOString()
+  const twoHrAgo = new Date(Date.now() - 2 * 3600_000).toISOString()
+  const yesterday = new Date(Date.now() - 86_400_000).toISOString()
   return [
-    { id: "mem-peter", name: "peter", email: "peter@flowbase.app", initial: "P", role: "owner", joinedAt: today },
-    { id: "mem-jisoo", name: "Jisoo Kim", email: "jisoo@flowbase.app", initial: "J", role: "admin", joinedAt: today },
-    { id: "mem-min", name: "Min Park", email: "min@flowbase.app", initial: "M", role: "member", joinedAt: today },
-    { id: "mem-rina", name: "Rina Lee", email: "rina@flowbase.app", initial: "R", role: "viewer", joinedAt: today },
+    { id: "mem-peter", name: "peter", email: "peter@flowbase.app", initial: "P", role: "owner", joinedAt: today, lastSeenAt: nowIso },
+    { id: "mem-jisoo", name: "Jisoo Kim", email: "jisoo@flowbase.app", initial: "J", role: "admin", joinedAt: today, lastSeenAt: fiveMinAgo },
+    { id: "mem-min", name: "Min Park", email: "min@flowbase.app", initial: "M", role: "member", joinedAt: today, lastSeenAt: twoHrAgo },
+    { id: "mem-rina", name: "Rina Lee", email: "rina@flowbase.app", initial: "R", role: "viewer", joinedAt: today, lastSeenAt: yesterday },
   ]
 }
 
@@ -108,6 +113,9 @@ export interface FlowBaseActions {
 
   // Data export — 전체 store 상태(persisted slice)를 JSON 문자열로.
   exportData: () => string
+  // Data import — exported JSON의 boards 머지 (id 충돌 시 새 id 부여).
+  // 반환: 새로 추가된 boardIds.
+  importBoards: (boards: Record<string, Board>) => string[]
 
   // Schema positions
   setSchemaPosition: (boardId: string, pos: { x: number; y: number }) => void
@@ -186,9 +194,6 @@ export interface FlowBaseActions {
   setColumnCondition: (col: string, cond: FilterCondition | null) => void
   // 'in' 전용 편의 액션 (FilterMenu 체크박스 토글).
   toggleColumnInValue: (col: string, value: string) => void
-  // 후방호환 (legacy 호출처 — 점진 삭제). values [] → clear.
-  setColumnFilter: (col: string, values: string[]) => void
-  toggleColumnFilter: (col: string, value: string) => void
   clearAllFilters: () => void
   setSort: (s: FlowBaseState["sort"]) => void
   setSelected: (ids: string[]) => void
@@ -223,6 +228,7 @@ function createInitialState(): FlowBaseState {
       workspaceLabel: "peter's workspace",
       workspaceInitial: "P",
       members: createSeedMembers(),
+      currentUserId: "mem-peter",
     },
     schemaPositions: {},
     viewSettings: {},
@@ -478,11 +484,23 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
 
         permanentDeleteBoard: (boardId) => {
-          set((s) => ({
-            trashedBoards: s.trashedBoards.filter(
-              (t) => t.board.id !== boardId,
-            ),
-          }))
+          set((s) => {
+            // dangling viewSettings · schemaPositions · viewByBoardId cleanup
+            const nextViewSettings = { ...s.viewSettings }
+            delete nextViewSettings[boardId]
+            const nextSchemaPositions = { ...s.schemaPositions }
+            delete nextSchemaPositions[boardId]
+            const nextViewByBoardId = { ...s.viewByBoardId }
+            delete nextViewByBoardId[boardId]
+            return {
+              trashedBoards: s.trashedBoards.filter(
+                (t) => t.board.id !== boardId,
+              ),
+              viewSettings: nextViewSettings,
+              schemaPositions: nextSchemaPositions,
+              viewByBoardId: nextViewByBoardId,
+            }
+          })
         },
 
         restoreRow: (rowId) => {
@@ -609,6 +627,25 @@ export const useFlowBase = create<FlowBaseStore>()(
               ),
             },
           })),
+
+        importBoards: (importedBoards) => {
+          const s = get()
+          const addedIds: string[] = []
+          const nextBoards = { ...s.boards }
+          const nextViewByBoardId = { ...s.viewByBoardId }
+          for (const [importedId, board] of Object.entries(importedBoards)) {
+            // id 충돌 시 새 id 부여 (`${importedId}-imported-${ts}`)
+            let id = importedId
+            if (nextBoards[id]) {
+              id = `${importedId}-imported-${Date.now().toString(36).slice(-4)}`
+            }
+            nextBoards[id] = { ...board, id, updatedAt: nowIso() }
+            nextViewByBoardId[id] = nextViewByBoardId[id] ?? "sheet"
+            addedIds.push(id)
+          }
+          set({ boards: nextBoards, viewByBoardId: nextViewByBoardId })
+          return addedIds
+        },
 
         exportData: () => {
           const s = get()
@@ -1012,6 +1049,16 @@ export const useFlowBase = create<FlowBaseStore>()(
         addRow: (row) => {
           const b = activeBoard()
           if (!b) return row?.id ?? "ROW-100"
+          // Viewer readonly 가드 (demo enforcement — Phase 2 W11에서 모든 mutation 적용)
+          const s = get()
+          const cur = s.settings.members.find(
+            (m) => m.id === s.settings.currentUserId,
+          )
+          if (cur && !roleCanEdit(cur.role)) {
+            // toast는 동기 import 불가 — 액션에서 silent fail + return placeholder.
+            // UI는 사용자 role 보고 버튼 disable 권장.
+            return row?.id ?? "ROW-100"
+          }
           pushUndo()
           const ts = nowIso()
           const id = row?.id ?? nextRowId(b)
@@ -1380,13 +1427,6 @@ export const useFlowBase = create<FlowBaseStore>()(
             }
             return { columnFilters: next }
           }),
-        // ── 후방호환 (legacy) ──────────────────────────────
-        setColumnFilter: (col, values) => {
-          get().setColumnCondition(col, { kind: "in", values })
-        },
-        toggleColumnFilter: (col, value) => {
-          get().toggleColumnInValue(col, value)
-        },
         clearAllFilters: () => set({ filter: [], columnFilters: {} }),
         setSort: (sort) => set({ sort }),
         setSelected: (selectedRowIds) => set({ selectedRowIds }),
@@ -1437,6 +1477,7 @@ export const useFlowBase = create<FlowBaseStore>()(
       //   v9 → v10: trashedWikiPages
       //   v10 → v11: settings.members
       //   v11 → v12: viewSettings (보드별 view별 Display 옵션)
+      //   v12 → v13: settings.currentUserId (Members role enforcement 기준)
       migrate: (persistedState, version) => {
         const s = (persistedState ?? {}) as Partial<FlowBaseState>
         if (version < 5) {
@@ -1489,6 +1530,14 @@ export const useFlowBase = create<FlowBaseStore>()(
         }
         if (version < 12) {
           s.viewSettings = s.viewSettings ?? {}
+        }
+        if (version < 13) {
+          // currentUserId 시드 (기존 사용자는 peter owner로 init)
+          s.settings = {
+            ...(s.settings as WorkspaceSettings),
+            currentUserId:
+              (s.settings as WorkspaceSettings)?.currentUserId ?? "mem-peter",
+          }
         }
         return s as FlowBaseState
       },

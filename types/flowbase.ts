@@ -351,13 +351,26 @@ export interface WorkspaceMember {
   initial: string // avatar 표시용 1글자
   role: MemberRole
   joinedAt: string // ISO date
+  lastSeenAt?: string // ISO timestamp — 마지막 활동
 }
+
+// role-based edit 권한 — Owner/Admin/Member는 편집 가능, Viewer는 readonly.
+// Phase 2 W11 (실 분리) 전 까지 mock check (mutation 액션의 toast 알림).
+export function roleCanEdit(role: MemberRole): boolean {
+  return role !== "viewer"
+}
+
+export type ThemeAccent = "purple" | "blue" | "emerald" | "amber"
 
 // 워크스페이스 설정 (persist) — Settings 모달이 편집.
 export interface WorkspaceSettings {
   workspaceLabel: string
   workspaceInitial: string // 1글자 — 사이드바 아이콘 표시
   members: WorkspaceMember[]
+  themeAccent?: ThemeAccent // default 'purple' (settings 모드 영구 적용)
+  // 현재 로그인 사용자 — Members 가운데 1명. role enforcement 기준.
+  // 시드/migrate에서 owner(peter)로 init. Phase 2(W11) 실 인증으로 교체.
+  currentUserId?: string
 }
 
 // 자동화 런타임이 listen하는 데이터 변경 이벤트 (ephemeral, persist ❌).

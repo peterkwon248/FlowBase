@@ -416,10 +416,51 @@ function syntheticChange(boardId: string, rowId: string, row: TableRow): ChangeE
   }
 }
 
+// ─── firedKeys persist (localStorage) ─────────────────────────────────
+//
+// 페이지 새로고침 후에도 같은 daily/dueDate 트리거 중복 발화 ❌.
+// daily 키 형식: `${ruleId}:YYYY-MM-DD` (30일 이전 자동 cleanup)
+// dueDate 키 형식: `${ruleId}:${boardId}:${rowId}` (보드/행 살아있는 동안 유지)
+
+const FIRED_KEYS_STORAGE_KEY = "flowbase-automation-firedKeys-v1"
+const DAILY_KEY_TTL_MS = 30 * 86_400_000
+
+function loadFiredKeys(): Set<string> {
+  try {
+    const raw = localStorage.getItem(FIRED_KEYS_STORAGE_KEY)
+    if (!raw) return new Set()
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return new Set()
+    // 30일 이전 daily 키 제거
+    const cutoff = Date.now() - DAILY_KEY_TTL_MS
+    const filtered = (parsed as string[]).filter((k) => {
+      const m = k.match(/^[^:]+:(\d{4})-(\d{2})-(\d{2})$/)
+      if (!m) return true // dueDate or other format — keep
+      const t = new Date(`${m[1]}-${m[2]}-${m[3]}`).getTime()
+      return Number.isFinite(t) && t >= cutoff
+    })
+    return new Set(filtered)
+  } catch {
+    return new Set()
+  }
+}
+
+function saveFiredKeys(keys: Set<string>): void {
+  try {
+    localStorage.setItem(
+      FIRED_KEYS_STORAGE_KEY,
+      JSON.stringify(Array.from(keys)),
+    )
+  } catch {
+    // quota 초과 / private mode 등 silent fail
+  }
+}
+
 function checkTimeTriggers(firedKeys: Set<string>): void {
   const s = useFlowBase.getState()
   const now = new Date()
   const dayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+  const beforeSize = firedKeys.size
 
   for (const rule of s.automations) {
     if (rule.status !== "active") continue
@@ -464,6 +505,11 @@ function checkTimeTriggers(firedKeys: Set<string>): void {
       }
     }
   }
+
+  // 새 키가 추가됐을 때만 localStorage 저장 (불필요한 IO 회피)
+  if (firedKeys.size !== beforeSize) {
+    saveFiredKeys(firedKeys)
+  }
 }
 
 // ─── 컴포넌트 (셸에 mount) ──────────────────────────────────────────
@@ -474,7 +520,7 @@ export function AutomationRuntime() {
   const lastChange = useFlowBase((s) => s.lastChange)
   // automations는 zustand 구독으로 받고, 핸들러에서 getState로 항상 fresh 액세스
   const handledRef = useRef<number>(0)
-  // 시간 기반 발화 dedupe 키 (세션 한정).
+  // 시간 기반 발화 dedupe 키 — localStorage persist (페이지 새로고침 후에도 유지).
   const firedKeysRef = useRef<Set<string>>(new Set())
 
   // row 변경 트리거 — automation rules + attached functions 둘 다
@@ -500,6 +546,8 @@ export function AutomationRuntime() {
 
   // 시간 기반 트리거 — 1분 tick. mount 즉시 1회 + 이후 60s마다.
   useEffect(() => {
+    // mount 시 localStorage에서 firedKeys 복원 (30일 이전 daily 자동 cleanup).
+    firedKeysRef.current = loadFiredKeys()
     const firedKeys = firedKeysRef.current
     checkTimeTriggers(firedKeys)
     const id = setInterval(() => checkTimeTriggers(firedKeys), TIME_TICK_MS)

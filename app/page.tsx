@@ -42,6 +42,15 @@ export default function Home() {
 
   const activityMode = useFlowBase((s) => s.activityMode)
   const activityBar = useFlowBase((s) => s.panels.activityBar)
+  // Theme accent — settings.themeAccent → <html data-theme-accent="...">
+  const themeAccent = useFlowBase((s) => s.settings.themeAccent ?? "purple")
+  useEffect(() => {
+    if (themeAccent === "purple") {
+      document.documentElement.removeAttribute("data-theme-accent")
+    } else {
+      document.documentElement.setAttribute("data-theme-accent", themeAccent)
+    }
+  }, [themeAccent])
 
   if (!mounted) {
     return <div className="min-h-[100dvh] bg-background" />

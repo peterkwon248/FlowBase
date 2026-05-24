@@ -1,23 +1,30 @@
-// FlowBase V2 — 다중 필드 Filter (2-step inline Popover, condition union)
-// 출처 컨셉: Linear filter (cascade ❌, popover 안에서 step 전환)
+// FlowBase V2 — 다중 필드 Filter (Linear-style cascade hover)
+// 출처 컨셉: Linear filter — DropdownMenu Sub로 hover 시 자동 cascade.
 //
-// Step 1 (list): 필터 가능 컬럼 (status/select/num/date) — type icon + 컬럼 hue dot + 라벨 + active count
-// Step 2 (values): ← Back + 선택 컬럼 + kind별 위젯 + Clear this filter
+// 1st level: 필터 가능 컬럼 리스트 (status/select/num/date) — type icon + 컬럼 hue dot + 라벨 + active count
+// 2nd level (Sub): kind별 widget
 //   - status/select: 값 체크박스 리스트 (FilterCondition kind='in')
 //   - num:           min/max numeric inputs (kind='range')
 //   - date:          from/to date inputs (kind='date-range')
 // 컬럼 hue dot으로 select끼리 시각 구분.
+// DropdownMenuSubContent z-[60] + sideOffset 6 + cursor-pointer (dropdown-menu.tsx 공통 적용).
 
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { ArrowLeft, Check, Filter as FilterIcon, X } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { useMemo } from "react"
+import { Check, Filter as FilterIcon, X } from "lucide-react"
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
 import { TYPE_ICON } from "@/components/sheet/header-cell"
 import { selectActiveBoard, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
@@ -36,7 +43,6 @@ const COLUMN_HUES = [
   "var(--chart-5)",
 ]
 
-// 필터 가능 type — status/select/num/date.
 function isFilterable(col: ColumnDef): boolean {
   return (
     col.type === "status" ||
@@ -49,7 +55,6 @@ function isFilterable(col: ColumnDef): boolean {
 interface ColumnOption {
   col: ColumnDef
   hue: string
-  // 'in' 컬럼만 사전 derive (체크박스용). num/date는 ValuesStep에서 input 사용.
   values?: { id: string; label: string; count: number }[]
 }
 
@@ -65,7 +70,6 @@ function buildInValues(
       count: rows.filter((r) => r[col.name] === k).length,
     }))
   }
-  // select
   const defined = col.options ?? []
   const set = new Set<string>(defined)
   for (const r of rows) {
@@ -90,24 +94,8 @@ function activeCountOf(cond: FilterCondition | undefined): number {
 export function FilterMenu() {
   const board = useFlowBase(selectActiveBoard)
   const columnFilters = useFlowBase((s) => s.columnFilters)
-  const toggleColumnInValue = useFlowBase((s) => s.toggleColumnInValue)
-  const setColumnCondition = useFlowBase((s) => s.setColumnCondition)
   const clearAllFilters = useFlowBase((s) => s.clearAllFilters)
   const setFilter = useFlowBase((s) => s.setFilter)
-
-  const [open, setOpen] = useState(false)
-  const [step, setStep] = useState<"list" | "values">("list")
-  const [colName, setColName] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!open) {
-      const t = setTimeout(() => {
-        setStep("list")
-        setColName(null)
-      }, 150)
-      return () => clearTimeout(t)
-    }
-  }, [open])
 
   const filterableCols = useMemo<ColumnOption[]>(() => {
     if (!board) return []
@@ -130,23 +118,18 @@ export function FilterMenu() {
     [columnFilters],
   )
 
-  const selected = useMemo(
-    () => filterableCols.find((c) => c.col.name === colName) ?? null,
-    [filterableCols, colName],
-  )
-
   if (!board) return null
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <button
           type="button"
           title="Filter"
           data-action="filter-menu"
           className={cn(
             "relative inline-flex h-7 items-center gap-1 rounded-md border px-2 text-[12px] transition-colors",
-            totalActive > 0 || open
+            totalActive > 0
               ? "border-border bg-foreground/[0.06] text-foreground"
               : "border-border-subtle text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground",
           )}
@@ -159,157 +142,65 @@ export function FilterMenu() {
             </span>
           )}
         </button>
-      </PopoverTrigger>
-
-      <PopoverContent
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
         align="start"
         sideOffset={6}
-        className="w-64 p-0"
+        className="w-48"
         data-filter-popover
-        data-filter-step={step}
       >
-        {step === "list" ? (
-          <ListStep
-            columns={filterableCols}
-            columnFilters={columnFilters}
-            onPick={(name) => {
-              setColName(name)
-              setStep("values")
-            }}
-            totalActive={totalActive}
-            onClearAll={() => {
-              clearAllFilters()
-              setFilter([])
-            }}
-          />
-        ) : selected ? (
-          <ValuesStep
-            option={selected}
-            cond={columnFilters[selected.col.name]}
-            onBack={() => {
-              setStep("list")
-              setColName(null)
-            }}
-            onToggleIn={(v) => toggleColumnInValue(selected.col.name, v)}
-            onSetCondition={(c) => setColumnCondition(selected.col.name, c)}
-            onClearCol={() => setColumnCondition(selected.col.name, null)}
-          />
-        ) : null}
-      </PopoverContent>
-    </Popover>
+        <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
+          Add filter…
+        </DropdownMenuLabel>
+        {filterableCols.length === 0 ? (
+          <div className="px-2 py-2 text-[12px] text-muted-foreground">
+            No filterable columns on this table.
+          </div>
+        ) : (
+          filterableCols.map((option) => (
+            <FilterColSub
+              key={option.col.name}
+              option={option}
+              cond={columnFilters[option.col.name]}
+            />
+          ))
+        )}
+        {totalActive > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={() => {
+                clearAllFilters()
+                setFilter([])
+              }}
+              className="gap-2 text-muted-foreground"
+            >
+              <X className="size-3.5" />
+              Clear all filters
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
-// ─── Step 1: 필드 리스트 ──────────────────────────────────
-function ListStep({
-  columns,
-  columnFilters,
-  onPick,
-  totalActive,
-  onClearAll,
-}: {
-  columns: ColumnOption[]
-  columnFilters: Record<string, FilterCondition>
-  onPick: (colName: string) => void
-  totalActive: number
-  onClearAll: () => void
-}) {
-  return (
-    <div className="space-y-0.5 py-1">
-      <div className="px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-        Add filter…
-      </div>
-      {columns.length === 0 ? (
-        <div className="px-3 py-2 text-[12px] text-muted-foreground">
-          No filterable columns on this table.
-        </div>
-      ) : (
-        <div className="px-1">
-          {columns.map(({ col, hue }) => {
-            const Icon = TYPE_ICON[col.type]
-            const activeOnCol = activeCountOf(columnFilters[col.name])
-            return (
-              <button
-                key={col.name}
-                type="button"
-                onClick={() => onPick(col.name)}
-                data-filter-col={col.name}
-                className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none"
-              >
-                <span
-                  className="size-2 shrink-0 rounded-full"
-                  style={{ background: hue }}
-                  aria-hidden="true"
-                />
-                <Icon
-                  className="size-3.5 shrink-0 text-muted-foreground"
-                  strokeWidth={1.75}
-                />
-                <span className="flex-1 truncate text-[12.5px]">
-                  {col.label || col.name}
-                </span>
-                {activeOnCol > 0 && (
-                  <span className="rounded bg-primary/15 px-1.5 py-px text-[10px] font-semibold tabular-nums text-primary">
-                    {activeOnCol}
-                  </span>
-                )}
-                <span className="text-muted-foreground/70">›</span>
-              </button>
-            )
-          })}
-        </div>
-      )}
-      {totalActive > 0 && (
-        <>
-          <div className="my-1 h-px bg-border" />
-          <button
-            type="button"
-            onClick={onClearAll}
-            className="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left text-[12px] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-          >
-            <X className="size-3.5" />
-            Clear all filters
-          </button>
-        </>
-      )}
-    </div>
-  )
-}
-
-// ─── Step 2: 값/범위 picker (kind 분기) ──────────────────
-function ValuesStep({
+// ─── Sub per column ───────────────────────────────────────
+function FilterColSub({
   option,
   cond,
-  onBack,
-  onToggleIn,
-  onSetCondition,
-  onClearCol,
 }: {
   option: ColumnOption
   cond: FilterCondition | undefined
-  onBack: () => void
-  onToggleIn: (value: string) => void
-  onSetCondition: (c: FilterCondition) => void
-  onClearCol: () => void
 }) {
   const Icon = TYPE_ICON[option.col.type]
-  const hasActive = activeCountOf(cond) > 0
-  const isInKind = option.col.type === "status" || option.col.type === "select"
-  const isNumKind = option.col.type === "num"
-  const isDateKind = option.col.type === "date"
+  const activeCount = activeCountOf(cond)
+  const toggleColumnInValue = useFlowBase((s) => s.toggleColumnInValue)
+  const setColumnCondition = useFlowBase((s) => s.setColumnCondition)
 
   return (
-    <div className="space-y-0.5 py-1" data-filter-col-values={option.col.name}>
-      <button
-        type="button"
-        onClick={onBack}
-        data-filter-back
-        className="flex w-full cursor-pointer items-center gap-1.5 px-3 py-1.5 text-left text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-      >
-        <ArrowLeft className="size-3" strokeWidth={2} />
-        <span>Back</span>
-      </button>
-      <div className="flex items-center gap-2 px-3 pb-1.5 pt-0.5">
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger className="gap-2" data-filter-col={option.col.name}>
         <span
           className="size-2 shrink-0 rounded-full"
           style={{ background: option.hue }}
@@ -319,71 +210,84 @@ function ValuesStep({
           className="size-3.5 shrink-0 text-muted-foreground"
           strokeWidth={1.75}
         />
-        <span className="flex-1 text-[12.5px] font-semibold">
-          {option.col.label || option.col.name}
-        </span>
-        {hasActive && (
-          <span className="rounded bg-primary/15 px-1.5 py-px text-[10px] font-semibold tabular-nums text-primary">
-            {activeCountOf(cond)}
+        <span className="flex-1 truncate">{option.col.label || option.col.name}</span>
+        {activeCount > 0 && (
+          <span className="rounded bg-primary/15 px-1 py-px text-[9.5px] font-semibold tabular-nums text-primary">
+            {activeCount}
           </span>
         )}
-      </div>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent
+        className="w-52"
+        data-filter-col-values={option.col.name}
+      >
+        <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
+          {option.col.label || option.col.name}
+        </DropdownMenuLabel>
 
-      {/* kind별 위젯 */}
-      {isInKind && option.values && (
-        <div className="max-h-64 overflow-y-auto px-1">
-          {option.values.map((v) => {
-            const checked =
-              cond?.kind === "in" ? cond.values.includes(v.id) : false
-            return (
-              <button
-                key={v.id}
-                type="button"
-                onClick={() => onToggleIn(v.id)}
-                data-filter-value={v.id}
-                className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-left text-[12.5px] transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none"
-              >
-                <span
-                  className={cn(
-                    "flex size-3.5 shrink-0 items-center justify-center rounded border",
-                    checked
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border",
-                  )}
+        {/* in (status/select) — 체크박스 리스트 */}
+        {option.values && (
+          <div className="max-h-64 overflow-y-auto">
+            {option.values.map((v) => {
+              const checked =
+                cond?.kind === "in" ? cond.values.includes(v.id) : false
+              return (
+                <DropdownMenuItem
+                  key={v.id}
+                  onSelect={(e) => {
+                    e.preventDefault() // sub 안 닫음
+                    toggleColumnInValue(option.col.name, v.id)
+                  }}
+                  className="gap-2"
+                  data-filter-value={v.id}
                 >
-                  {checked && <Check className="size-2.5" strokeWidth={3} />}
-                </span>
-                <span className="flex-1 truncate">{v.label}</span>
-                <span className="text-[10.5px] tabular-nums text-muted-foreground">
-                  {v.count}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      )}
+                  <span
+                    className={cn(
+                      "flex size-3.5 shrink-0 items-center justify-center rounded border",
+                      checked
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border",
+                    )}
+                  >
+                    {checked && <Check className="size-2.5" strokeWidth={3} />}
+                  </span>
+                  <span className="flex-1 truncate">{v.label}</span>
+                  <span className="text-[10.5px] tabular-nums text-muted-foreground">
+                    {v.count}
+                  </span>
+                </DropdownMenuItem>
+              )
+            })}
+          </div>
+        )}
 
-      {isNumKind && (
-        <RangeWidget cond={cond} onSet={onSetCondition} />
-      )}
-      {isDateKind && (
-        <DateRangeWidget cond={cond} onSet={onSetCondition} />
-      )}
+        {/* range (num) */}
+        {option.col.type === "num" && (
+          <RangeWidget cond={cond} onSet={(c) => setColumnCondition(option.col.name, c)} />
+        )}
 
-      {hasActive && (
-        <>
-          <div className="my-1 h-px bg-border" />
-          <button
-            type="button"
-            onClick={onClearCol}
-            className="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left text-[12px] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-          >
-            <X className="size-3.5" />
-            Clear this filter
-          </button>
-        </>
-      )}
-    </div>
+        {/* date-range */}
+        {option.col.type === "date" && (
+          <DateRangeWidget
+            cond={cond}
+            onSet={(c) => setColumnCondition(option.col.name, c)}
+          />
+        )}
+
+        {activeCount > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={() => setColumnCondition(option.col.name, null)}
+              className="gap-2 text-muted-foreground"
+            >
+              <X className="size-3.5" />
+              Clear this filter
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
   )
 }
 
@@ -398,7 +302,7 @@ function RangeWidget({
   const min = cond?.kind === "range" ? cond.min : undefined
   const max = cond?.kind === "range" ? cond.max : undefined
   return (
-    <div className="space-y-2 px-3 pb-1 pt-1">
+    <div className="space-y-2 px-2 pb-1.5 pt-1">
       <div className="flex items-center gap-1.5">
         <Input
           type="number"
@@ -413,6 +317,7 @@ function RangeWidget({
               max,
             })
           }}
+          onClick={(e) => e.stopPropagation()}
           data-filter-min
           className="h-7 text-[12px]"
         />
@@ -430,6 +335,7 @@ function RangeWidget({
               max: Number.isFinite(n as number) ? (n as number) : undefined,
             })
           }}
+          onClick={(e) => e.stopPropagation()}
           data-filter-max
           className="h-7 text-[12px]"
         />
@@ -449,7 +355,7 @@ function DateRangeWidget({
   const from = cond?.kind === "date-range" ? cond.from : undefined
   const to = cond?.kind === "date-range" ? cond.to : undefined
   return (
-    <div className="space-y-1.5 px-3 pb-1 pt-1">
+    <div className="space-y-1.5 px-2 pb-1.5 pt-1">
       <div className="space-y-1">
         <label className="text-[10.5px] text-muted-foreground">From</label>
         <Input
@@ -458,6 +364,7 @@ function DateRangeWidget({
           onChange={(e) =>
             onSet({ kind: "date-range", from: e.target.value || undefined, to })
           }
+          onClick={(e) => e.stopPropagation()}
           data-filter-from
           className="h-7 text-[12px]"
         />
@@ -474,6 +381,7 @@ function DateRangeWidget({
               to: e.target.value || undefined,
             })
           }
+          onClick={(e) => e.stopPropagation()}
           data-filter-to
           className="h-7 text-[12px]"
         />
@@ -493,7 +401,9 @@ export function ActiveFilterChips() {
 
   const colByName = (n: string) => board.columns.find((c) => c.name === n)
 
-  const entries = Object.entries(columnFilters).filter(([, c]) => activeCountOf(c) > 0)
+  const entries = Object.entries(columnFilters).filter(
+    ([, c]) => activeCountOf(c) > 0,
+  )
   if (entries.length === 0) return null
 
   return (
@@ -535,7 +445,6 @@ export function ActiveFilterChips() {
             />,
           ]
         }
-        // date-range
         const text =
           cond.from && cond.to
             ? `${cond.from} ~ ${cond.to}`
