@@ -4,6 +4,84 @@
 
 ---
 
+## 2026-05-24 (kkh94 머신, 폴리시 + 인프라) — 컬럼 리사이즈 · 레이아웃 fix · pill 일괄 · 스마트 메모리 · EventStore
+
+### 완료 (1 commit `49a1767` · 18 파일 변경 · 1142+/71−)
+**5 묶음** — 사용자 보고 UI 폴리시 3 + 깊은 토론 인프라 2.
+
+1. **컬럼 리사이즈** (사용자 명시 — Excel auto-fit 패턴)
+   - `components/sheet/column-resizer.tsx` (신규) — 4px right-edge handle · drag로 resize (MIN 60 / MAX 600) · dblclick → autofit (cell scrollWidth max + padding 28)
+   - `types.SheetViewSettings.columnWidths?: Record<string, number>` 추가 — ColumnDef.width fallback
+   - sheet-view: tableRef · columnWidths raw 구독 · `widthOf(c)` helper · `<th>` relative + data-column + ColumnResizer · `<td>` data-column
+
+2. **레이아웃 spill fix** (사용자 보고 — 모든 사이드바 열었을 때 옆 패널 침범)
+   - 원인: flex-col 자식 컨테이너에 `min-w-0` 누락 → 자식 intrinsic width(table 1600+px)가 부모 강제 부풀림. `overflow-auto`만으론 부족.
+   - Fix: sheet-view / kanban-view / gallery-view / timeline-view / dashboard-view 5 곳 컨테이너에 `min-w-0`
+   - tables-mode 보드영역 title block `min-w-0` · h1 `truncate` · toolbar 행 `min-w-0 flex-wrap gap-y-2`
+   - **LOCK**: flex-col 자식 컨테이너는 `min-w-0` 명시 (새 view/panel 추가 시 강제)
+
+3. **Pill nowrap 일괄 11 곳** (직전 status pill fix 컨벤션 확장)
+   - editable-cell: sentiment · select(priority 등) · reaction 3 곳
+   - asset-detail: Used-in jump · Options · Required/Optional · Recommended views(multi/single) 5 곳
+   - category-catalog: OptionList color pill
+   - kanban-view: 카드 badge
+   - timeline-view: OVERDUE badge
+   - skip: inbox action button(pill 아님) · pending-card AI 버튼(cell 아님)
+   - 패턴: flex-wrap 컨테이너 안이어도 *개별 pill 자체는 한 줄*
+
+4. **스마트 메모리 Phase 1** (깊은 토론 — workspace vocabulary)
+   - types: MemoryEntry + WorkspaceMemory
+   - store v13→v14: `learnFromPatch` hook (addRow/addRowToBoard/updateRow/commitAiCell) · selectMemoryForColumn selector · MEMORY_MIN_COUNT
+   - LOCK: Memory ≠ Library · 30일 expire · 50개 cap · scope=`{colName}::{libraryFieldId}` (cross-board 의미 충돌 방지)
+   - Cell editor select popover에 "Recent" 섹션 (Clock icon · frequency 2+ · col.options 제외 · 상위 5개)
+   - StatusCell skip (enum 4개 다 노출). text cell autocomplete은 Phase 1B 후속.
+
+5. **EventStore Phase A·C·D·E·F1** (깊은 토론 — 통합 액션 timeline 아키텍처)
+   - **A (인프라)**: types에 EventKind + TimestampedEvent. store v14→v15에 events 배열 + appendEvent(90일+1000개 cap) + publishChange/pushAi 동시 push(set,get 시그니처) + migrate(aiHistory 백필) + partialize + selectors(forBoard/forRow/global)
+   - **C (Workspace History)**: ActiveWorkspaceItem += "history" · workspace-sidebar 3번째 항목 · workspace-mode 분기 · `components/workspace/history-view.tsx` 신규 (날짜 그룹 Today/Yesterday/MMM d · kind/board filter dropdown · entry click → switchBoard+setActivityMode+setFocused+detailBar 자동 open · 보드 삭제 시 toast warning)
+   - **D (Detail Activity 탭)**: detail-bar에 shadcn Tabs (Fields/Activity) + RowActivity (events filter by boardId+rowId|rowIds.includes)
+   - **E (AI panel derive)**: ai-activity-panel의 aiHistory를 events에서 derive (kind=ai_* filter + AIHistoryEntry 매핑) — board.aiHistory 호환 유지 · Pending+Composer 그대로
+   - **F1 (Promote bridge)**: CellPopover에 `onPromote?: (value) => void` prop + Recent item 우측 "+" 버튼 (group-hover fade-in) · SelectCell `handlePromote` → updateColumn으로 col.options 추가 + toast · LOCK: 명시 click 시만
+
+### 큰 결정
+- **사용자 인사이트 "스마트 메모리 = 자동 history"** (2026-05-24) — 4 곳 분산된 history-like data(`lastChange`/`aiHistory`/`undoStack`/`workspaceMemory`)를 EventStore single source로 통합 결정. UI surface(AI panel)는 그대로, 데이터 source만 통일. 향후 협업 layer(comment/snooze)도 같은 통로.
+- **Memory ≠ Library** — 자동 promote ❌, 명시 click 시만(Recent "+" 버튼). 사용자 우려("Library 난잡") 정직 반영.
+- **AI panel 흡수 ❌, Timeline data source만 통일** — Pending(AI 제안 검토) + Composer(Ask AI) 100% 유지. 사용자 안심 핵심.
+- **Library 자산 카테고리에 Memory 추가 ❌** — Library는 명시 자산만. Workspace 사이드바에 History 항목으로 분리 → 의미 부합(Schema 구조 / Automations 규칙 / History 기록).
+- **컬럼 리사이즈는 viewSettings에 persist** — ColumnDef.width fallback. 보드 spec 안 건드림.
+- **레이아웃 spill 원인 = flex item min-width auto** — overflow-auto만으론 부족. min-w-0 명시가 LOCK.
+- **모든 history-like data store 통합 후 derived views** — workspaceMemory도 향후 events derived 가능(Phase 1 코드는 일단 별도 유지, 후속 통합 가능).
+- **단일 commit 1142+/71−** — 직전 #5·#6·#7 패턴 답습. 다음 PR부터 분할 검토 가능.
+
+### 검증
+- tsc 0 · vitest 44/44 (5번 확인 — 각 phase 진행 중)
+- 브라우저 검증은 사용자가 직접 (변경량 큼). 컬럼 리사이즈는 사용자 "내가 원하는대로 잘 됐어" 확인 완료.
+
+### 다음
+- 토론 backlog 8 항목 (NEXT-ACTION 신규 섹션):
+  - A 그룹 (즉시): 스마트 메모리 Phase 1 ✅완료 · Sheet groupBy + 다중 sort · Library 자산 개별 적용 UI
+  - B 그룹 (큰 변화): 스마트 메모리 Phase 2 (autocomplete · Library promote bridge toast · recentFilters/Sorts) · Event/Comment/Thread/Snooze (Phase 2 W11 후)
+  - C 그룹 (부차): OptionList 영역별 분리 + Saved view · Wiki+Inbox 노티스 결합
+- EventStore 후속:
+  - Phase B: 만료 cleanup hook (AppShell mount, cleanupExpiredTrash 패턴) — append 시 처리되니 nice-to-have
+  - Phase F2: col.libraryFieldId 있으면 Library OptionList에도 sync (cross-board promote)
+  - aiHistory deprecation (현재 호환 유지, 향후 events derived 전환)
+- 우선순위 중간 남음: mutation enforcement 30+ · UI 단 viewer disable · Theme accent oklch · Data Import skip summary
+
+### Watch Out
+- **EventStore migrate v15에서 aiHistory 백필** — 기존 사용자의 aiHistory entries가 events로 복사됨 (board.aiHistory는 그대로). 중복 데이터 일시적 — 향후 deprecation 시 정리.
+- **events.appendEvent의 cap 1000** — 활발 사용 시 90일 안에 도달 가능. cap 도달 시 오래된 것부터 자름(=정보 손실). 사용 패턴 보고 조정.
+- **HistoryView entry click 점프** — 보드 삭제된 경우 toast warning (silent skip ❌). row 삭제 시 rowId 존재 체크.
+- **Detail bar RowActivity** — events.filter 매 렌더 호출. rowEvents useMemo deps([events, boardId, rowId]) 정확. board.rows 변경엔 trigger 안 함(의도 — 같은 row의 history는 board.rows 변화와 무관).
+- **AI panel Timeline** — aiHistory 백필된 events 사용. 신규 push는 양쪽 다 갱신. 표시 차이 ❌.
+- **promote bridge F1 한계** — col.options 인라인 추가만. col.libraryFieldId 있는 경우 Library OptionList sync는 F2 후속. 사용자가 컬럼 Promote한 후 Recent "+" 누르면 OptionList 영향 ❌.
+- **단일 commit 1142+/71−** — review·revert 시 sub-feature 분리 어려움. 트레이드오프 인지.
+
+### 머신
+kkh94. main 머지·푸시 자동.
+
+---
+
 ## 2026-05-24 (kkh94 머신, fix #1) — status pill 줄바꿈
 
 ### 완료 (1 commit `a7e91c5`)
