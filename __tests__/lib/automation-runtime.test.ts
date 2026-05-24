@@ -5,6 +5,9 @@ import { describe, expect, it } from "vitest"
 import {
   matches,
   parseRowDetail,
+  parseTimeTrigger,
+  shouldFireDaily,
+  shouldFireDueDate,
 } from "@/lib/automation-runtime"
 import { SEED_AUTOMATIONS } from "@/lib/flowbase-workspace-seed"
 import type { AutomationRule, ChangeEvent, TableRow } from "@/types/flowbase"
@@ -134,6 +137,114 @@ describe("automation-runtime · matches", () => {
       const change = mkChange("row_added", "interviews", { id: "INT-100" })
       expect(matches(dailySummary, change, interviewsLabel)).toBe(false)
     })
+  })
+})
+
+describe("automation-runtime · parseTimeTrigger", () => {
+  it("parses 'every day at 09:00 KST'", () => {
+    const t = parseTimeTrigger({
+      table: "—",
+      event: "every day at",
+      value: "09:00 KST",
+    })
+    expect(t).toEqual({ kind: "daily", hour: 9, minute: 0 })
+  })
+
+  it("parses 'every day at' with no seconds", () => {
+    const t = parseTimeTrigger({
+      table: "—",
+      event: "every day at",
+      value: "14:30",
+    })
+    expect(t).toEqual({ kind: "daily", hour: 14, minute: 30 })
+  })
+
+  it("parses 'due date passes and status is' with status", () => {
+    const t = parseTimeTrigger({
+      table: "tasks",
+      event: "due date passes and status is",
+      value: "In progress",
+    })
+    expect(t).toEqual({ kind: "dueDate", statusEquals: "In progress" })
+  })
+
+  it("returns null for row events (sentiment changes to)", () => {
+    expect(
+      parseTimeTrigger({
+        table: "interviews",
+        event: "row added or sentiment changes to",
+        value: "Negative",
+      }),
+    ).toBeNull()
+  })
+
+  it("returns null for unrecognized time value (no HH:MM)", () => {
+    expect(
+      parseTimeTrigger({
+        table: "—",
+        event: "every day at",
+        value: "morning",
+      }),
+    ).toBeNull()
+  })
+})
+
+describe("automation-runtime · shouldFireDaily", () => {
+  const trigger = { kind: "daily" as const, hour: 9, minute: 0 }
+
+  it("fires when current hour/minute match", () => {
+    const now = new Date(2026, 4, 24, 9, 0, 30) // 09:00:30
+    expect(shouldFireDaily(trigger, now)).toBe(true)
+  })
+
+  it("does not fire one minute off", () => {
+    const now = new Date(2026, 4, 24, 9, 1, 0)
+    expect(shouldFireDaily(trigger, now)).toBe(false)
+  })
+
+  it("does not fire one hour off", () => {
+    const now = new Date(2026, 4, 24, 10, 0, 0)
+    expect(shouldFireDaily(trigger, now)).toBe(false)
+  })
+})
+
+describe("automation-runtime · shouldFireDueDate", () => {
+  const now = new Date(2026, 4, 24, 12, 0, 0) // May 24 2026 noon
+
+  it("fires when row.due is yesterday and status matches", () => {
+    const row: TableRow = { id: "T1", due: "2026-05-23", status: "진행중" }
+    const t = { kind: "dueDate" as const, statusEquals: "진행중" }
+    expect(shouldFireDueDate(t, row, now)).toBe(true)
+  })
+
+  it("does not fire when row.due is today", () => {
+    const row: TableRow = { id: "T1", due: "2026-05-24", status: "진행중" }
+    const t = { kind: "dueDate" as const, statusEquals: "진행중" }
+    expect(shouldFireDueDate(t, row, now)).toBe(false)
+  })
+
+  it("does not fire when row.due is in the future", () => {
+    const row: TableRow = { id: "T1", due: "2026-06-01", status: "진행중" }
+    const t = { kind: "dueDate" as const, statusEquals: "진행중" }
+    expect(shouldFireDueDate(t, row, now)).toBe(false)
+  })
+
+  it("does not fire when status mismatch", () => {
+    const row: TableRow = { id: "T1", due: "2026-05-23", status: "완료" }
+    const t = { kind: "dueDate" as const, statusEquals: "진행중" }
+    expect(shouldFireDueDate(t, row, now)).toBe(false)
+  })
+
+  it("fires regardless of status when statusEquals is undefined", () => {
+    const row: TableRow = { id: "T1", due: "2026-05-23", status: "완료" }
+    const t = { kind: "dueDate" as const }
+    expect(shouldFireDueDate(t, row, now)).toBe(true)
+  })
+
+  it("does not fire when due is missing", () => {
+    const row: TableRow = { id: "T1" }
+    const t = { kind: "dueDate" as const }
+    expect(shouldFireDueDate(t, row, now)).toBe(false)
   })
 })
 
