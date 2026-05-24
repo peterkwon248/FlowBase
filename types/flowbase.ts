@@ -327,6 +327,9 @@ export interface FlowBaseState {
   trashedBoards: TrashedBoard[]
   settings: WorkspaceSettings
 
+  // Schema ER 카드 수동 위치 (persist) — 없으면 auto-layout
+  schemaPositions: Record<string, { x: number; y: number }>
+
   // 전역 UI (persist)
   panels: PanelState
   viewByBoardId: Record<string, ViewMode>

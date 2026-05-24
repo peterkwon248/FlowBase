@@ -36,7 +36,7 @@ import {
 import { undoStack } from "@/lib/undo-stack"
 
 const STORE_KEY = "flowbase-state-v4"
-const STORE_VERSION = 7 // v7: trashedBoards · settings 추가
+const STORE_VERSION = 8 // v8: schemaPositions 추가
 
 function nowIso(): string {
   return new Date().toISOString()
@@ -74,6 +74,10 @@ export interface FlowBaseActions {
 
   // Settings
   updateSettings: (patch: Partial<WorkspaceSettings>) => void
+
+  // Schema positions
+  setSchemaPosition: (boardId: string, pos: { x: number; y: number }) => void
+  resetSchemaPositions: () => void
 
   // Automations — rule 토글/삭제 + suggestion accept/dismiss + 테스트 실행
   toggleAutomationStatus: (id: string) => void
@@ -154,6 +158,7 @@ function createInitialState(): FlowBaseState {
     wikiSelectedId: wikiPages[0]?.id ?? null,
     trashedBoards: [],
     settings: { workspaceLabel: "peter's workspace", workspaceInitial: "P" },
+    schemaPositions: {},
     panels: { activityBar: true, sidebar: true, aiPanel: true, detailBar: false },
     viewByBoardId: { [interviews.id]: "sheet", [tasks.id]: "sheet" },
     activityMode: "tables",
@@ -416,6 +421,12 @@ export const useFlowBase = create<FlowBaseStore>()(
 
         updateSettings: (patch) =>
           set((s) => ({ settings: { ...s.settings, ...patch } })),
+
+        setSchemaPosition: (boardId, pos) =>
+          set((s) => ({
+            schemaPositions: { ...s.schemaPositions, [boardId]: pos },
+          })),
+        resetSchemaPositions: () => set({ schemaPositions: {} }),
 
         // Automations — rule 토글: active ↔ paused. draft는 따로 명시적 변경.
         toggleAutomationStatus: (id) =>
@@ -1030,6 +1041,9 @@ export const useFlowBase = create<FlowBaseStore>()(
             workspaceInitial: "P",
           }
         }
+        if (version < 8) {
+          s.schemaPositions = s.schemaPositions ?? {}
+        }
         return s as FlowBaseState
       },
       partialize: (s) => ({
@@ -1042,6 +1056,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         wikiSelectedId: s.wikiSelectedId,
         trashedBoards: s.trashedBoards,
         settings: s.settings,
+        schemaPositions: s.schemaPositions,
         panels: s.panels,
         viewByBoardId: s.viewByBoardId,
         activityMode: s.activityMode,

@@ -1,17 +1,20 @@
-// FlowBase V2 — Schema ER 다이어그램 (positioned table cards + bezier edges)
+// FlowBase V2 — Schema ER 다이어그램 (positioned cards + bezier edges + pan/zoom/drag)
 // 출처: design-ref/prototype/schema-er.jsx ERDiagram
 //
-// 자동 레이아웃: 보드 순서대로 3-column grid (240 wide, gap 60). FK 컬럼이 가리키는
-// 보드와 bezier curve로 연결, 중간에 cardinality pill.
+// auto-layout(3-col grid) 기본 위치. 사용자가 카드 헤더 드래그하면
+// store.schemaPositions에 저장 → persisted. 캔버스 빈 곳 드래그=pan,
+// wheel+ctrl=zoom (cursor anchor). 우상단 zoom controls + reset.
 
 "use client"
 
-import { useMemo, useState } from "react"
-import { KeyRound, Plus, RefreshCw, Sparkles } from "lucide-react"
+import { useCallback, useMemo, useRef, useState } from "react"
+import { KeyRound, Minus, Plus, RotateCcw, Sparkles } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { TYPE_ICON } from "@/components/sheet/header-cell"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { Board } from "@/types/flowbase"
+import { NewTableModal } from "./schema-new-table-modal"
 
 const CARD_WIDTH = 240
 const HEADER_H = 34
@@ -21,6 +24,8 @@ const COL_GAP = 80
 const ROW_GAP = 60
 const COLS = 3
 const VIEWPORT_PAD = 32
+const ZOOM_MIN = 0.4
+const ZOOM_MAX = 2
 
 interface LayoutRect {
   id: string
@@ -38,36 +43,45 @@ interface Edge {
   cardinality: string
 }
 
-function layoutBoards(boards: Board[]): LayoutRect[] {
-  const cardHeight = (b: Board) =>
-    HEADER_H + b.columns.length * ROW_H + CARD_PAD_BOTTOM
+function cardHeight(b: Board): number {
+  return HEADER_H + b.columns.length * ROW_H + CARD_PAD_BOTTOM
+}
 
-  // row-major auto-layout. y는 같은 row 내 최대 높이로 정렬.
+function autoLayout(boards: Board[]): Record<string, { x: number; y: number }> {
+  const out: Record<string, { x: number; y: number }> = {}
   const rows: Board[][] = []
   for (let i = 0; i < boards.length; i += COLS) {
     rows.push(boards.slice(i, i + COLS))
   }
-
-  const result: LayoutRect[] = []
   let yCursor = VIEWPORT_PAD
   for (const row of rows) {
     let xCursor = VIEWPORT_PAD
     const rowH = Math.max(...row.map(cardHeight))
     for (const b of row) {
-      const h = cardHeight(b)
-      result.push({
-        id: b.id,
-        x: xCursor,
-        y: yCursor,
-        w: CARD_WIDTH,
-        h,
-        board: b,
-      })
+      out[b.id] = { x: xCursor, y: yCursor }
       xCursor += CARD_WIDTH + COL_GAP
     }
     yCursor += rowH + ROW_GAP
   }
-  return result
+  return out
+}
+
+function buildLayout(
+  boards: Board[],
+  positions: Record<string, { x: number; y: number }>,
+): LayoutRect[] {
+  const auto = autoLayout(boards)
+  return boards.map((b) => {
+    const pos = positions[b.id] ?? auto[b.id] ?? { x: 0, y: 0 }
+    return {
+      id: b.id,
+      x: pos.x,
+      y: pos.y,
+      w: CARD_WIDTH,
+      h: cardHeight(b),
+      board: b,
+    }
+  })
 }
 
 interface Side {
@@ -134,126 +148,292 @@ function deriveEdges(boards: Board[]): Edge[] {
 export function SchemaERDiagram() {
   const boards = useFlowBase((s) => s.boards)
   const boardList = useMemo(() => Object.values(boards), [boards])
+  const schemaPositions = useFlowBase((s) => s.schemaPositions)
+  const setSchemaPosition = useFlowBase((s) => s.setSchemaPosition)
+  const resetSchemaPositions = useFlowBase((s) => s.resetSchemaPositions)
 
-  const layout = useMemo(() => layoutBoards(boardList), [boardList])
+  const layout = useMemo(
+    () => buildLayout(boardList, schemaPositions),
+    [boardList, schemaPositions],
+  )
   const edges = useMemo(() => deriveEdges(boardList), [boardList])
 
   const [hovered, setHovered] = useState<string | null>(null)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [newTableOpen, setNewTableOpen] = useState(false)
 
-  // 캔버스 크기 = 마지막 카드의 우/하단 + padding
+  // 드래그 상태: 캔버스 pan vs 카드 drag.
+  const dragRef = useRef<
+    | { kind: "pan"; startX: number; startY: number; startPan: { x: number; y: number } }
+    | {
+        kind: "card"
+        id: string
+        startX: number
+        startY: number
+        startCard: { x: number; y: number }
+      }
+    | null
+  >(null)
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      // 카드 헤더 드래그 시작은 별도. 여기는 빈 배경 → pan.
+      const target = e.target as HTMLElement
+      if (target.closest("[data-er-card-header]")) return
+      if (target.closest("[data-er-toolbar]")) return
+      dragRef.current = {
+        kind: "pan",
+        startX: e.clientX,
+        startY: e.clientY,
+        startPan: pan,
+      }
+      e.preventDefault()
+    },
+    [pan],
+  )
+
+  const handleCardHeaderMouseDown = useCallback(
+    (boardId: string, e: React.MouseEvent) => {
+      const cur = layout.find((r) => r.id === boardId)
+      if (!cur) return
+      dragRef.current = {
+        kind: "card",
+        id: boardId,
+        startX: e.clientX,
+        startY: e.clientY,
+        startCard: { x: cur.x, y: cur.y },
+      }
+      e.preventDefault()
+      e.stopPropagation()
+    },
+    [layout],
+  )
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      const d = dragRef.current
+      if (!d) return
+      if (d.kind === "pan") {
+        setPan({
+          x: d.startPan.x + (e.clientX - d.startX),
+          y: d.startPan.y + (e.clientY - d.startY),
+        })
+      } else {
+        // zoom 보정: 드래그 거리를 1/zoom으로 나눠 inverse-scale
+        const dx = (e.clientX - d.startX) / zoom
+        const dy = (e.clientY - d.startY) / zoom
+        setSchemaPosition(d.id, {
+          x: Math.max(0, d.startCard.x + dx),
+          y: Math.max(0, d.startCard.y + dy),
+        })
+      }
+    },
+    [zoom, setSchemaPosition],
+  )
+
+  const handleMouseUp = useCallback(() => {
+    dragRef.current = null
+  }, [])
+
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return
+      e.preventDefault()
+      const delta = e.deltaY > 0 ? -0.1 : 0.1
+      setZoom((z) => Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, +(z + delta).toFixed(2))))
+    },
+    [],
+  )
+
   const canvasW = useMemo(() => {
-    if (layout.length === 0) return 0
+    if (layout.length === 0) return 600
     return Math.max(...layout.map((r) => r.x + r.w)) + VIEWPORT_PAD
   }, [layout])
   const canvasH = useMemo(() => {
-    if (layout.length === 0) return 0
+    if (layout.length === 0) return 400
     return Math.max(...layout.map((r) => r.y + r.h)) + VIEWPORT_PAD
   }, [layout])
 
   return (
-    <div className="relative flex min-h-0 flex-1 overflow-auto bg-background">
-      {/* Grid background — sub pattern */}
+    <>
       <div
-        className="pointer-events-none absolute inset-0"
+        className="relative flex min-h-0 flex-1 overflow-hidden bg-background select-none"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onWheel={handleWheel}
         style={{
-          backgroundImage:
-            "radial-gradient(circle, var(--border-subtle) 0.7px, transparent 0.7px)",
-          backgroundSize: "24px 24px",
+          cursor: dragRef.current?.kind === "pan" ? "grabbing" : "default",
         }}
-      />
-
-      <div
-        className="relative shrink-0"
-        style={{ width: canvasW, height: canvasH }}
       >
-        {/* Edges — behind cards */}
-        <svg
+        {/* Grid bg (pan offset 반영) */}
+        <div
           className="pointer-events-none absolute inset-0"
-          width={canvasW}
-          height={canvasH}
-          style={{ overflow: "visible" }}
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, var(--border-subtle) 0.7px, transparent 0.7px)",
+            backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
+            backgroundPosition: `${pan.x}px ${pan.y}px`,
+          }}
+        />
+
+        {/* Diagram inner — pan + zoom transform */}
+        <div
+          className="relative shrink-0"
+          style={{
+            width: canvasW,
+            height: canvasH,
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: "0 0",
+          }}
         >
-          {edges.map((e, i) => {
-            const a = layout.find((r) => r.id === e.fromId)
-            const b = layout.find((r) => r.id === e.toId)
-            if (!a || !b) return null
-            const [p1, p2] = edgeEndpoints(a, b)
-            const path = bezierPath(p1, p2)
-            const midX = (p1.x + p2.x) / 2
-            const midY = (p1.y + p2.y) / 2
-            const isActive =
-              hovered !== null && (hovered === a.id || hovered === b.id)
-            const stroke = isActive ? "var(--primary)" : "var(--border)"
-            return (
-              <g
-                key={i}
-                opacity={hovered && !isActive ? 0.3 : 1}
-                style={{ transition: "opacity 160ms ease" }}
-              >
-                <path
-                  d={path}
-                  fill="none"
-                  stroke={stroke}
-                  strokeWidth={isActive ? 1.75 : 1.25}
-                />
-                <circle cx={p1.x} cy={p1.y} r={3} fill={stroke} />
-                <circle cx={p2.x} cy={p2.y} r={3} fill={stroke} />
-                <g transform={`translate(${midX - 16} ${midY - 9})`}>
-                  <rect
-                    width="32"
-                    height="18"
-                    rx="4"
-                    fill="var(--card)"
+          {/* Edges */}
+          <svg
+            className="pointer-events-none absolute inset-0"
+            width={canvasW}
+            height={canvasH}
+            style={{ overflow: "visible" }}
+          >
+            {edges.map((e, i) => {
+              const a = layout.find((r) => r.id === e.fromId)
+              const b = layout.find((r) => r.id === e.toId)
+              if (!a || !b) return null
+              const [p1, p2] = edgeEndpoints(a, b)
+              const path = bezierPath(p1, p2)
+              const midX = (p1.x + p2.x) / 2
+              const midY = (p1.y + p2.y) / 2
+              const isActive =
+                hovered !== null && (hovered === a.id || hovered === b.id)
+              const stroke = isActive ? "var(--primary)" : "var(--border)"
+              return (
+                <g
+                  key={i}
+                  opacity={hovered && !isActive ? 0.3 : 1}
+                  style={{ transition: "opacity 160ms ease" }}
+                >
+                  <path
+                    d={path}
+                    fill="none"
                     stroke={stroke}
-                    strokeWidth="1"
+                    strokeWidth={isActive ? 1.75 : 1.25}
                   />
-                  <text
-                    x="16"
-                    y="13"
-                    fontSize="10"
-                    fontWeight="600"
-                    fill={isActive ? "var(--primary)" : "var(--muted-foreground)"}
-                    textAnchor="middle"
-                    style={{ fontFamily: "var(--font-mono)" }}
-                  >
-                    {e.cardinality}
-                  </text>
+                  <circle cx={p1.x} cy={p1.y} r={3} fill={stroke} />
+                  <circle cx={p2.x} cy={p2.y} r={3} fill={stroke} />
+                  <g transform={`translate(${midX - 16} ${midY - 9})`}>
+                    <rect
+                      width="32"
+                      height="18"
+                      rx="4"
+                      fill="var(--card)"
+                      stroke={stroke}
+                      strokeWidth="1"
+                    />
+                    <text
+                      x="16"
+                      y="13"
+                      fontSize="10"
+                      fontWeight="600"
+                      fill={
+                        isActive ? "var(--primary)" : "var(--muted-foreground)"
+                      }
+                      textAnchor="middle"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      {e.cardinality}
+                    </text>
+                  </g>
                 </g>
-              </g>
-            )
-          })}
-        </svg>
+              )
+            })}
+          </svg>
 
-        {/* Cards */}
-        {layout.map((r) => (
-          <TableCard
-            key={r.id}
-            rect={r}
-            hovered={hovered === r.id}
-            onHover={setHovered}
-          />
-        ))}
-      </div>
-
-      {/* Empty state */}
-      {boardList.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center text-[13px] text-muted-foreground">
-          No boards yet.
+          {/* Cards */}
+          {layout.map((r) => (
+            <TableCard
+              key={r.id}
+              rect={r}
+              hovered={hovered === r.id}
+              onHover={setHovered}
+              onHeaderMouseDown={(e) => handleCardHeaderMouseDown(r.id, e)}
+            />
+          ))}
         </div>
-      )}
 
-      {/* Bottom meta */}
-      <div className="pointer-events-none absolute bottom-3 left-4 inline-flex items-center gap-3.5 rounded-md border border-border bg-card/90 px-2.5 py-1 text-[11.5px] text-muted-foreground backdrop-blur-sm">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-1.5 rounded-full bg-chart-1" />
-          Tables: <b className="font-semibold tabular-nums text-foreground">{boardList.length}</b>
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-1.5 rounded-full bg-chart-4" />
-          Relations: <b className="font-semibold tabular-nums text-foreground">{edges.length}</b>
-        </span>
+        {/* Empty state */}
+        {boardList.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center text-[13px] text-muted-foreground">
+            No boards yet.
+          </div>
+        )}
+
+        {/* Toolbar — top right */}
+        <div
+          className="absolute right-4 top-3 flex items-center gap-2"
+          data-er-toolbar
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <div className="inline-flex items-center gap-1 rounded-md border border-border bg-card p-1 shadow-sm">
+            <ZoomBtn
+              title="Zoom out"
+              onClick={() =>
+                setZoom((z) => Math.max(ZOOM_MIN, +(z - 0.1).toFixed(2)))
+              }
+            >
+              <Minus className="size-3" strokeWidth={2} />
+            </ZoomBtn>
+            <span className="min-w-[40px] text-center text-[11px] tabular-nums text-muted-foreground">
+              {Math.round(zoom * 100)}%
+            </span>
+            <ZoomBtn
+              title="Zoom in"
+              onClick={() =>
+                setZoom((z) => Math.min(ZOOM_MAX, +(z + 0.1).toFixed(2)))
+              }
+            >
+              <Plus className="size-3" strokeWidth={2} />
+            </ZoomBtn>
+            <span className="mx-1 h-4 w-px bg-border" />
+            <ZoomBtn
+              title="Reset view + positions"
+              onClick={() => {
+                setZoom(1)
+                setPan({ x: 0, y: 0 })
+                resetSchemaPositions()
+              }}
+            >
+              <RotateCcw className="size-3" strokeWidth={2} />
+            </ZoomBtn>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => setNewTableOpen(true)}
+            className="h-8 gap-1.5 px-2.5 text-[12px]"
+            data-action="schema-new-table"
+          >
+            <Plus className="size-3" strokeWidth={2} />
+            New table
+          </Button>
+        </div>
+
+        {/* Bottom meta */}
+        <div className="pointer-events-none absolute bottom-3 left-4 inline-flex items-center gap-3.5 rounded-md border border-border bg-card/90 px-2.5 py-1 text-[11.5px] text-muted-foreground backdrop-blur-sm">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-1.5 rounded-full bg-chart-1" />
+            Tables: <b className="font-semibold tabular-nums text-foreground">{boardList.length}</b>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-1.5 rounded-full bg-chart-4" />
+            Relations: <b className="font-semibold tabular-nums text-foreground">{edges.length}</b>
+          </span>
+          <span className="opacity-60">·</span>
+          <span>Drag header to move · ⌘+wheel to zoom</span>
+        </div>
       </div>
-    </div>
+
+      <NewTableModal open={newTableOpen} onOpenChange={setNewTableOpen} />
+    </>
   )
 }
 
@@ -261,10 +441,12 @@ function TableCard({
   rect,
   hovered,
   onHover,
+  onHeaderMouseDown,
 }: {
   rect: LayoutRect
   hovered: boolean
   onHover: (id: string | null) => void
+  onHeaderMouseDown: (e: React.MouseEvent) => void
 }) {
   const { board } = rect
   const color = board.colorVar ?? "var(--chart-1)"
@@ -288,9 +470,10 @@ function TableCard({
         height: rect.h,
       }}
     >
-      {/* Header */}
       <div
-        className="flex shrink-0 items-center gap-2 border-b border-border-subtle px-3"
+        data-er-card-header={board.id}
+        onMouseDown={onHeaderMouseDown}
+        className="flex shrink-0 cursor-grab items-center gap-2 border-b border-border-subtle px-3 active:cursor-grabbing"
         style={{
           height: HEADER_H,
           background: accentBg,
@@ -299,12 +482,9 @@ function TableCard({
       >
         <span className="text-[13px] font-bold">{board.label}</span>
         <div className="flex-1" />
-        <span className="font-mono text-[10.5px] opacity-70">
-          {board.id}
-        </span>
+        <span className="font-mono text-[10.5px] opacity-70">{board.id}</span>
       </div>
 
-      {/* Fields */}
       <div className="flex flex-1 flex-col pb-1">
         {board.columns.map((c) => {
           const isPk = c.name === "id"
@@ -317,7 +497,10 @@ function TableCard({
               style={{ height: ROW_H }}
             >
               {isPk ? (
-                <KeyRound className="size-3 shrink-0 text-amber-500" strokeWidth={2} />
+                <KeyRound
+                  className="size-3 shrink-0 text-amber-500"
+                  strokeWidth={2}
+                />
               ) : (
                 <Icon
                   className="size-3 shrink-0 text-muted-foreground"
@@ -372,5 +555,26 @@ function TypeChip({
     >
       {label}
     </span>
+  )
+}
+
+function ZoomBtn({
+  title,
+  onClick,
+  children,
+}: {
+  title: string
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+    >
+      {children}
+    </button>
   )
 }
