@@ -84,12 +84,23 @@ export function AddColumnMenu() {
   const handleLibField = (fieldId: string) => {
     const f = library.fields.find((x) => x.id === fieldId)
     if (!f) return
+    // A3-2: optionListId 우선 해석 (config.options는 인라인 fallback)
+    let options: string[] | undefined
+    if (f.config.optionListId) {
+      const list = library.optionLists.find(
+        (l) => l.id === f.config.optionListId,
+      )
+      options = list?.options.map((o) => o.label)
+    } else if (f.config.options) {
+      options = f.config.options.map((o) => o.label)
+    }
     addColumn({
       name: slugify(f.name),
       label: f.name,
       type: f.type,
       width: 140,
-      options: f.config.options?.map((o) => o.label),
+      options,
+      libraryFieldId: f.id, // 자동 link (Library에서 가져왔으니 자연 link)
     })
   }
 

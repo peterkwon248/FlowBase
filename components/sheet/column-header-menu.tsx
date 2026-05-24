@@ -10,6 +10,7 @@ import { useState } from "react"
 import {
   Check,
   Link2,
+  List,
   MoreHorizontal,
   Pencil,
   Sigma,
@@ -149,6 +150,71 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
               })}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
+
+          {/* A3-1: Library OptionList을 select/status 컬럼에 적용 (개별 적용 UI). */}
+          {/* 깊은 link(optionListId 참조)는 후속 — 현재는 col.options 덮어쓰기. */}
+          {(col.type === "select" || col.type === "status") && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="gap-2">
+                <List
+                  className="size-3.5 text-muted-foreground"
+                  strokeWidth={1.75}
+                />
+                <span>Apply OptionList</span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent
+                className="w-56"
+                data-column-apply-optionlist={col.name}
+              >
+                {library.optionLists.length === 0 ? (
+                  <div className="px-2 py-1.5 text-[12px] text-muted-foreground">
+                    No OptionLists in Library yet.
+                  </div>
+                ) : (
+                  library.optionLists.map((list) => {
+                    const values = list.options.map((o) => o.label)
+                    return (
+                      <DropdownMenuItem
+                        key={list.id}
+                        onSelect={() => {
+                          updateColumn(col.name, { options: values })
+                          toast.success(
+                            `Applied "${list.name}" to ${col.label || col.name}`,
+                            {
+                              description: `${values.length} options replaced. ⌘Z to undo.`,
+                            },
+                          )
+                        }}
+                        className="gap-2"
+                        data-apply-optionlist-option={list.id}
+                      >
+                        <span className="flex shrink-0 items-center gap-0.5">
+                          {/* 처음 3 옵션의 color dot — 시각 식별 */}
+                          {list.options.slice(0, 3).map((o, i) => (
+                            <span
+                              key={i}
+                              aria-hidden
+                              className="size-1.5 rounded-full"
+                              style={{ background: o.color }}
+                            />
+                          ))}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-[12.5px]">
+                            {list.name}
+                          </div>
+                          <div className="truncate text-[10.5px] text-muted-foreground">
+                            {list.options.length} options
+                          </div>
+                        </div>
+                      </DropdownMenuItem>
+                    )
+                  })
+                )}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
+
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onSelect={() => {
