@@ -4,6 +4,34 @@
 
 ---
 
+## 2026-05-24 (kkh94 머신, 후속 refactor) — Shell chrome 재배치
+
+### 완료 (1 commit `d263373` · 3 파일 · 87+/98−)
+사용자 명시 요청 — 푸터 영역의 Trash/Settings/storage counter를 BoardHeader로 통합.
+
+- **BoardHeader 우측**: Storage(Search 좌측) + Trash + Settings(ThemeToggle 우측)
+- **StatusBar 컴포넌트 삭제** (app/page.tsx 렌더/import 제거)
+- TrashDialog/SettingsDialog state를 BoardHeader로 이동
+- 다이얼로그 동작 100% 유지
+
+### 큰 결정
+- **LOCK 갱신**: "셸 푸터 status bar 영구" → "Trash/Settings는 BoardHeader" — 사용자 명시. NEXT-ACTION LOCK 컨벤션 strikethrough + 신규 규칙.
+- **footer 통째로 제거** — 빈 footer 남기면 시각 영향. 정보를 옮긴 만큼 footer 자체 제거가 깨끗.
+- **Trash 배지 위치 보존** — 카운트 배지는 버튼 우상단 그대로. hover/style 동일.
+
+### 검증
+- tsc 0 · vitest 44/44
+- 브라우저 검증은 사용자가 직접
+
+### Watch Out
+- **레이아웃 영향**: 헤더 우측이 더 빽빽해짐. narrow viewport에서 wrap 가능성 검토(toolbar wrap 패턴 적용 불가능 — header는 단일 행 의도).
+- **storage counter는 placeholder** — "2.1 / 10 GB" 하드코딩. 실 데이터 연결은 BaaS 결정 후 후속.
+
+### 머신
+kkh94. main 머지·푸시 자동.
+
+---
+
 ## 2026-05-24 (kkh94 머신, 폴리시 + 인프라) — 컬럼 리사이즈 · 레이아웃 fix · pill 일괄 · 스마트 메모리 · EventStore
 
 ### 완료 (1 commit `49a1767` · 18 파일 변경 · 1142+/71−)
