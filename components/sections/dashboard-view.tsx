@@ -14,6 +14,7 @@ import { CategoryBar, type CategoryBarItem } from "@/components/charts/category-
 import { ChartCard } from "@/components/charts/chart-card"
 import { DonutChart } from "@/components/charts/donut-chart"
 import { KpiTile } from "@/components/charts/kpi-tile"
+import { LineChart, type LinePoint } from "@/components/charts/line-chart"
 import {
   selectActiveBoard,
   selectVisibleRows,
@@ -76,15 +77,41 @@ function colTitle(col: ColumnDef): string {
   return col.label?.trim() || col.name
 }
 
+// 날짜 컬럼 row를 주별로 버킷팅 → 최근 8주 기준.
+function buildWeeklyTrend(rows: TableRow[], dateField: string): LinePoint[] {
+  const valid: { ts: number; iso: string }[] = []
+  for (const r of rows) {
+    const v = r[dateField]
+    if (typeof v !== "string") continue
+    const t = new Date(v).getTime()
+    if (!Number.isFinite(t)) continue
+    valid.push({ ts: t, iso: v })
+  }
+  if (valid.length === 0) return []
+  const maxTs = Math.max(...valid.map((v) => v.ts))
+  const weeks: LinePoint[] = []
+  for (let i = 7; i >= 0; i--) {
+    const end = maxTs - i * 7 * 86_400_000
+    const start = end - 7 * 86_400_000
+    const count = valid.filter((v) => v.ts > start && v.ts <= end).length
+    const dt = new Date(end)
+    const label = `${dt.getMonth() + 1}/${dt.getDate()}`
+    weeks.push({ label, value: count })
+  }
+  return weeks
+}
+
 export function DashboardView() {
   const board = useFlowBase(selectActiveBoard)
   // selectVisibleRows는 새 배열을 반환 → 직접 구독 ❌. 의존 슬라이스 구독 후 useMemo.
   const search = useFlowBase((s) => s.search)
   const filter = useFlowBase((s) => s.filter)
   const sort = useFlowBase((s) => s.sort)
+  const columnFilters = useFlowBase((s) => s.columnFilters)
   const rows = useMemo(
     () => selectVisibleRows(useFlowBase.getState()),
-    [board, search, filter, sort],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [board, search, filter, sort, columnFilters],
   )
 
   if (!board) return null
@@ -93,6 +120,11 @@ export function DashboardView() {
     (c) => (c.type === "status" || c.type === "select") && c.name !== "id",
   )
   const numeric = board.columns.filter((c) => c.type === "num")
+  const dateCol = board.columns.find((c) => c.type === "date")
+  const trend = useMemo(
+    () => (dateCol ? buildWeeklyTrend(rows, dateCol.name) : []),
+    [rows, dateCol],
+  )
 
   if (categorical.length === 0 && numeric.length === 0) {
     return (
@@ -103,11 +135,10 @@ export function DashboardView() {
             strokeWidth={1.5}
           />
           <div className="mb-1 text-sm font-semibold">
-            집계할 컬럼이 없습니다
+            No columns to aggregate
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Dashboard는 Select·Status 카테고리 또는 숫자 컬럼이 1개 이상
-            필요합니다.
+            Dashboard needs at least one Select/Status category or Number column.
           </p>
         </div>
       </div>
@@ -122,11 +153,11 @@ export function DashboardView() {
     <div className="flex flex-1 flex-col gap-4 overflow-auto bg-background p-5">
       {/* KPI 타일 */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3">
-        <KpiTile label="전체 행" value={rows.length} />
+        <KpiTile label="Total rows" value={rows.length} />
         {aggs.slice(0, 3).map(({ col, agg }) => (
           <KpiTile
             key={col.name}
-            label={`${colTitle(col)} · 종류`}
+            label={`${colTitle(col)} · distinct`}
             value={agg.length}
           />
         ))}
@@ -138,7 +169,7 @@ export function DashboardView() {
           {hero[0] && (
             <ChartCard
               title={colTitle(hero[0].col)}
-              subtitle="분포"
+              subtitle="Distribution"
               accent={CHART_ACCENT[0]}
             >
               <DonutChart
@@ -152,7 +183,7 @@ export function DashboardView() {
           {hero[1] && (
             <ChartCard
               title={colTitle(hero[1].col)}
-              subtitle="분포"
+              subtitle="Distribution"
               accent={CHART_ACCENT[1]}
             >
               <BarChart
@@ -166,14 +197,25 @@ export function DashboardView() {
         </div>
       )}
 
+      {/* Trend (date 컬럼 있을 때) — 최근 8주 row 카운트 */}
+      {trend.length > 0 && (
+        <ChartCard
+          title={`${colTitle(dateCol!)} trend`}
+          subtitle="Rows per week, last 8 weeks"
+          accent={CHART_ACCENT[2]}
+        >
+          <LineChart data={trend} area />
+        </ChartCard>
+      )}
+
       {/* 나머지 categorical 컬럼별 막대 */}
       {rest.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2">
           {rest.map(({ col, agg }, i) => (
             <ChartCard
               key={col.name}
-              title={`${colTitle(col)}별`}
-              subtitle={`${agg.length}개 값`}
+              title={`By ${colTitle(col)}`}
+              subtitle={`${agg.length} values`}
               accent={CHART_ACCENT[(i + 2) % CHART_ACCENT.length]}
             >
               <CategoryBar items={toBarItems(agg, col)} total={rows.length} />
@@ -184,7 +226,7 @@ export function DashboardView() {
 
       {/* numeric 요약 */}
       {numeric.length > 0 && (
-        <ChartCard title="숫자 요약" accent={CHART_ACCENT[2]}>
+        <ChartCard title="Number summary" accent={CHART_ACCENT[2]}>
           <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
             {numeric.map((col) => {
               const vals = rows
@@ -201,7 +243,7 @@ export function DashboardView() {
                     {sum.toLocaleString()}
                   </div>
                   <div className="text-[11px] text-muted-foreground">
-                    평균 {avg.toFixed(1)} · {vals.length}개
+                    avg {avg.toFixed(1)} · {vals.length} values
                   </div>
                 </div>
               )

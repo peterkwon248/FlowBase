@@ -7,7 +7,7 @@
 "use client"
 
 import { useState } from "react"
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { Check, MoreHorizontal, Pencil, Trash2, Type } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,17 +30,33 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { TYPE_ICON } from "@/components/sheet/header-cell"
 import { useFlowBase } from "@/lib/flowbase-store"
-import type { ColumnDef } from "@/types/flowbase"
+import type { ColumnDef, ColumnType } from "@/types/flowbase"
+
+const CHANGEABLE_TYPES: { type: ColumnType; label: string }[] = [
+  { type: "text", label: "Text" },
+  { type: "num", label: "Number" },
+  { type: "date", label: "Date" },
+  { type: "email", label: "Email" },
+  { type: "select", label: "Select" },
+  { type: "status", label: "Status" },
+  { type: "avatar", label: "Person" },
+]
 
 export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
   const renameColumn = useFlowBase((s) => s.renameColumn)
   const deleteColumn = useFlowBase((s) => s.deleteColumn)
+  const updateColumn = useFlowBase((s) => s.updateColumn)
 
   const [renameOpen, setRenameOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -78,11 +94,49 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
             <MoreHorizontal className="size-3.5" strokeWidth={2} />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem onSelect={openRename} className="gap-2">
             <Pencil className="size-3.5 text-muted-foreground" />
             Rename
           </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="gap-2">
+              <Type className="size-3.5 text-muted-foreground" />
+              <span>Change type</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent
+              className="w-40"
+              data-column-change-type={col.name}
+            >
+              {CHANGEABLE_TYPES.map(({ type, label }) => {
+                const Icon = TYPE_ICON[type]
+                const on = col.type === type
+                return (
+                  <DropdownMenuItem
+                    key={type}
+                    onSelect={() => {
+                      if (!on) updateColumn(col.name, { type })
+                    }}
+                    className="gap-2"
+                    data-column-type-option={type}
+                  >
+                    <Icon
+                      className="size-3.5 text-muted-foreground"
+                      strokeWidth={1.75}
+                    />
+                    <span className="flex-1">{label}</span>
+                    {on && (
+                      <Check
+                        className="size-3 text-primary"
+                        strokeWidth={3}
+                      />
+                    )}
+                  </DropdownMenuItem>
+                )
+              })}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             onSelect={() => setConfirmDelete(true)}
             className="gap-2 text-destructive focus:text-destructive"
