@@ -190,6 +190,9 @@ export interface FlowBaseActions {
   // Library promotion: 현재 active board의 컬럼을 LibraryField로 승격.
   promoteColumnToLibraryField: (colName: string) => string | null
   attachFunctionToColumn: (colName: string, functionId: string | null) => void
+  // F2: Library Field에 옵션 추가. config.optionListId 있으면 OptionList sync, 없으면 인라인.
+  // 호출 시 명시 ✅ (자동 promote ❌, LOCK). cell editor "+"/promote toast가 사용.
+  addOptionToLibraryField: (fieldId: string, value: string) => boolean
 
   // Rows — active board 대상. 변경 전 undo 스냅샷 push.
   addRow: (row?: Partial<TableRow>) => string
@@ -435,7 +438,18 @@ function learnFromPatch(
                 },
               })
             }
-            toast.success(`Saved "${value}" to ${colLabel}`)
+            // F2: col.libraryFieldId 있으면 Library OptionList에도 sync
+            let libSynced = false
+            if (c.libraryFieldId) {
+              libSynced = useFlowBase
+                .getState()
+                .addOptionToLibraryField(c.libraryFieldId, value)
+            }
+            toast.success(
+              libSynced
+                ? `Saved "${value}" to ${colLabel} + Library`
+                : `Saved "${value}" to ${colLabel}`,
+            )
           },
         },
       })
@@ -1322,6 +1336,67 @@ export const useFlowBase = create<FlowBaseStore>()(
               },
             },
           })
+        },
+
+        // F2: Library Field에 옵션 추가. config.optionListId 참조면 OptionList sync, 인라인이면 config.options.
+        // 반환: 추가됐으면 true, 이미 있으면 false.
+        // LOCK: 명시 호출 시만 (cell editor "+" 버튼 / promote toast). 자동 ❌.
+        addOptionToLibraryField: (fieldId, value) => {
+          const s = get()
+          if (!ensureCanEdit(s, "Add Library option")) return false
+          const field = s.library.fields.find((f) => f.id === fieldId)
+          if (!field) return false
+          const newOptId = `opt-${Date.now().toString(36).slice(-6)}`
+
+          // Case 1: optionListId 참조 — OptionList에 sync
+          if (field.config.optionListId) {
+            const list = s.library.optionLists.find(
+              (l) => l.id === field.config.optionListId,
+            )
+            if (!list) return false
+            if (list.options.some((o) => o.label === value)) return false
+            set({
+              library: {
+                ...s.library,
+                optionLists: s.library.optionLists.map((l) =>
+                  l.id === list.id
+                    ? {
+                        ...l,
+                        options: [
+                          ...l.options,
+                          { id: newOptId, label: value, color: "var(--chart-1)" },
+                        ],
+                      }
+                    : l,
+                ),
+              },
+            })
+            return true
+          }
+
+          // Case 2: 인라인 options — config.options에 추가
+          const existing = field.config.options ?? []
+          if (existing.some((o) => o.label === value)) return false
+          set({
+            library: {
+              ...s.library,
+              fields: s.library.fields.map((f) =>
+                f.id === fieldId
+                  ? {
+                      ...f,
+                      config: {
+                        ...f.config,
+                        options: [
+                          ...existing,
+                          { id: newOptId, label: value, color: "var(--chart-1)" },
+                        ],
+                      },
+                    }
+                  : f,
+              ),
+            },
+          })
+          return true
         },
 
         addRow: (row) => {

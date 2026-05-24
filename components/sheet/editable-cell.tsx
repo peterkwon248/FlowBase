@@ -367,10 +367,13 @@ function SelectCell({
     else onUpdate({ [col.name]: v })
   }
 
-  // Memory → Library promote bridge (Phase F1).
-  // Recent item "+" 버튼 → col.options에 영구 추가 (인라인). 자동 ❌, 명시 click 시만.
-  // 후속(Phase F2): col.libraryFieldId 있으면 Library OptionList에도 sync.
+  // Memory → Library promote bridge (Phase F1 + F2).
+  // Recent item "+" 버튼 → col.options에 추가 + col.libraryFieldId 있으면 Library OptionList도 sync.
+  // 자동 ❌, 명시 click 시만 (LOCK).
   const updateColumn = useFlowBase((s) => s.updateColumn)
+  const addOptionToLibraryField = useFlowBase(
+    (s) => s.addOptionToLibraryField,
+  )
   const handlePromote = (v: string) => {
     const existing = col.options ?? []
     if (existing.includes(v)) {
@@ -378,8 +381,15 @@ function SelectCell({
       return
     }
     updateColumn(col.name, { options: [...existing, v] })
+    // F2: Library link 있으면 Library에도 sync
+    let libSynced = false
+    if (col.libraryFieldId) {
+      libSynced = addOptionToLibraryField(col.libraryFieldId, v)
+    }
     toast.success(`Saved "${v}" as ${col.label || col.name} option`, {
-      description: "Available in this column from now on.",
+      description: libSynced
+        ? "Also synced to Library (linked column)."
+        : "Available in this column from now on.",
     })
   }
 
