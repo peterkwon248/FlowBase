@@ -6,7 +6,15 @@
 
 ## Current Features (Completed — 최근 우선)
 
-1. **P1 시급 일괄 #2 — Schema ER · Automations 작동 · Wiki 편집** (2026-05-24, `7694d76`·`4969e50`·`bf02ebb`, **main 머지 완료**) —
+1. **깊이 일괄 — Automations 엔진 + Filter 다중 + 우클릭 + Gallery/Timeline + Bulk edit + Wiki 페이지 생성** (2026-05-24, 6 커밋 `12a65d3`~`44d5003`, **main 머지 완료**) —
+   - **Automations 트리거 엔진** (`lib/automation-runtime.tsx`) — row 변경 시 active 룰 자동 발화. Notify/Set/Add row to 액션. 15 단위 테스트.
+   - **다중 필드 Filter** (`components/board/filter-menu.tsx`) — Linear 스타일 submenu. ActiveFilterChips.
+   - **우클릭 컨텍스트 메뉴** (`components/sheet/row-context-menu.tsx`) — Open detail/Duplicate/Copy ID/Delete + 자동 선택.
+   - **Gallery + Timeline 뷰** (`components/sections/{gallery,timeline}-view.tsx`) — 5종 뷰 완성.
+   - **Bulk edit + ⌘D** (`components/board/bulk-edit-menu.tsx` + keyboard-shortcuts) — 다중 행 일괄 set + 복제 단축.
+   - **Wiki 페이지 생성 + 사이드바 검색** (`components/wiki/wiki-sidebar.tsx` + store) — + 버튼 / 활성 검색.
+
+2. **P1 시급 일괄 #2 — Schema ER · Automations 작동 · Wiki 편집** (2026-05-24, `7694d76`·`4969e50`·`bf02ebb`, **main 머지 완료**) —
    - **Schema ER**: positioned 박스 + SVG bezier 엣지 + cardinality pill. Schema/Fields/Relations 3 sub-tab.
    - **Automations 동작**: 룰 toggle/delete/test-run · 제안 accept(promote to draft)/dismiss. 실제 트리거 엔진은 후속.
    - **Wiki 편집**: Edit 토글 → textarea + Save/Cancel. markdown 원문 직접 편집 가능.

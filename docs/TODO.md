@@ -25,15 +25,20 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 - [x] **Automations 동작 (toggle/delete/accept/dismiss)** (2026-05-24 — `4969e50`)
 - [x] **Wiki 본문 편집** (2026-05-24 — `bf02ebb`)
 
-## P1 — 다음 시급
+## P1 — 다음 시급 (6/9 완료)
 
-- [ ] **Automations 실제 트리거 엔진** — 룰 발화 (현재 testRun 시 runs++만)
-- [ ] **컬럼 헤더 확장 메뉴**: Promote to Library · Attach function · Change type
-- [ ] **Gallery view** (`view-grid.jsx`) · **Timeline view** (`view-timeline.jsx`)
-- [ ] **Dashboard builder** + 추가 차트 종류 (Line/Area/Stacked)
+- [x] **Automations 실제 트리거 엔진** (2026-05-24 — `12a65d3`)
+- [x] **다중 필드 Filter 팝오버** (2026-05-24 — `bfbc3d3`)
+- [x] **우클릭 컨텍스트 메뉴** (2026-05-24 — `26a0c28`)
+- [x] **Gallery view + Timeline view** (2026-05-24 — `0bdedfd`)
+- [x] **Bulk edit + ⌘D 단축** (2026-05-24 — `f6044e1`)
+- [x] **Wiki**: 새 페이지 + 사이드바 검색 (2026-05-24 — `44d5003`)
+
+## P1 — 남은 시급
+
 - [ ] **Schema pan/zoom + drag + New table from template 모달**
-- [ ] **Wiki**: 새 페이지 생성 · 사이드바 검색 활성화 · live preview
-- [ ] **다중 필드 Filter 팝오버** · **Bulk edit** · **우클릭 컨텍스트 메뉴**
+- [ ] **Dashboard builder** + 추가 차트 종류 (Line/Area/Stacked)
+- [ ] **컬럼 헤더 확장 메뉴**: Promote to Library · Attach function · Change type
 
 ---
 
@@ -84,6 +89,12 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## 완료
 
+- [x] **Wiki 새 페이지 + 사이드바 검색** (2026-05-24 — `44d5003`): addWikiPage(init?) draft + deleteWikiPage 액션. 사이드바 헤더 + 버튼. 검색 input 활성 (title/category/body 매치, X clear).
+- [x] **Bulk edit + ⌘D 단축키** (2026-05-24 — `f6044e1`): bulk-edit-menu submenu(status/select 컬럼 → 값) 선택 행 일괄 updateRow. ⌘D → 선택 행 duplicateRow.
+- [x] **Gallery + Timeline view** (2026-05-24 — `0bdedfd`): view-switcher에 grid·timeline 추가. gallery 카드 그리드 (avatar/text 헤더 + status/select/date/num 본문). timeline 월별 그룹화. 둘 다 RowContextMenu 공유.
+- [x] **우클릭 컨텍스트 메뉴** (2026-05-24 — `26a0c28`): store.duplicateRow + row-context-menu(Open detail·Duplicate·Copy ID·Delete). 우클릭 시 자동 선택. 다중 선택 일괄 적용.
+- [x] **다중 필드 Filter 팝오버** (2026-05-24 — `bfbc3d3`): columnFilters: Record&lt;string,string[]&gt; 신규 state · setColumnFilter/toggleColumnFilter/clearAllFilters · filter-menu submenu 패턴 · ActiveFilterChips 칩 바.
+- [x] **Automations 실제 트리거 엔진** (2026-05-24 — `12a65d3`): types.ChangeEvent + lastChange ephemeral + publishChange in addRow/updateRow/commitAiCell · addRowToBoard cross-board · AutomationRuntime 컴포넌트 셸 마운트 · matches/executeRule with row_added·sentiment changes·AI theme confirmed 트리거 + Notify/Set/Add row 액션 + parseRowDetail({token} 치환). **vitest 15 → 30 passing.**
 - [x] **Wiki 본문 편집** (2026-05-24 — `bf02ebb`): editMode 토글 · Title 우측 Edit/Cancel·Save 버튼군 · textarea(min-h-400, font-mono) · markdown 문법 헬퍼 · Save → updateWikiPage({body, updatedAt}) · 페이지 전환 시 draft 자동 리셋.
 - [x] **Automations 동작** (2026-05-24 — `4969e50`): toggleAutomationStatus(active↔paused) · deleteAutomation · testRunAutomation(visual proof) · acceptSuggestion(draft promote) · dismissSuggestion · 룰 카드 status pill 클릭 + "..." 드롭다운(Test run/Delete with AlertDialog) · Empty state · SuggestionCard Accept/Dismiss 버튼.
 - [x] **Schema ER 다이어그램 + 3 sub-tab** (2026-05-24 — `7694d76`): auto-layout 3-col grid · FK → bezier 엣지 + 1:N cardinality pill · hover active 표시 + 비-active 페이드 · Schema/Fields/Relations sub-tab 분리 · 카드/리스트 동일 컬러 시스템(TableChip).

@@ -4,6 +4,63 @@
 
 ---
 
+## 2026-05-24 (kkh94 머신, 깊이 일괄) — Automations 엔진 · Filter · 우클릭 · Gallery/Timeline · Bulk edit · ⌘D · Wiki 페이지 생성/검색
+
+### 완료 (6 커밋)
+1. **Automations 실제 트리거 엔진** (`12a65d3`) — 룰이 진짜 발화.
+   - types: `ChangeEvent` + `FlowBaseState.lastChange` (ephemeral).
+   - store: addRow/updateRow/commitAiCell이 `publishChange()`로 lastChange set. cross-board `addRowToBoard(boardId, row)` 신규.
+   - `lib/automation-runtime.tsx` (신규) — AutomationRuntime 컴포넌트 셸 마운트. lastChange 구독 → active 룰 스캔 → `matches()` → `executeRule()`. 트리거: row_added · sentiment changes to · AI Theme confirmed as. 액션: Notify(toast) · Set(updateRow patch) · Add row to(cross-board). detail의 `{name}` 토큰 source row 값으로 치환.
+   - 단위 테스트 15 신규 — AUT-001/002/003 트리거 매칭 + parseRowDetail. **vitest 15 → 30 passing**.
+2. **다중 필드 Filter 팝오버** (`bfbc3d3`) — status chips만 가능했던 필터를 모든 select/status 컬럼으로 확장.
+   - store: `columnFilters: Record<string, string[]>` ephemeral + setColumnFilter / toggleColumnFilter / clearAllFilters. selectVisibleRows에 적용.
+   - `components/board/filter-menu.tsx` — Linear "Add Filter…" submenu 패턴. 활성 카운트 배지. ActiveFilterChips 칩 바 (col:value, x로 제거).
+3. **행 우클릭 컨텍스트 메뉴** (`26a0c28`) — `onContextMenu` 0건 → shadcn ContextMenu.
+   - store: `duplicateRow(rowId)` — 원본 다음 위치에 새 ID + AI confirmed 유지. publishChange로 자동화 통지.
+   - `components/sheet/row-context-menu.tsx` — Open in detail(⌘I) · Duplicate(⌘D) · Copy ID · Delete(⌫). 우클릭 시 선택 자동 교체. 다중 선택이면 일괄 적용.
+   - sheet-view 각 tr을 RowContextMenu로 래핑.
+4. **Gallery + Timeline 뷰** (`0bdedfd`) — Sheet/Kanban/Dashboard 옆에 정렬.
+   - view-switcher: VIEWS에 grid · timeline 추가. timeline은 date 컬럼 있을 때만 활성.
+   - `gallery-view.tsx`: auto-fill 카드 그리드. 첫 avatar/text → 헤더, status/select/date/num 4개 → 본문. RowContextMenu + detail bar 자동 활성.
+   - `timeline-view.tsx`: 첫 date 컬럼 기준 월별 그룹화 (최근부터). 카드: 일자 + 제목/ID + priority/status pill.
+5. **Bulk edit + ⌘D 복제 단축키** (`f6044e1`):
+   - `bulk-edit-menu.tsx` — 다중 선택 시 "Set…" 드롭다운. status/select 컬럼 → 값 선택 → 모든 선택 행 updateRow. STATUS_LABELS 디스플레이.
+   - keyboard-shortcuts: ⌘D → 선택 행 모두 duplicateRow.
+6. **Wiki 새 페이지 + 사이드바 검색** (`44d5003`):
+   - store: addWikiPage(init?) → unverified draft + 새 ID + 선택 자동. deleteWikiPage.
+   - wiki-sidebar 헤더 + 버튼, 검색 input 활성 (title/category/body 매치, X clear).
+
+### 큰 결정
+- **자동화 트리거 엔진 = 휴리스틱 키워드 매칭** — when.event/value 자유 텍스트로 두고, "row added"/"sentiment changes to"/"AI theme confirmed as" 같은 substring으로 라우팅. 명시적 typed schema(TriggerKind)로 마이그레이트 ❌ (시드 그대로 동작).
+- **publishChange는 store 액션 내부에서** — 별도 middleware ❌. 명시적 호출 + timestamp dedupe로 useEffect 재실행 제어.
+- **columnFilters는 filter와 병존** — 기존 status chips 빠른 접근 유지, 새 FilterMenu가 모든 select/status 커버. 둘 다 selectVisibleRows에서 AND.
+- **Gallery/Timeline은 RowContextMenu 공유** — 시트 외 뷰에서도 동일 액션 제공. detail bar 자동 활성도 동일.
+- **Bulk edit은 select/status만** — text/num/date 인플레이스 bulk는 후속 (입력 위젯 다양해서 복잡).
+- **새 Wiki 페이지는 draft 상태** — 자동 verified ❌ (LOCK: 사람이 검증).
+
+### 검증
+- tsc 0 · vitest 30/30 (15 신규 automation matches/parseRowDetail) · build.
+- 브라우저 통합 테스트는 정량적 store 카운트 검증 (DOM 변화 + lastChange 추적).
+
+### 다음
+- Schema pan/zoom + drag reposition · "New table from template" 모달.
+- Dashboard builder (Line/Area/Stacked + Add chart 카탈로그).
+- 컬럼 헤더 확장: Promote/Attach function/Change type.
+- 자동화 시간 기반 트리거 (cron-like for "every day at", "due date passes").
+- Wiki sidebar 페이지 우클릭 (Rename · Move category · Delete).
+- Trash 행 단위 + 30일 만료.
+- Ask AI ⌘J · Settings 멤버 탭.
+
+### Watch Out
+- **`updateRow` 호출은 `publishChange` → AutomationRuntime이 useEffect 재실행**. 무한 루프 위험: rule action이 updateRow를 부르면 새 change → 다시 매칭. handledRef로 같은 timestamp는 한 번만 처리, 추가로 룰 자체가 자기-매칭하지 않도록 액션 결과로 trigger 조건이 다시 충족되지 않게 시드 룰 디자인 (Negative→Urgent task는 새 boardId라 OK).
+- **Bulk edit + Automations 결합**: 10행 동시 updateRow → 10개 ChangeEvent · 10번 룰 매칭. 시드 룰 4개 × 10행 = 최대 40 fire. 자동화가 toast 폭주 가능성. 향후 batch suppress 옵션 검토.
+- **Gallery/Timeline은 selectVisibleRows 결과를 useMemo 의존성 hack** — board/search/filter/sort/columnFilters로 invalidation 추적. 새 ephemeral state 추가하면 deps 갱신 필요.
+
+### 머신
+kkh94. main 머지·푸시는 after-work 자동.
+
+---
+
 ## 2026-05-24 (kkh94 머신, P1 시급 일괄 #2) — Schema ER · Automations 작동 · Wiki 편집
 
 ### 완료
