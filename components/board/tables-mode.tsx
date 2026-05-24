@@ -18,7 +18,9 @@ import { FilterChips } from "@/components/board/filter-chips"
 import { ViewSwitcher } from "@/components/board/view-switcher"
 import { ImportDialog } from "@/components/import/import-dialog"
 import { DashboardView } from "@/components/sections/dashboard-view"
+import { GalleryView } from "@/components/sections/gallery-view"
 import { KanbanView } from "@/components/sections/kanban-view"
+import { TimelineView } from "@/components/sections/timeline-view"
 import { SheetView } from "@/components/sheet/sheet-view"
 import {
   selectActiveBoard,
@@ -42,9 +44,15 @@ export function TablesMode() {
   const colCount = board?.columns.length ?? 0
   const selectedCount = selectedRowIds.length
 
-  // Kanban은 status 컬럼 필요 — 없으면 sheet 폴백. grid/timeline도 sheet(Phase 4 범위 밖).
+  // Kanban은 status 컬럼 필요, Timeline은 date 컬럼 필요 — 없으면 sheet 폴백.
   const hasStatus = board?.columns.some((c) => c.type === "status") ?? false
-  const effectiveView = view === "kanban" && !hasStatus ? "sheet" : view
+  const hasDate = board?.columns.some((c) => c.type === "date") ?? false
+  const effectiveView =
+    view === "kanban" && !hasStatus
+      ? "sheet"
+      : view === "timeline" && !hasDate
+        ? "sheet"
+        : view
 
   return (
     <>
@@ -123,9 +131,13 @@ export function TablesMode() {
           </div>
         </div>
 
-        {/* 뷰 — Sheet / Kanban / Dashboard */}
+        {/* 뷰 — Sheet / Kanban / Gallery / Timeline / Dashboard */}
         {effectiveView === "kanban" ? (
           <KanbanView />
+        ) : effectiveView === "grid" ? (
+          <GalleryView />
+        ) : effectiveView === "timeline" ? (
+          <TimelineView />
         ) : effectiveView === "chart" ? (
           <DashboardView />
         ) : (

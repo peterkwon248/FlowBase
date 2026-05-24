@@ -8,7 +8,9 @@
 "use client"
 
 import {
+  CalendarRange,
   LayoutDashboard,
+  LayoutGrid,
   type LucideIcon,
   SquareKanban,
   Table2,
@@ -30,6 +32,8 @@ interface ViewDef {
 const VIEWS: ViewDef[] = [
   { id: "sheet", label: "Sheet", icon: Table2 },
   { id: "kanban", label: "Kanban", icon: SquareKanban },
+  { id: "grid", label: "Gallery", icon: LayoutGrid },
+  { id: "timeline", label: "Timeline", icon: CalendarRange },
   { id: "chart", label: "Dashboard", icon: LayoutDashboard },
 ]
 
@@ -39,11 +43,24 @@ export function ViewSwitcher() {
   const setView = useFlowBase((s) => s.setView)
 
   const hasStatus = board?.columns.some((c) => c.type === "status") ?? false
+  const hasDate = board?.columns.some((c) => c.type === "date") ?? false
+
+  const isDisabled = (id: ViewMode): boolean => {
+    if (id === "kanban" && !hasStatus) return true
+    if (id === "timeline" && !hasDate) return true
+    return false
+  }
+
+  const disabledReason = (id: ViewMode): string => {
+    if (id === "kanban") return "Needs a status column"
+    if (id === "timeline") return "Needs a date column"
+    return ""
+  }
 
   return (
     <div className="inline-flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
       {VIEWS.map((v) => {
-        const disabled = v.id === "kanban" && !hasStatus
+        const disabled = isDisabled(v.id)
         const active = view === v.id
         const Icon = v.icon
         return (
@@ -52,9 +69,7 @@ export function ViewSwitcher() {
             type="button"
             disabled={disabled}
             onClick={() => setView(v.id)}
-            title={
-              disabled ? "status 컬럼이 있는 보드에서 사용 가능" : v.label
-            }
+            title={disabled ? disabledReason(v.id) : v.label}
             className={cn(
               "inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium transition-colors",
               active
