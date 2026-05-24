@@ -7,17 +7,17 @@
 ## Phase Status
 
 - **Phase 0 (Plan)**: ✅ 완료
-- **Phase 1 (Beta)**: 🟡 진행 중 — FlowBase V2. **앱 범위 재정의**(2026-05-23): 옛 "7단계 plan"은 프로토타입 6 액티비티 모드 중 Tables 하나뿐이었음. Phase A 셸✅ → Library B1·B2✅ + Workspace Automations✅ + Inbox✅ + Detail bar✅ + English UI✅ + Tasks 보드✅. **남은 breadth**: Wiki · Search 팔레트. 깊이(B3 Library 편집·B4 테이블 연동)는 breadth 완성 뒤. BaaS는 후순위.
+- **Phase 1 (Beta)**: 🟢 거의 완성 — FlowBase V2. 6 액티비티 모드 모두 작동(Tables/Workspace/Library/Wiki/Inbox/Search) + 깊이 작업 일괄 완료(자동화 엔진 · 시간 트리거 · 다중 필터 · Gallery/Timeline · Dashboard builder · Schema ER 인터랙션 · Trash 행 단위 · Promote/Attach function). **남은 폴리시**: AI_CLASSIFY 자동 실행 · Wiki Trash 통합 · Ask AI ⌘J · Settings 멤버 탭 · Heatmap 차트 · 시간 트리거 firedKeys persist.
 - **Phase 2 (Team)**: ⬜ — 멤버 초대, 권한 모델, 워크스페이스 분리 (W11)
-- **Phase 3+**: ⬜ — Realtime collab, scaling
+- **Phase 3+**: ⬜ — Realtime collab, scaling, BaaS 결정 (Supabase vs bkend.ai)
 
 ---
 
 ## Current Direction (다음 우선순위)
 
-**2026-05-23 재정의**: V2 옛 "Phase 1~6"은 프로토타입이 그리는 6 액티비티 모드(Inbox·Tables·Workspace·Library·Wiki·Search) 중 **Tables 모드 하나**만 구현한 것 — 앱의 약 1/6. 셸을 6모드 `activityMode` 라우터로 재구축(Phase A✅, `daad859`). 다음: 나머지 서브시스템을 차례로 — **Library 먼저**(설계 `docs/02-design/features/flowbase-v2-library.design.md`, B1~B4), 이어 Wiki·Inbox·Workspace·Search. BaaS(옛 Phase 7)는 후순위.
+**2026-05-24 진행상태**: 6 액티비티 모드 모두 작동 + 일관성/깊이 작업 광범위하게 완료. 사용자 지적("의도한 거냐?")으로 Workspace/Inbox 사이드바 추가 + 5 모드 사이드바 너비 통일(240px). 자동화 엔진 실 동작(row 변경 + 시간 트리거). Dashboard builder로 사용자 차트 추가/삭제. 컬럼 ↔ Library 양방향(Promote + Attach function).
 
-**옛 7단계 진행**(= Tables 모드 내용): 시트·AI·Import·Kanban·Dashboard·멀티보드 구현 완료 (`main`).
+**다음**: 폴리시 항목들 (NEXT-ACTION 참조). B4(Library asset 링크의 마지막 절반)는 사용자 명시 후순위.
 
 상세는 [../NEXT-ACTION.md](../NEXT-ACTION.md) 참조.
 
@@ -34,7 +34,13 @@
 | `eb31064` | FlowBase V2 Phase 1B·2·3 (시트·AI·Import) | `feat/sheet-view-v2` → `main` 머지 (2026-05-21) | 시트 뷰 · AI 패널+Claude(`claude-sonnet-4-6`) · Import 3-step 위저드. 설계 문서 phase{2,3}. tsc·build·vitest(13) green. `app/txt-poc` 제거 |
 | `df7eeb4` | FlowBase V2 Phase 4·5·6 (Kanban·Dashboard·앱 셸·멀티보드·Schema) | `feat/kanban-dashboard` → `main` 머지 (2026-05-21) | 뷰 스위처 · Kanban · Dashboard(recharts) · 앱 셸(패널 토글·단축키) · 보드 CRUD · Schema 뷰. 설계 문서 phase{4,5,6}. tsc·build green |
 | `2cbf01a`~`2cdbb0f` | 세션: 명령어 · Phase 3 Q1 · 죽은코드 정리 · 앱 셸 6모드(Phase A) · Library 설계 | `claude/wizardly-murdock-451e3d` (origin) — main 머지 대기 (2026-05-23) | before/after-work 프로젝트 커맨드화 · infer-batch sourceField · V1 코드 20파일 삭제(−7,025줄) · 셸 6모드 라우터+Schema→Workspace · Library 설계(B1~B4). **앱 범위 재정의** |
-| `4148c96`~`605b9f3` | 후속: Phase B Library(B1·B2) · Workspace Automations · Inbox · Detail bar · English UI · Tasks 보드 | `claude/wizardly-murdock-451e3d` (origin push) — **main 머지 대기** (2026-05-23) | 6 커밋. Library B1(브라우즈)·B2(디테일, selectAsset 원자 액션) · Workspace Automations(룰+AI 제안+탭) · Inbox(파생 항목·필터) · Detail bar(4번째 패널·⌘I) · UI 영어화(STATUS_LABELS 맵·17+파일) · Trash/Settings 푸터 · Tasks 시드 보드(store v4→v5 migrate). **breadth 우선 (사용자 명시)** |
+| `4148c96`~`605b9f3` | 후속: Phase B Library(B1·B2) · Workspace Automations · Inbox · Detail bar · English UI · Tasks 보드 | `main` 머지 (2026-05-23) | 6 커밋. Library B1(브라우즈)·B2(디테일) · Workspace Automations(룰+AI 제안+탭) · Inbox(파생 항목·필터) · Detail bar(4번째 패널·⌘I) · UI 영어화(STATUS_LABELS 맵) · Trash/Settings 푸터 · Tasks 시드 보드 |
+| `01a7ae7`~`3771bc8` | Wiki 모드 + Search 팔레트 → breadth P0 100% | `main` 머지 (2026-05-23) | Wiki 6 시드 페이지 + 미니 마크다운 렌더러 + Verified pill + store v5→v6 · ⌘K Search 팔레트 + 풀페이지 Search 모드(All/Tables/Rows/Library/Wiki) |
+| `96ff20d`~`d911c06` | 셸 chrome 보정 + 컬럼 CRUD + Trash/Settings 실작동 + 시드 영어화 | `main` 머지 (2026-05-24) | status-bar(영구, hide-all UX) · NavCluster(시계·‹·›) · 컬럼 추가/편집 ("+" 활성, 헤더 ... 메뉴) · Trash/Settings 다이얼로그 실 동작 · 시드 deep 영어화 |
+| `12a65d3`~`44d5003` | 깊이 일괄: Automations 엔진 · Filter · 우클릭 · Gallery/Timeline · Bulk edit · Wiki CRUD | `main` 머지 (2026-05-24) | 6 커밋. row 변경 시 active 룰 자동 발화 + 15 단위 테스트 · 다중 필드 Filter(submenu) · 행 우클릭(Open/Duplicate/Copy/Delete) · Gallery+Timeline 뷰 · Bulk edit + ⌘D · Wiki 새 페이지 + 사이드바 검색 |
+| `2bdee40`~`57fadb6` | Schema 인터랙션 + Dashboard 영어/Line + Change type | `main` 머지 (2026-05-24) | Schema pan/zoom + 카드 드래그 + "New table" 모달 · Dashboard Line trend(date 컬럼 있을 때) + 모든 라벨 영어화 · 컬럼 Change type submenu |
+| `fb79379`~`8909ec2` | 일관성 회복: Workspace/Inbox 사이드바 + Trash 행 단위 + Promote/Attach + Automation log | `main` 머지 (2026-05-24) | 사용자 지적("왜 사이드바가 아니라 탭?") → Workspace/Inbox 사이드바 추가 · 5 모드 너비 통일(240px) · Automation 실행 → aiHistory log · Wiki 페이지 우클릭(Rename/Move/Delete) · Trash 행 단위 + 30일 만료(2탭 다이얼로그) · Promote to Library / Attach function 컬럼 헤더 |
+| `bb5a0cc`~`5db2376` | Dashboard builder + 시간 트리거 + Attached function | `main` 머지 (2026-05-24) | Dashboard builder full(ChartConfig persist · Stacked bar · "+Add chart" 모달 · X 삭제 · Reset to auto · 5종 차트 type) · Automations 시간 트리거(daily HH:MM · dueDate+status, setInterval 1분 tick + firedKeys dedupe) + 14 신규 unit test · Attached function 실 실행(MATCH_FROM_DROPDOWN 동작, AI_CLASSIFY hint) |
 
 ---
 
