@@ -13,6 +13,7 @@ import { BoardSidebar } from "@/components/board/board-sidebar"
 import { DetailBar } from "@/components/board/detail-bar"
 import { EdgeCollapse } from "@/components/board/edge-collapse"
 import { ExpandTab } from "@/components/board/expand-tab"
+import { BulkEditMenu } from "@/components/board/bulk-edit-menu"
 import { ActiveFilterChips, FilterMenu } from "@/components/board/filter-menu"
 import { FilterChips } from "@/components/board/filter-chips"
 import { ViewSwitcher } from "@/components/board/view-switcher"
@@ -87,14 +88,17 @@ export function TablesMode() {
             <FilterMenu />
             <div className="flex-1" />
             {selectedCount > 0 && (
-              <button
-                type="button"
-                onClick={() => deleteRows(selectedRowIds)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.05]"
-              >
-                <Trash2 className="size-3" />
-                Delete {selectedCount} rows
-              </button>
+              <>
+                <BulkEditMenu />
+                <button
+                  type="button"
+                  onClick={() => deleteRows(selectedRowIds)}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.05]"
+                >
+                  <Trash2 className="size-3" />
+                  Delete {selectedCount} rows
+                </button>
+              </>
             )}
             <button
               type="button"

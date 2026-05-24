@@ -74,6 +74,18 @@ export function useKeyboardShortcuts(): void {
         return
       }
 
+      // ⌘D — 선택 행 복제. 셀 편집 중에는 입력기에 양보.
+      if (mod && !e.shiftKey && e.key.toLowerCase() === "d") {
+        if (editing) return
+        const s = useFlowBase.getState()
+        if (s.selectedRowIds.length === 0) return
+        e.preventDefault()
+        for (const id of s.selectedRowIds) {
+          s.duplicateRow(id)
+        }
+        return
+      }
+
       // Delete / Backspace — 선택 행 삭제 (편집 중 ❌, 선택 없으면 무시)
       if ((e.key === "Delete" || e.key === "Backspace") && !editing) {
         const s = useFlowBase.getState()
