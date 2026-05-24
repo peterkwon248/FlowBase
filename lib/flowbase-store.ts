@@ -21,6 +21,7 @@ import type {
   TableRow,
   TicketStatus,
   TrashedBoard,
+  TrashedRow,
   ViewMode,
   WikiPage,
   WorkspaceSettings,
@@ -36,7 +37,9 @@ import {
 import { undoStack } from "@/lib/undo-stack"
 
 const STORE_KEY = "flowbase-state-v4"
-const STORE_VERSION = 8 // v8: schemaPositions 추가
+const STORE_VERSION = 9 // v9: trashedRows 추가 + 30일 만료 정책
+
+const TRASH_EXPIRY_MS = 30 * 86_400_000 // 30 days
 
 function nowIso(): string {
   return new Date().toISOString()
@@ -70,7 +73,11 @@ export interface FlowBaseActions {
   // Trash — 복원/영구 삭제
   restoreBoard: (boardId: string) => void
   permanentDeleteBoard: (boardId: string) => void
+  restoreRow: (rowId: string) => void
+  permanentDeleteRow: (rowId: string) => void
   emptyTrash: () => void
+  // 30일 만료 자동 정리 (mount 시 호출 권장)
+  cleanupExpiredTrash: () => void
 
   // Settings
   updateSettings: (patch: Partial<WorkspaceSettings>) => void
@@ -91,6 +98,9 @@ export interface FlowBaseActions {
   deleteColumn: (colName: string) => void
   renameColumn: (colName: string, newName: string, newLabel?: string) => void
   updateColumn: (colName: string, patch: Partial<ColumnDef>) => void
+  // Library promotion: 현재 active board의 컬럼을 LibraryField로 승격.
+  promoteColumnToLibraryField: (colName: string) => string | null
+  attachFunctionToColumn: (colName: string, functionId: string | null) => void
 
   // Rows — active board 대상. 변경 전 undo 스냅샷 push.
   addRow: (row?: Partial<TableRow>) => string
@@ -157,6 +167,7 @@ function createInitialState(): FlowBaseState {
     wikiPages,
     wikiSelectedId: wikiPages[0]?.id ?? null,
     trashedBoards: [],
+    trashedRows: [],
     settings: { workspaceLabel: "peter's workspace", workspaceInitial: "P" },
     schemaPositions: {},
     panels: { activityBar: true, sidebar: true, aiPanel: true, detailBar: false },
@@ -417,7 +428,50 @@ export const useFlowBase = create<FlowBaseStore>()(
           }))
         },
 
-        emptyTrash: () => set({ trashedBoards: [] }),
+        restoreRow: (rowId) => {
+          set((s) => {
+            const trashed = s.trashedRows.find((t) => t.row.id === rowId)
+            if (!trashed) return s
+            const target = s.boards[trashed.boardId]
+            if (!target) {
+              // 보드 자체가 사라졌으면 row 복원 불가 — 휴지통에선 제거
+              return {
+                trashedRows: s.trashedRows.filter((t) => t.row.id !== rowId),
+              }
+            }
+            return {
+              boards: {
+                ...s.boards,
+                [trashed.boardId]: {
+                  ...target,
+                  rows: [...target.rows, trashed.row],
+                  updatedAt: nowIso(),
+                },
+              },
+              trashedRows: s.trashedRows.filter((t) => t.row.id !== rowId),
+            }
+          })
+        },
+
+        permanentDeleteRow: (rowId) => {
+          set((s) => ({
+            trashedRows: s.trashedRows.filter((t) => t.row.id !== rowId),
+          }))
+        },
+
+        emptyTrash: () => set({ trashedBoards: [], trashedRows: [] }),
+
+        cleanupExpiredTrash: () => {
+          const cutoff = Date.now() - TRASH_EXPIRY_MS
+          set((s) => ({
+            trashedBoards: s.trashedBoards.filter(
+              (t) => new Date(t.deletedAt).getTime() >= cutoff,
+            ),
+            trashedRows: s.trashedRows.filter(
+              (t) => new Date(t.deletedAt).getTime() >= cutoff,
+            ),
+          }))
+        },
 
         updateSettings: (patch) =>
           set((s) => ({ settings: { ...s.settings, ...patch } })),
@@ -629,6 +683,70 @@ export const useFlowBase = create<FlowBaseStore>()(
           })
         },
 
+        // 컬럼을 Library Field로 승격 — usedIn 트래킹. 이미 승격됐으면 기존 id 반환.
+        promoteColumnToLibraryField: (colName) => {
+          const s = get()
+          const b = s.boards[s.activeBoardId]
+          if (!b) return null
+          const col = b.columns.find((c) => c.name === colName)
+          if (!col) return null
+          if (col.libraryFieldId) return col.libraryFieldId
+          const fieldId = `fld-${Date.now().toString(36).slice(-6)}`
+          const newField = {
+            id: fieldId,
+            name: col.label || col.name,
+            type: col.type,
+            desc: `Promoted from ${b.label}.${col.name}`,
+            usedIn: [`${b.label}.${col.name}`],
+            config: col.options
+              ? {
+                  options: col.options.map((o) => ({
+                    id: o.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+                    label: o,
+                    color: "var(--chart-1)",
+                  })),
+                }
+              : {},
+          }
+          set({
+            library: {
+              ...s.library,
+              fields: [...s.library.fields, newField],
+            },
+            boards: {
+              ...s.boards,
+              [b.id]: {
+                ...b,
+                columns: b.columns.map((c) =>
+                  c.name === colName ? { ...c, libraryFieldId: fieldId } : c,
+                ),
+                updatedAt: nowIso(),
+              },
+            },
+          })
+          return fieldId
+        },
+
+        attachFunctionToColumn: (colName, functionId) => {
+          const s = get()
+          const b = s.boards[s.activeBoardId]
+          if (!b) return
+          set({
+            boards: {
+              ...s.boards,
+              [b.id]: {
+                ...b,
+                columns: b.columns.map((c) =>
+                  c.name === colName
+                    ? { ...c, functionId: functionId ?? undefined }
+                    : c,
+                ),
+                updatedAt: nowIso(),
+              },
+            },
+          })
+        },
+
         addRow: (row) => {
           const b = activeBoard()
           if (!b) return row?.id ?? "ROW-100"
@@ -738,9 +856,18 @@ export const useFlowBase = create<FlowBaseStore>()(
           if (!b || rowIds.length === 0) return
           pushUndo()
           const targets = new Set(rowIds)
+          const movedToTrash: TrashedRow[] = b.rows
+            .filter((r) => targets.has(r.id))
+            .map((row) => ({
+              boardId: b.id,
+              boardLabel: b.label,
+              row,
+              deletedAt: nowIso(),
+            }))
           setRows(b.rows.filter((r) => !targets.has(r.id)))
           set((s) => ({
             selectedRowIds: s.selectedRowIds.filter((id) => !targets.has(id)),
+            trashedRows: [...movedToTrash, ...s.trashedRows],
           }))
         },
 
@@ -1044,6 +1171,9 @@ export const useFlowBase = create<FlowBaseStore>()(
         if (version < 8) {
           s.schemaPositions = s.schemaPositions ?? {}
         }
+        if (version < 9) {
+          s.trashedRows = s.trashedRows ?? []
+        }
         return s as FlowBaseState
       },
       partialize: (s) => ({
@@ -1055,6 +1185,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         wikiPages: s.wikiPages,
         wikiSelectedId: s.wikiSelectedId,
         trashedBoards: s.trashedBoards,
+        trashedRows: s.trashedRows,
         settings: s.settings,
         schemaPositions: s.schemaPositions,
         panels: s.panels,

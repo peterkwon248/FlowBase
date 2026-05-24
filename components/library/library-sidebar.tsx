@@ -78,7 +78,7 @@ export function LibrarySidebar() {
   }
 
   return (
-    <aside className="flex w-[260px] shrink-0 flex-col border-r border-border-subtle bg-surface text-[13px]">
+    <aside className="flex w-60 shrink-0 flex-col border-r border-border-subtle bg-surface text-[13px]">
       {/* 헤더 */}
       <div className="flex items-center gap-2 border-b border-border-subtle px-3 py-2.5">
         <span className="flex size-5 items-center justify-center rounded bg-primary/15 text-primary">

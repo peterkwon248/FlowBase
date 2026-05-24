@@ -7,7 +7,17 @@
 "use client"
 
 import { useState } from "react"
-import { Check, MoreHorizontal, Pencil, Trash2, Type } from "lucide-react"
+import {
+  Check,
+  Link2,
+  MoreHorizontal,
+  Pencil,
+  Sigma,
+  Sparkles,
+  Trash2,
+  Type,
+} from "lucide-react"
+import { toast } from "sonner"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +67,9 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
   const renameColumn = useFlowBase((s) => s.renameColumn)
   const deleteColumn = useFlowBase((s) => s.deleteColumn)
   const updateColumn = useFlowBase((s) => s.updateColumn)
+  const promoteColumn = useFlowBase((s) => s.promoteColumnToLibraryField)
+  const attachFunction = useFlowBase((s) => s.attachFunctionToColumn)
+  const library = useFlowBase((s) => s.library)
 
   const [renameOpen, setRenameOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -131,6 +144,104 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
                         strokeWidth={3}
                       />
                     )}
+                  </DropdownMenuItem>
+                )
+              })}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onSelect={() => {
+              const id = promoteColumn(col.name)
+              if (id) {
+                toast.success(
+                  col.libraryFieldId
+                    ? `Already linked to Library Field`
+                    : `Promoted "${col.label || col.name}" to Library`,
+                  {
+                    description: `Available across boards as a reusable Field.`,
+                  },
+                )
+              }
+            }}
+            className="gap-2"
+            data-column-promote={col.name}
+          >
+            <Sparkles className="size-3.5 text-primary" strokeWidth={1.75} />
+            <span>
+              {col.libraryFieldId ? "Linked to Library" : "Promote to Library"}
+            </span>
+            {col.libraryFieldId && (
+              <Check className="ml-auto size-3 text-primary" strokeWidth={3} />
+            )}
+          </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="gap-2">
+              <Sigma
+                className="size-3.5 text-muted-foreground"
+                strokeWidth={1.75}
+              />
+              <span>Attach function</span>
+              {col.functionId && (
+                <Link2
+                  className="ml-auto size-3 text-primary"
+                  strokeWidth={2}
+                />
+              )}
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent
+              className="w-52"
+              data-column-attach-function={col.name}
+            >
+              <DropdownMenuItem
+                onSelect={() => {
+                  attachFunction(col.name, null)
+                  toast.info(`Detached function from "${col.label || col.name}"`)
+                }}
+                className="gap-2"
+              >
+                <span className="flex size-3.5 items-center justify-center">
+                  {!col.functionId && (
+                    <Check
+                      className="size-3 text-primary"
+                      strokeWidth={3}
+                    />
+                  )}
+                </span>
+                <span className="text-muted-foreground">None</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {library.functions.map((fn) => {
+                const on = col.functionId === fn.id
+                return (
+                  <DropdownMenuItem
+                    key={fn.id}
+                    onSelect={() => {
+                      attachFunction(col.name, fn.id)
+                      toast.success(
+                        `Attached ${fn.name} to "${col.label || col.name}"`,
+                        { description: fn.desc },
+                      )
+                    }}
+                    className="gap-2"
+                    data-attach-function-option={fn.id}
+                  >
+                    <span className="flex size-3.5 items-center justify-center">
+                      {on && (
+                        <Check
+                          className="size-3 text-primary"
+                          strokeWidth={3}
+                        />
+                      )}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-mono text-[11.5px]">
+                        {fn.name}
+                      </div>
+                      <div className="truncate text-[10.5px] text-muted-foreground">
+                        {fn.label}
+                      </div>
+                    </div>
                   </DropdownMenuItem>
                 )
               })}

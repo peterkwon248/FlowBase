@@ -104,6 +104,18 @@ function executeRule(rule: AutomationRule, change: ChangeEvent): void {
   // runs/lastRun 갱신
   s.testRunAutomation(rule.id)
 
+  // AI Activity timeline에 기록 — 트리거 보드의 aiHistory에 append (current board 컨텍스트)
+  const triggerBoard = s.boards[change.boardId]
+  if (triggerBoard && s.activeBoardId === change.boardId) {
+    s.pushAi({
+      kind: "manual",
+      title: `Automation: ${rule.name}`,
+      detail: `${rule.when.event} → ${rule.then.map((t) => t.action).join(", ")}`,
+      status: "applied",
+      rowIds: [change.rowId],
+    })
+  }
+
   for (const step of rule.then) {
     try {
       executeStep(rule, step, change)

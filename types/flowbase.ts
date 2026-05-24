@@ -43,6 +43,8 @@ export interface ColumnDef {
   fk?: string // type === "fk" — 대상 보드 id
   buttonLabel?: string // type === "button"
   buttonAction?: string // type === "button" — 액션 식별자
+  libraryFieldId?: string // Promote to Library 후 연결된 LibraryField id
+  functionId?: string // Attach function — Library function id (실행은 향후)
 }
 
 // reaction 셀(votes) 값
@@ -259,6 +261,14 @@ export interface TrashedBoard {
   deletedAt: string // ISO
 }
 
+// 삭제된 행 항목 — boardId + row 스냅샷.
+export interface TrashedRow {
+  boardId: string
+  boardLabel: string // 복원/삭제 후에도 보드 라벨 표시
+  row: TableRow
+  deletedAt: string // ISO
+}
+
 // 워크스페이스 설정 (persist) — Settings 모달이 편집.
 export interface WorkspaceSettings {
   workspaceLabel: string
@@ -325,6 +335,7 @@ export interface FlowBaseState {
 
   // Trash · Settings (persist)
   trashedBoards: TrashedBoard[]
+  trashedRows: TrashedRow[]
   settings: WorkspaceSettings
 
   // Schema ER 카드 수동 위치 (persist) — 없으면 auto-layout

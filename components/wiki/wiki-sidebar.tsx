@@ -6,6 +6,7 @@
 
 import { useMemo, useState } from "react"
 import { BookText, ChevronDown, FileText, Plus, Search, X } from "lucide-react"
+import { WikiPageContextMenu } from "@/components/wiki/wiki-page-context-menu"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { WikiPage } from "@/types/flowbase"
@@ -48,7 +49,7 @@ export function WikiSidebar() {
     setCollapsed((c) => ({ ...c, [cat]: !c[cat] }))
 
   return (
-    <aside className="flex w-[260px] shrink-0 flex-col border-r border-border-subtle bg-surface text-[13px]">
+    <aside className="flex w-60 shrink-0 flex-col border-r border-border-subtle bg-surface text-[13px]">
       {/* 헤더 */}
       <div className="flex items-center gap-2 border-b border-border-subtle px-3 py-2.5">
         <span className="flex size-5 items-center justify-center rounded bg-chart-3/15 text-chart-3">
@@ -129,40 +130,41 @@ export function WikiSidebar() {
                 items.map((p) => {
                   const active = p.id === selectedId
                   return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setWikiPage(p.id)}
-                      data-page-id={p.id}
-                      className={cn(
-                        "relative flex w-full items-center gap-1.5 rounded-md py-1.5 pl-7 pr-2 text-left text-[12.5px] transition-colors",
-                        active
-                          ? "bg-foreground/[0.06] font-medium text-foreground"
-                          : "text-muted-foreground hover:bg-foreground/[0.04]",
-                      )}
-                    >
-                      {active && (
-                        <span className="absolute inset-y-1 left-2 w-0.5 rounded bg-primary" />
-                      )}
-                      <FileText
+                    <WikiPageContextMenu key={p.id} page={p}>
+                      <button
+                        type="button"
+                        onClick={() => setWikiPage(p.id)}
+                        data-page-id={p.id}
                         className={cn(
-                          "size-3 shrink-0",
-                          p.verified
-                            ? "text-success-fg"
-                            : "text-muted-foreground",
+                          "relative flex w-full items-center gap-1.5 rounded-md py-1.5 pl-7 pr-2 text-left text-[12.5px] transition-colors",
+                          active
+                            ? "bg-foreground/[0.06] font-medium text-foreground"
+                            : "text-muted-foreground hover:bg-foreground/[0.04]",
                         )}
-                        strokeWidth={1.75}
-                      />
-                      <span className="flex-1 truncate">{p.title}</span>
-                      {!p.verified && (
-                        <span
-                          title="Unverified"
-                          className="rounded bg-destructive/15 px-1 py-0 text-[9px] font-semibold text-destructive"
-                        >
-                          DRAFT
-                        </span>
-                      )}
-                    </button>
+                      >
+                        {active && (
+                          <span className="absolute inset-y-1 left-2 w-0.5 rounded bg-primary" />
+                        )}
+                        <FileText
+                          className={cn(
+                            "size-3 shrink-0",
+                            p.verified
+                              ? "text-success-fg"
+                              : "text-muted-foreground",
+                          )}
+                          strokeWidth={1.75}
+                        />
+                        <span className="flex-1 truncate">{p.title}</span>
+                        {!p.verified && (
+                          <span
+                            title="Unverified"
+                            className="rounded bg-destructive/15 px-1 py-0 text-[9px] font-semibold text-destructive"
+                          >
+                            DRAFT
+                          </span>
+                        )}
+                      </button>
+                    </WikiPageContextMenu>
                   )
                 })}
             </div>
