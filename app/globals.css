@@ -157,7 +157,10 @@
 
 /* ─── Theme accent presets (Settings Appearance) ──────────────────
    default = purple (above). data-theme-accent attribute on <html>로 토글.
-   light/dark 둘 다 같은 oklch hue를 쓰되 lightness만 조정. */
+   light/dark 둘 다 같은 oklch hue를 쓰되 lightness만 조정.
+   2026-05-24 튜닝: light L≈0.50~0.55 / dark L≈0.65~0.68 / chroma 0.16~0.20 통일.
+   - amber는 hue 75 (yellow-orange)라 같은 L에서 다른 색보다 밝아 보임 → 살짝 L 낮춤.
+   - amber chroma 0.16→0.18로 vibrancy 강화 (다른 accent와 균형). */
 
 :root[data-theme-accent="blue"] {
   --primary: oklch(0.52 0.18 240);
@@ -169,21 +172,21 @@
 }
 
 :root[data-theme-accent="emerald"] {
-  --primary: oklch(0.50 0.16 155);
-  --ring: oklch(0.50 0.16 155);
+  --primary: oklch(0.52 0.16 155);
+  --ring: oklch(0.52 0.16 155);
 }
 .dark[data-theme-accent="emerald"] {
-  --primary: oklch(0.62 0.18 155);
-  --ring: oklch(0.62 0.18 155);
+  --primary: oklch(0.66 0.18 155);
+  --ring: oklch(0.66 0.18 155);
 }
 
 :root[data-theme-accent="amber"] {
-  --primary: oklch(0.62 0.16 75);
-  --ring: oklch(0.62 0.16 75);
+  --primary: oklch(0.58 0.18 75);
+  --ring: oklch(0.58 0.18 75);
 }
 .dark[data-theme-accent="amber"] {
-  --primary: oklch(0.72 0.16 75);
-  --ring: oklch(0.72 0.16 75);
+  --primary: oklch(0.68 0.18 75);
+  --ring: oklch(0.68 0.18 75);
 }
 
 @theme inline {

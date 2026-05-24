@@ -154,6 +154,12 @@ export interface FlowBaseActions {
     library: number
     wiki: number
     automations: number
+    // id 충돌로 skip된 항목 (boards는 새 id로 항상 추가라 skip ❌)
+    skipped: {
+      library: number
+      wiki: number
+      automations: number
+    }
   }
 
   // Schema positions
@@ -851,13 +857,26 @@ export const useFlowBase = create<FlowBaseStore>()(
           })),
 
         importWorkspace: (snapshot) => {
+          const emptySummary = {
+            boards: 0,
+            library: 0,
+            wiki: 0,
+            automations: 0,
+            skipped: { library: 0, wiki: 0, automations: 0 },
+          }
           if (!ensureCanEdit(get(), "Import workspace")) {
-            return { boards: 0, library: 0, wiki: 0, automations: 0 }
+            return emptySummary
           }
           const s = get()
-          const summary = { boards: 0, library: 0, wiki: 0, automations: 0 }
+          const summary = {
+            boards: 0,
+            library: 0,
+            wiki: 0,
+            automations: 0,
+            skipped: { library: 0, wiki: 0, automations: 0 },
+          }
 
-          // 1) Boards — id 충돌 시 새 id, 항상 추가
+          // 1) Boards — id 충돌 시 새 id, 항상 추가 (skip ❌)
           const nextBoards = { ...s.boards }
           const nextViewByBoardId = { ...s.viewByBoardId }
           for (const [importedId, board] of Object.entries(
@@ -872,7 +891,7 @@ export const useFlowBase = create<FlowBaseStore>()(
             summary.boards += 1
           }
 
-          // 2) Library — 카테고리별 id 일치 항목 skip, 신규만 추가
+          // 2) Library — 카테고리별 id 일치 항목 skip, 신규만 추가 (skip 카운트 누적)
           const nextLibrary = { ...s.library }
           if (snapshot.library) {
             const merge = <T extends { id: string }>(
@@ -883,6 +902,7 @@ export const useFlowBase = create<FlowBaseStore>()(
               const existing = new Set(cur.map((x) => x.id))
               const added = incoming.filter((x) => !existing.has(x.id))
               summary.library += added.length
+              summary.skipped.library += incoming.length - added.length
               return [...cur, ...added]
             }
             nextLibrary.optionLists = merge(
@@ -909,17 +929,21 @@ export const useFlowBase = create<FlowBaseStore>()(
 
           // 3) Wiki — id 일치 skip
           const existingWikiIds = new Set(s.wikiPages.map((p) => p.id))
-          const addedWiki = (snapshot.wikiPages ?? []).filter(
+          const incomingWiki = snapshot.wikiPages ?? []
+          const addedWiki = incomingWiki.filter(
             (p) => !existingWikiIds.has(p.id),
           )
           summary.wiki = addedWiki.length
+          summary.skipped.wiki = incomingWiki.length - addedWiki.length
 
           // 4) Automations — id 일치 skip
           const existingAutoIds = new Set(s.automations.map((a) => a.id))
-          const addedAutos = (snapshot.automations ?? []).filter(
+          const incomingAutos = snapshot.automations ?? []
+          const addedAutos = incomingAutos.filter(
             (a) => !existingAutoIds.has(a.id),
           )
           summary.automations = addedAutos.length
+          summary.skipped.automations = incomingAutos.length - addedAutos.length
 
           set({
             boards: nextBoards,

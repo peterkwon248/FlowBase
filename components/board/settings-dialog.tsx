@@ -643,14 +643,24 @@ function ImportSection() {
           return
         }
         const summary = importWorkspace(parsed)
-        toast.success(
-          `Imported ${summary.boards} board${summary.boards === 1 ? "" : "s"}` +
-            (summary.library > 0 ? `, ${summary.library} library` : "") +
-            (summary.wiki > 0 ? `, ${summary.wiki} wiki` : "") +
-            (summary.automations > 0
-              ? `, ${summary.automations} automation${summary.automations === 1 ? "" : "s"}`
-              : ""),
-        )
+        const addedBits =
+          `${summary.boards} board${summary.boards === 1 ? "" : "s"}` +
+          (summary.library > 0 ? `, ${summary.library} library` : "") +
+          (summary.wiki > 0 ? `, ${summary.wiki} wiki` : "") +
+          (summary.automations > 0
+            ? `, ${summary.automations} automation${summary.automations === 1 ? "" : "s"}`
+            : "")
+        const skipBits: string[] = []
+        if (summary.skipped.library > 0)
+          skipBits.push(`${summary.skipped.library} library`)
+        if (summary.skipped.wiki > 0) skipBits.push(`${summary.skipped.wiki} wiki`)
+        if (summary.skipped.automations > 0)
+          skipBits.push(`${summary.skipped.automations} automation${summary.skipped.automations === 1 ? "" : "s"}`)
+        const skipDesc =
+          skipBits.length > 0
+            ? `Skipped (already exist by ID): ${skipBits.join(", ")}`
+            : undefined
+        toast.success(`Imported ${addedBits}`, { description: skipDesc })
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Unknown error"
         toast.error(`Import failed — ${msg}`)
