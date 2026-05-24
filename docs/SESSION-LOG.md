@@ -4,6 +4,33 @@
 
 ---
 
+## 2026-05-24 (kkh94 머신, 아키텍처 LOCK) — 로컬 first 명시 + storage placeholder 제거
+
+### 완료 (1 commit 예정)
+사용자 통찰 "우리 앱이 로컬 데이터 우선이면 storage 표기되면 안 되지 않나?" → 큰 아키텍처 결정.
+
+- **BoardHeader storage span 제거** — "2.1 / 10 GB" placeholder (prototype 답습 design debt). 빈 자리에 NOTE 주석 (Phase 3+ sync status 자리).
+- **Key Design Decisions #17 신규** — 로컬 first 아키텍처 LOCK 명시. 클라우드(BaaS) = sync 매개일 뿐. offline 완전 작동. conflict = last-write-wins. AI 호출은 예외.
+- **NEXT-ACTION LOCK 갱신** — storage/plan tier/quota 표기 ❌ 추가.
+
+### 큰 결정
+- **로컬 first LOCK** — 사용자 통찰이 evidence. BaaS 선택(Supabase vs bkend.ai) 시 "real-time DB 필수 ❌"로 옵션 열림. PWA·offline 자연. 유료 모델 시 storage quota ❌ (멤버/AI 호출 quota만, 요금제 본격 토론은 후속).
+- **요금제 토론 보류** — 사용자 명시 "요금제 논의 일러". LOCK만 박고 plan tier 본격 토론은 BaaS 결정 후.
+- **storage 자리 비움** — minimal 톤. row count는 보드 헤더에 이미 있음(중복 회피). Phase 3+ sync status 채울 자리만 NOTE 주석.
+
+### 검증
+- tsc 0 · vitest 44/44 (변경량 작음, 별도 재검증 생략)
+
+### Watch Out
+- **로컬 first LOCK 부작용**: 실시간 협업(comment cursor 등) 패턴이 cloud-first보다 어려움. 우리는 비동기 협업(comment thread)이 본 모델이라 큰 문제 ❌.
+- **localStorage 5MB 한계** — 데이터 많아지면 IndexedDB로 마이그레이션 필요 (Phase 2+). zustand persist storage 어댑터 교체로 transparent.
+- **prototype design debt 패턴** — sourceless inheritance 위험 인지. 다음 prototype 답습 시 의도 검증 필요.
+
+### 머신
+kkh94. main 머지·푸시 자동.
+
+---
+
 ## 2026-05-24 (kkh94 머신, 후속 refactor) — Shell chrome 재배치
 
 ### 완료 (1 commit `d263373` · 3 파일 · 87+/98−)

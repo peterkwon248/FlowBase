@@ -39,13 +39,8 @@ export function BoardHeader() {
         </div>
         <div className="flex-1" />
 
-        {/* Storage counter — Search 왼쪽 (직전 위치: StatusBar 우측) */}
-        <span
-          className="whitespace-nowrap text-[11px] tabular-nums text-muted-foreground"
-          title="Workspace storage"
-        >
-          2.1 / 10 GB
-        </span>
+        {/* NOTE: storage counter 자리 — 로컬 first 아키텍처라 클라우드 quota 표기 ❌ (Key Design #17). */}
+        {/* Phase 3+ 클라우드 sync 도입 시 sync status indicator(점/색)로 채울 자리. */}
 
         <button
           type="button"

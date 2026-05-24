@@ -139,7 +139,8 @@
 
 - **Status 키 LOCK 한국어 + `STATUS_LABELS` 맵 영어**.
 - **`selectAsset(category, id)` 원자 액션**.
-- ~~셸 푸터 status bar 영구~~ → **Trash/Settings/Storage는 BoardHeader 우측** (2026-05-24 사용자 요청, `d263373`). StatusBar 컴포넌트 폐기.
+- ~~셸 푸터 status bar 영구~~ → **Trash/Settings는 BoardHeader 우측** (2026-05-24, `d263373`). StatusBar 컴포넌트 폐기.
+- **로컬 first 아키텍처** (Key Design #17) — 데이터 source of truth = 사용자 디바이스. 클라우드(Phase 3+)는 sync 매개. **storage counter / "plan tier" / 클라우드 quota 표기 ❌**. sync status는 점/색 indicator만 (도입 후). offline 완전 작동. conflict = 보드별 last-write-wins. AI 호출(Anthropic) 예외.
 - **모든 navigation 모드는 사이드바** — Tables/Library/Wiki/Workspace/Inbox. Search 예외.
 - **사이드바 너비 240px 통일**.
 - **컬럼 변경 = undo 비대상**.
