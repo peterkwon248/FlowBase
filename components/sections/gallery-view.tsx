@@ -200,7 +200,7 @@ function GalleryCardField({ col, row }: { col: ColumnDef; row: TableRow }) {
         <span className="font-medium text-muted-foreground">{col.label}</span>
         <span
           className={cn(
-            "inline-flex items-center rounded px-1.5 py-0 text-[10.5px] font-semibold",
+            "inline-flex items-center whitespace-nowrap rounded px-1.5 py-0 text-[10.5px] font-semibold",
             statusBgClass(s),
             statusColorClass(s),
           )}
