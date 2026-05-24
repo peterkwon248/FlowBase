@@ -92,6 +92,7 @@ export interface FlowBaseActions {
   addRow: (row?: Partial<TableRow>) => string
   // 명시 boardId 대상 — 자동화 런타임이 cross-board 행 추가 시 사용.
   addRowToBoard: (boardId: string, row?: Partial<TableRow>) => string | null
+  duplicateRow: (rowId: string) => string | null
   updateRow: (rowId: string, patch: Partial<TableRow>) => void
   deleteRows: (rowIds: string[]) => void
   commitAiCell: (rowId: string, col: "theme" | "sentiment", value: string) => void
@@ -671,6 +672,35 @@ export const useFlowBase = create<FlowBaseStore>()(
             next: newRow,
           })
           return id
+        },
+
+        // 행 복제 — id 새로 발급, 나머지 값 + AI confirmed 플래그 유지.
+        duplicateRow: (rowId) => {
+          const b = activeBoard()
+          if (!b) return null
+          const src = b.rows.find((r) => r.id === rowId)
+          if (!src) return null
+          pushUndo()
+          const ts = nowIso()
+          const newId = nextRowId(b)
+          const dup: TableRow = {
+            ...src,
+            id: newId,
+            createdAt: ts,
+            updatedAt: ts,
+          }
+          // 원본 다음 위치에 삽입
+          const idx = b.rows.findIndex((r) => r.id === rowId)
+          const next = [...b.rows]
+          next.splice(idx + 1, 0, dup)
+          setRows(next)
+          publishChange(set, {
+            kind: "row_added",
+            boardId: b.id,
+            rowId: newId,
+            next: dup,
+          })
+          return newId
         },
 
         updateRow: (rowId, patch) => {

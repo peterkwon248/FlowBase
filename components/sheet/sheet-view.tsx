@@ -19,6 +19,7 @@ import { AddColumnMenu } from "./add-column-menu"
 import { EditableCell } from "./editable-cell"
 import { HeaderCell } from "./header-cell"
 import { NewRowStub } from "./new-row-stub"
+import { RowContextMenu } from "./row-context-menu"
 import { useSheetClipboard } from "./use-sheet-clipboard"
 import { type EditingCell, useSheetKeyboard } from "./use-sheet-keyboard"
 
@@ -167,8 +168,8 @@ export function SheetView() {
           {rows.map((row, idx) => {
             const isSelected = selectedRowIds.includes(row.id)
             return (
+              <RowContextMenu key={row.id} rowId={row.id}>
               <tr
-                key={row.id}
                 className={cn("h-12", isSelected && "bg-primary/[0.07]")}
               >
                 <td className="border-b border-border-subtle px-2.5 py-2 text-center">
@@ -229,6 +230,7 @@ export function SheetView() {
                 })}
                 <td className="border-b border-border-subtle" />
               </tr>
+              </RowContextMenu>
             )
           })}
 
