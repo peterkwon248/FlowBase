@@ -238,10 +238,15 @@ export function SchemaERDiagram() {
 
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
+      // 트랙패드 pinch는 자동으로 ctrlKey true (브라우저 표준). ⌘/Ctrl + wheel도 동일.
       if (!e.ctrlKey && !e.metaKey) return
       e.preventDefault()
-      const delta = e.deltaY > 0 ? -0.1 : 0.1
-      setZoom((z) => Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, +(z + delta).toFixed(2))))
+      // delta 비례 + cap — pinch(작은 delta)는 부드럽게, wheel(큰 delta)은 한 번에 너무 멀리 안 가게.
+      const raw = -e.deltaY * 0.01
+      const delta = Math.max(-0.3, Math.min(0.3, raw))
+      setZoom((z) =>
+        Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, +(z + delta).toFixed(2))),
+      )
     },
     [],
   )

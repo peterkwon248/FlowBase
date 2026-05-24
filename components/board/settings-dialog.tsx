@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react"
 import {
   Check,
   Download,
+  LogIn,
   Monitor,
   Moon,
   Sun,
@@ -209,6 +210,7 @@ function MembersTab() {
   const updateMemberRole = useFlowBase((s) => s.updateMemberRole)
   const removeMember = useFlowBase((s) => s.removeMember)
   const addMember = useFlowBase((s) => s.addMember)
+  const updateSettings = useFlowBase((s) => s.updateSettings)
 
   const [inviteOpen, setInviteOpen] = useState(false)
   const [draftName, setDraftName] = useState("")
@@ -255,6 +257,15 @@ function MembersTab() {
             isCurrent={m.id === currentUserId}
             onRoleChange={(role) => updateMemberRole(m.id, role)}
             onRemove={() => removeMember(m.id)}
+            onSwitchTo={() => {
+              updateSettings({ currentUserId: m.id })
+              toast.success(`Switched to ${m.name} (${m.role})`, {
+                description:
+                  m.role === "viewer"
+                    ? "Viewer — edit buttons will be disabled."
+                    : "Test role behavior across the app.",
+              })
+            }}
           />
         ))}
       </div>
@@ -328,11 +339,13 @@ function MemberRow({
   isCurrent,
   onRoleChange,
   onRemove,
+  onSwitchTo,
 }: {
   member: WorkspaceMember
   isCurrent: boolean
   onRoleChange: (role: MemberRole) => void
   onRemove: () => void
+  onSwitchTo: () => void
 }) {
   const isOwner = member.role === "owner"
   const lastSeen = relativeLastSeen(member.lastSeenAt)
@@ -364,6 +377,17 @@ function MemberRow({
           )}
         </div>
       </div>
+      {!isCurrent && (
+        <button
+          type="button"
+          title={`Switch to ${member.name} (test role behavior)`}
+          onClick={onSwitchTo}
+          data-member-switch
+          className="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+        >
+          <LogIn className="size-3.5" strokeWidth={1.75} />
+        </button>
+      )}
       {isOwner ? (
         <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10.5px] font-semibold text-amber-700 dark:text-amber-300">
           Owner
