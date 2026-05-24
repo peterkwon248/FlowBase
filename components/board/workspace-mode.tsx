@@ -9,6 +9,7 @@
 import { SchemaView } from "@/components/sections/schema-view"
 import { WorkspaceSidebar } from "@/components/workspace/workspace-sidebar"
 import { AutomationsView } from "@/components/workspace/automations-view"
+import { HistoryView } from "@/components/workspace/history-view"
 import { useFlowBase } from "@/lib/flowbase-store"
 
 export function WorkspaceMode() {
@@ -21,6 +22,8 @@ export function WorkspaceMode() {
       <div className="flex min-w-0 flex-1 flex-col">
         {activeWorkspaceItem === "automations" ? (
           <AutomationsView />
+        ) : activeWorkspaceItem === "history" ? (
+          <HistoryView />
         ) : (
           <SchemaView />
         )}

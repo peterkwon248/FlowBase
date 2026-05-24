@@ -72,16 +72,16 @@ export function TablesMode() {
       {/* 보드 영역 */}
       <div className="relative flex min-w-0 flex-1 flex-col">
         {/* 보드 타이틀 블록 */}
-        <div className="shrink-0 px-6 pb-2 pt-5">
-          <div className="mb-1.5 flex items-center gap-2.5">
-            <span className="inline-flex size-7 items-center justify-center rounded-md bg-chart-1/15 text-chart-1">
+        <div className="min-w-0 shrink-0 px-6 pb-2 pt-5">
+          <div className="mb-1.5 flex min-w-0 items-center gap-2.5">
+            <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-md bg-chart-1/15 text-chart-1">
               <Database className="size-4" />
             </span>
-            <h1 className="text-[22px] font-bold tracking-[-0.02em]">
+            <h1 className="truncate text-[22px] font-bold tracking-[-0.02em]">
               {board?.label ?? "FlowBase"}
             </h1>
           </div>
-          <div className="flex items-center gap-3 pl-[38px]">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 pl-[38px]">
             <ViewSwitcher />
             <span className="text-xs tabular-nums text-muted-foreground">
               {rowCount} rows · {colCount} columns

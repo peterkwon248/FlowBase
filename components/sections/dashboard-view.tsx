@@ -219,7 +219,7 @@ export function DashboardView() {
   const rest = aggs.slice(2)
 
   return (
-    <div className="flex flex-1 flex-col gap-4 overflow-auto bg-background p-5">
+    <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-auto bg-background p-5">
       {/* Toolbar */}
       <div className="flex items-center justify-between">
         <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">

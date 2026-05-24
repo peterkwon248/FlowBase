@@ -228,7 +228,7 @@ function OptionListCard({ asset, active, onSelect }: CardProps<OptionList>) {
         {asset.options.slice(0, 5).map((o) => (
           <span
             key={o.id}
-            className="rounded-full px-2 py-0.5 text-[11px] font-medium"
+            className="whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium"
             style={{
               background: `color-mix(in oklch, ${o.color} 22%, transparent)`,
               color: o.color,

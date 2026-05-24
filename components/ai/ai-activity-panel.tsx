@@ -19,6 +19,7 @@ import {
 } from "@/lib/flowbase-ai"
 import { selectActiveBoard, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
+import type { AIHistoryEntry } from "@/types/flowbase"
 import { AiComposer } from "./ai-composer"
 import { PendingCard } from "./pending-card"
 import { TimelineItem } from "./timeline-item"
@@ -57,7 +58,29 @@ export function AiActivityPanel() {
     [rows],
   )
   const pendingTotal = pendingTheme.length + pendingSentiment.length
-  const aiHistory = board?.aiHistory ?? []
+
+  // Phase E: aiHistory를 EventStore에서 derive (kind=ai_* filter view).
+  // raw events 구독 + useMemo derive. TimelineItem 호환을 위해 AIHistoryEntry 모양으로 매핑.
+  // board.aiHistory는 호환 유지(pushAi가 양쪽 push) — 향후 deprecation.
+  const events = useFlowBase((s) => s.events)
+  const aiHistory: AIHistoryEntry[] = useMemo(() => {
+    if (!board) return []
+    return events
+      .filter(
+        (e) =>
+          e.boardId === board.id &&
+          (e.kind === "ai_infer" || e.kind === "ai_ask"),
+      )
+      .map((e) => ({
+        id: e.id,
+        kind: e.kind === "ai_ask" ? "ask" : "infer",
+        title: e.title ?? "(untitled)",
+        detail: e.detail,
+        time: new Date(e.ts).toISOString(),
+        status: e.status ?? "applied",
+        rowIds: e.rowIds,
+      }))
+  }, [board, events])
 
   // "Apply all" — Claude로 분류 → 확정 적용 (1 undo 단위). 클릭이 곧 사람의 확정.
   const handleApply = async (column: AiColumn) => {

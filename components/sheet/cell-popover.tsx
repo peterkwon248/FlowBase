@@ -8,7 +8,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { Check, Sparkles } from "lucide-react"
+import { Check, Clock, Plus, Sparkles } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
@@ -35,6 +35,12 @@ interface CellPopoverProps {
   onSelect: (value: string) => void
   ai?: AiBlock
   width?: number
+  // Workspace Memory "Recent" 섹션 — frequency 2+ 학습 값. options 위에 별도 섹션으로 표시.
+  // Memory ≠ Library — 자동 학습 cache. LOCK: 명시 click 시만 적용. (lib/flowbase-store.ts learnFromPatch)
+  recent?: CellOption[]
+  // Memory → Library promote bridge — Recent item 옆 "+" 버튼. 호출 시 col.options에 영구 추가.
+  // 사용자 명시 click 시만 (LOCK: 자동 promote ❌).
+  onPromote?: (value: string) => void
 }
 
 // 셀 클릭/Enter 시 열리는 옵션 선택 Popover. select·status 공용.
@@ -48,6 +54,8 @@ export function CellPopover({
   onSelect,
   ai,
   width = 180,
+  recent,
+  onPromote,
 }: CellPopoverProps) {
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
@@ -88,6 +96,52 @@ export function CellPopover({
               </button>
             </div>
           </div>
+        )}
+
+        {recent && recent.length > 0 && (
+          <>
+            <div className="flex items-center gap-1 px-2 pb-1 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+              <Clock className="size-3" strokeWidth={1.75} />
+              Recent
+            </div>
+            <div className="flex flex-col">
+              {recent.map((opt) => (
+                <div
+                  key={`recent-${opt.value}`}
+                  className="group/recent flex items-center gap-1 rounded-md hover:bg-foreground/[0.05]"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelect(opt.value)
+                      onOpenChange(false)
+                    }}
+                    className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left text-[13px]"
+                  >
+                    {opt.icon}
+                    <span className="min-w-0 flex-1 truncate text-muted-foreground">
+                      {opt.label}
+                    </span>
+                  </button>
+                  {onPromote && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onPromote(opt.value)
+                      }}
+                      title="Save as option (add to column)"
+                      aria-label={`Save "${opt.label}" as option`}
+                      className="mr-1 inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-0 transition-opacity hover:bg-foreground/[0.08] hover:text-foreground group-hover/recent:opacity-100 focus:opacity-100"
+                    >
+                      <Plus className="size-3" strokeWidth={2} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="my-1 h-px bg-border-subtle" />
+          </>
         )}
 
         {label && (

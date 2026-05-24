@@ -234,7 +234,7 @@ function Shell({
                     data-library-jump={u}
                     title={jumpable ? "Jump to source column" : "Source board not found"}
                     className={cn(
-                      "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-[11.5px] font-medium transition-colors",
+                      "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 font-mono text-[11.5px] font-medium transition-colors",
                       jumpable
                         ? "cursor-pointer bg-primary/15 text-primary hover:bg-primary/25"
                         : "cursor-not-allowed bg-muted text-muted-foreground/60",
@@ -376,7 +376,7 @@ function FieldBody({
                 {c.options.map((o) => (
                   <span
                     key={o.id}
-                    className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium"
+                    className="whitespace-nowrap rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium"
                   >
                     {o.label}
                   </span>
@@ -388,7 +388,7 @@ function FieldBody({
             <DefRow label="Required">
               <span
                 className={cn(
-                  "rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                  "whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold",
                   c.required
                     ? "bg-destructive/15 text-destructive"
                     : "bg-muted text-muted-foreground",
@@ -460,7 +460,7 @@ function TemplateBody({
               {asset.recommendedViews.map((v) => (
                 <span
                   key={v}
-                  className="rounded-full bg-foreground/[0.06] px-2.5 py-0.5 text-[12px] font-medium"
+                  className="whitespace-nowrap rounded-full bg-foreground/[0.06] px-2.5 py-0.5 text-[12px] font-medium"
                 >
                   {v}
                 </span>

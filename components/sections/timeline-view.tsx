@@ -217,7 +217,7 @@ export function TimelineView() {
   }
 
   return (
-    <div className="flex-1 overflow-auto bg-background" data-timeline-gantt>
+    <div className="min-w-0 flex-1 overflow-auto bg-background" data-timeline-gantt>
       <div className="block w-full min-w-full">
         {/* Sticky header */}
         <div className="sticky top-0 z-[2] flex border-b border-border bg-surface">
@@ -402,7 +402,7 @@ function GanttRow({
           )}
           {overdue && (
             <span
-              className="ml-auto rounded px-1.5 py-px text-[9.5px] font-bold text-blue-700 dark:text-blue-300"
+              className="ml-auto whitespace-nowrap rounded px-1.5 py-px text-[9.5px] font-bold text-blue-700 dark:text-blue-300"
               style={{
                 background:
                   "color-mix(in oklch, var(--color-blue-500) 18%, transparent)",

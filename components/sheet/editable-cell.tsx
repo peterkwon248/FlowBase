@@ -7,7 +7,7 @@
 
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   CheckCircle,
   CircleDashed,
@@ -15,6 +15,8 @@ import {
   CircleNotch,
 } from "@phosphor-icons/react"
 import { STATUS_LABELS, type ColumnDef, type TableRow, type TicketStatus } from "@/types/flowbase"
+import { toast } from "sonner"
+import { MEMORY_MIN_COUNT, useFlowBase } from "@/lib/flowbase-store"
 import { statusBgClass, statusColorClass } from "@/lib/tokens"
 import { cn } from "@/lib/utils"
 import { AiPendingMark } from "./ai-pending-mark"
@@ -307,6 +309,23 @@ function SelectCell({
     label: o,
   }))
 
+  // Workspace Memory — 자동 학습된 값 중 frequency 2+, col.options에 없는 것만 노출.
+  // raw byScope 구독 후 useMemo로 derive (selector 직접 구독 시 새 배열 반환 → 무한 루프).
+  const memoryByScope = useFlowBase((s) => s.workspaceMemory.byScope)
+  const recent: CellOption[] | undefined = useMemo(() => {
+    const scope = `${col.name}::${col.libraryFieldId ?? "_"}`
+    const list = memoryByScope[scope] ?? []
+    if (list.length === 0) return undefined
+    const excluded = new Set(col.options ?? [])
+    const filtered = list
+      .filter((e) => e.count >= MEMORY_MIN_COUNT)
+      .filter((e) => !excluded.has(e.value))
+      .sort((a, b) => b.count - a.count || b.lastUsedTs - a.lastUsedTs)
+      .slice(0, 5)
+    if (filtered.length === 0) return undefined
+    return filtered.map((e) => ({ value: e.value, label: e.value }))
+  }, [memoryByScope, col.name, col.libraryFieldId, col.options])
+
   // AI 컬럼(theme/sentiment) — pending이면 마커 + Accept/Dismiss
   const aiCol = col.ai && isAiColumn(col.name) ? col.name : null
   const pending =
@@ -321,6 +340,22 @@ function SelectCell({
     else onUpdate({ [col.name]: v })
   }
 
+  // Memory → Library promote bridge (Phase F1).
+  // Recent item "+" 버튼 → col.options에 영구 추가 (인라인). 자동 ❌, 명시 click 시만.
+  // 후속(Phase F2): col.libraryFieldId 있으면 Library OptionList에도 sync.
+  const updateColumn = useFlowBase((s) => s.updateColumn)
+  const handlePromote = (v: string) => {
+    const existing = col.options ?? []
+    if (existing.includes(v)) {
+      toast.info(`"${v}" is already in ${col.label || col.name} options.`)
+      return
+    }
+    updateColumn(col.name, { options: [...existing, v] })
+    toast.success(`Saved "${v}" as ${col.label || col.name} option`, {
+      description: "Available in this column from now on.",
+    })
+  }
+
   // 트리거 표시 — sentiment는 색 pill, 그 외는 muted pill / theme은 평문
   let trigger: React.ReactNode
   if (col.name === "sentiment") {
@@ -328,7 +363,7 @@ function SelectCell({
       <button
         type="button"
         className={cn(
-          "rounded px-1.5 py-0.5 text-xs font-medium",
+          "whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-medium",
           SENTIMENT_TONE[value] ?? "bg-muted text-muted-foreground",
         )}
       >
@@ -345,7 +380,7 @@ function SelectCell({
     trigger = (
       <button
         type="button"
-        className="rounded border border-border-subtle bg-muted px-1.5 py-0.5 text-xs"
+        className="whitespace-nowrap rounded border border-border-subtle bg-muted px-1.5 py-0.5 text-xs"
       >
         {value || "—"}
       </button>
@@ -360,6 +395,8 @@ function SelectCell({
         label={col.label?.trim() || undefined}
         width={col.name === "theme" ? 220 : 170}
         options={options}
+        recent={recent}
+        onPromote={handlePromote}
         value={value}
         onSelect={handleSelect}
         ai={
@@ -422,7 +459,7 @@ function ReactionCell({ col, row, onUpdate }: EditableCellProps) {
               onUpdate({ [col.name]: { ...votes, [r.key]: n + 1 } })
             }}
             className={cn(
-              "inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[11.5px]",
+              "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-px text-[11.5px]",
               n > 0 ? r.tone : "bg-muted text-muted-foreground",
             )}
           >

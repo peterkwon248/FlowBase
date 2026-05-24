@@ -16,10 +16,13 @@ import type {
   ChangeEvent,
   ChartConfig,
   ColumnDef,
+  ColumnType,
+  EventKind,
   ExportedSnapshot,
   FilterCondition,
   FlowBaseState,
   LibraryCategoryId,
+  MemoryEntry,
   NavEntry,
   SortDir,
   TableRow,
@@ -30,8 +33,10 @@ import type {
   TrashedWikiPage,
   ViewMode,
   ViewSettings,
+  TimestampedEvent,
   WikiPage,
   WorkspaceMember,
+  WorkspaceMemory,
   WorkspaceSettings,
 } from "@/types/flowbase"
 import { roleCanEdit } from "@/types/flowbase"
@@ -46,7 +51,7 @@ import {
 import { undoStack } from "@/lib/undo-stack"
 
 const STORE_KEY = "flowbase-state-v4"
-const STORE_VERSION = 13 // v13: settings.currentUserId 추가 (Members role enforcement)
+const STORE_VERSION = 15 // v15: events 추가 (EventStore 인프라 · Phase A · aiHistory 백필)
 
 // 초기 시드 멤버 — 데모용 4명. 사용자는 Owner. lastSeenAt mock.
 function createSeedMembers(): WorkspaceMember[] {
@@ -266,6 +271,8 @@ function createInitialState(): FlowBaseState {
     },
     schemaPositions: {},
     viewSettings: {},
+    workspaceMemory: { byScope: {} },
+    events: [],
     panels: { activityBar: true, sidebar: true, aiPanel: true, detailBar: false },
     viewByBoardId: { [interviews.id]: "sheet", [tasks.id]: "sheet" },
     activityMode: "tables",
@@ -287,11 +294,98 @@ function createInitialState(): FlowBaseState {
   }
 }
 
+// ─── EventStore — 통합 액션 timeline ───
+// LOCK: append-only · 90일 expire · 1000개 cap. Phase A에선 추가만, 기존 store 변경 ❌.
+// 향후 Workspace > History · Detail Activity · AI Timeline 모두 이 source에서 derive.
+
+const EVENT_EXPIRE_MS = 90 * 24 * 60 * 60 * 1000 // 90일
+const EVENT_CAP = 1000
+
+function makeEventId(ts: number): string {
+  return `evt-${ts.toString(36)}-${Math.random().toString(36).slice(2, 7)}`
+}
+
+function appendEvent(events: TimestampedEvent[], next: TimestampedEvent): TimestampedEvent[] {
+  const cutoff = Date.now() - EVENT_EXPIRE_MS
+  const merged = [...events, next].filter((e) => e.ts > cutoff)
+  // cap: 오래된 것부터 잘림 (배열 끝이 최신)
+  return merged.length > EVENT_CAP ? merged.slice(-EVENT_CAP) : merged
+}
+
 function publishChange(
   set: (partial: Partial<FlowBaseState>) => void,
+  get: () => FlowBaseState,
   event: Omit<ChangeEvent, "timestamp">,
 ): void {
-  set({ lastChange: { ...event, timestamp: Date.now() } })
+  const ts = Date.now()
+  // ephemeral — 자동화 트리거 (lib/automation-runtime)
+  set({ lastChange: { ...event, timestamp: ts } })
+  // persist — EventStore에 동시 push (Phase A)
+  const s = get()
+  set({
+    events: appendEvent(s.events, {
+      id: makeEventId(ts),
+      ts,
+      kind: event.kind,
+      boardId: event.boardId,
+      rowId: event.rowId,
+      prev: event.prev,
+      next: event.next,
+    }),
+  })
+}
+
+// ─── Workspace Memory — 자동 학습 cache ───
+// LOCK: Memory ≠ Library. 자동 학습, frequency 2+ 부터 노출(selector), 30일 expire + 50개 cap.
+// scope 키 = `{colName}::{libraryFieldId ?? "_"}` — 같은 colName이라도 다른 LibraryField면 격리.
+// 학습 대상 type: text · select · status (Phase 1). num/date/email/avatar/reaction/button/fk 제외.
+
+const MEMORY_EXPIRE_MS = 30 * 24 * 60 * 60 * 1000 // 30일
+const MEMORY_CAP_PER_SCOPE = 50
+const MEMORY_LEARN_TYPES = new Set<ColumnType>(["text", "select", "status"])
+
+function memoryScopeKey(col: ColumnDef): string {
+  return `${col.name}::${col.libraryFieldId ?? "_"}`
+}
+
+// 한 행의 patch를 학습. 변경된 컬럼별 값을 scope별로 누적.
+function learnFromPatch(
+  state: FlowBaseState,
+  boardId: string,
+  patch: Record<string, unknown>,
+): WorkspaceMemory {
+  const board = state.boards[boardId]
+  if (!board) return state.workspaceMemory
+  const now = Date.now()
+  const cutoff = now - MEMORY_EXPIRE_MS
+  const byScope = { ...state.workspaceMemory.byScope }
+
+  for (const [colName, raw] of Object.entries(patch)) {
+    if (typeof raw !== "string") continue
+    const value = raw.trim()
+    if (!value) continue
+    const col = board.columns.find((c) => c.name === colName)
+    if (!col || !MEMORY_LEARN_TYPES.has(col.type)) continue
+    const scope = memoryScopeKey(col)
+    const list = byScope[scope] ? [...byScope[scope]] : []
+    const idx = list.findIndex((e) => e.value === value)
+    if (idx >= 0) {
+      list[idx] = {
+        ...list[idx],
+        count: list[idx].count + 1,
+        lastUsedTs: now,
+      }
+    } else {
+      list.push({ value, count: 1, lastUsedTs: now })
+    }
+    // expire + cap: 30일 이전 제거 + lastUsed 기준 상위 N개
+    const filtered = list
+      .filter((e) => e.lastUsedTs > cutoff)
+      .sort((a, b) => b.lastUsedTs - a.lastUsedTs)
+      .slice(0, MEMORY_CAP_PER_SCOPE)
+    byScope[scope] = filtered
+  }
+  return { byScope }
 }
 
 // 현재 store 상태에서 NavEntry를 만들어 돌려준다 (push 직전 호출).
@@ -1190,7 +1284,8 @@ export const useFlowBase = create<FlowBaseStore>()(
             ...row,
           }
           setRows([...b.rows, newRow])
-          publishChange(set, {
+          set({ workspaceMemory: learnFromPatch(get(), b.id, newRow) })
+          publishChange(set, get, {
             kind: "row_added",
             boardId: b.id,
             rowId: id,
@@ -1225,8 +1320,9 @@ export const useFlowBase = create<FlowBaseStore>()(
                 updatedAt: ts,
               },
             },
+            workspaceMemory: learnFromPatch(get(), boardId, newRow),
           })
-          publishChange(set, {
+          publishChange(set, get, {
             kind: "row_added",
             boardId,
             rowId: id,
@@ -1256,7 +1352,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           const next = [...b.rows]
           next.splice(idx + 1, 0, dup)
           setRows(next)
-          publishChange(set, {
+          publishChange(set, get, {
             kind: "row_added",
             boardId: b.id,
             rowId: newId,
@@ -1274,7 +1370,8 @@ export const useFlowBase = create<FlowBaseStore>()(
           pushUndo()
           const next: TableRow = { ...prev, ...patch, updatedAt: nowIso() }
           setRows(b.rows.map((r) => (r.id === rowId ? next : r)))
-          publishChange(set, {
+          set({ workspaceMemory: learnFromPatch(get(), b.id, patch) })
+          publishChange(set, get, {
             kind: "row_updated",
             boardId: b.id,
             rowId,
@@ -1320,7 +1417,8 @@ export const useFlowBase = create<FlowBaseStore>()(
             updatedAt: nowIso(),
           }
           setRows(b.rows.map((r) => (r.id === rowId ? next : r)))
-          publishChange(set, {
+          set({ workspaceMemory: learnFromPatch(get(), b.id, { [col]: value }) })
+          publishChange(set, get, {
             kind: "row_updated",
             boardId: b.id,
             rowId,
@@ -1383,17 +1481,21 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
 
         // aiHistory append — active board 대상 (append-only 로그, undo 비대상)
+        // Phase A: events에도 동시 push (kind: ai_infer/ai_ask). 향후 derived view로 통일.
         pushAi: (entry) => {
           const s = get()
           const b = s.boards[s.activeBoardId]
           if (!b) return
+          const ts = Date.now()
           const full: AIHistoryEntry = {
             ...entry,
-            id: `ai-${Date.now().toString(36)}-${Math.random()
+            id: `ai-${ts.toString(36)}-${Math.random()
               .toString(36)
               .slice(2, 7)}`,
             time: nowIso(),
           }
+          const eventKind: EventKind =
+            entry.kind === "ask" ? "ai_ask" : "ai_infer"
           set({
             boards: {
               ...s.boards,
@@ -1403,6 +1505,16 @@ export const useFlowBase = create<FlowBaseStore>()(
                 updatedAt: nowIso(),
               },
             },
+            events: appendEvent(s.events, {
+              id: makeEventId(ts),
+              ts,
+              kind: eventKind,
+              boardId: b.id,
+              rowIds: entry.rowIds,
+              title: entry.title,
+              detail: entry.detail,
+              status: entry.status,
+            }),
           })
         },
 
@@ -1607,6 +1719,8 @@ export const useFlowBase = create<FlowBaseStore>()(
       //   v10 → v11: settings.members
       //   v11 → v12: viewSettings (보드별 view별 Display 옵션)
       //   v12 → v13: settings.currentUserId (Members role enforcement 기준)
+      //   v13 → v14: workspaceMemory (자동 학습 cache · Library와 분리)
+      //   v14 → v15: events (EventStore 인프라 · 기존 aiHistory 백필)
       migrate: (persistedState, version) => {
         const s = (persistedState ?? {}) as Partial<FlowBaseState>
         if (version < 5) {
@@ -1668,6 +1782,35 @@ export const useFlowBase = create<FlowBaseStore>()(
               (s.settings as WorkspaceSettings)?.currentUserId ?? "mem-peter",
           }
         }
+        if (version < 14) {
+          s.workspaceMemory = s.workspaceMemory ?? { byScope: {} }
+        }
+        if (version < 15) {
+          // 기존 board.aiHistory entries를 events로 백필 (호환 유지 — aiHistory도 그대로 남김).
+          const events: TimestampedEvent[] = []
+          const boards = (s.boards ?? {}) as Record<string, Board>
+          Object.values(boards).forEach((b) => {
+            ;(b.aiHistory ?? []).forEach((h) => {
+              const ts = Date.parse(h.time)
+              if (!Number.isFinite(ts)) return
+              events.push({
+                id: `evt-mig-${h.id}`,
+                ts,
+                kind: h.kind === "ask" ? "ai_ask" : "ai_infer",
+                boardId: b.id,
+                rowIds: h.rowIds,
+                title: h.title,
+                detail: h.detail,
+                status: h.status,
+              })
+            })
+          })
+          events.sort((a, b) => a.ts - b.ts)
+          // 90일 cutoff + cap 적용
+          const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000
+          const filtered = events.filter((e) => e.ts > cutoff).slice(-1000)
+          s.events = (s.events ?? []).concat(filtered)
+        }
         return s as FlowBaseState
       },
       partialize: (s) => ({
@@ -1684,6 +1827,8 @@ export const useFlowBase = create<FlowBaseStore>()(
         settings: s.settings,
         schemaPositions: s.schemaPositions,
         viewSettings: s.viewSettings,
+        workspaceMemory: s.workspaceMemory,
+        events: s.events,
         panels: s.panels,
         viewByBoardId: s.viewByBoardId,
         activityMode: s.activityMode,
@@ -1717,6 +1862,49 @@ export function selectActiveBoard(state: FlowBaseState): Board | undefined {
 
 export function selectActiveView(state: FlowBaseState): ViewMode {
   return state.viewByBoardId[state.activeBoardId] ?? "sheet"
+}
+
+// EventStore — Phase A 인프라. 향후 Workspace > History · Detail Activity · AI Timeline의 source.
+// raw 슬라이스 구독 후 컴포넌트에서 useMemo로 derive (selector 직접 구독 시 새 배열 → 무한 루프).
+//   - selectEventsForBoard(state, boardId): 보드 scoped (AI panel Timeline 후속 통일용)
+//   - selectEventsForRow(state, boardId, rowId): row scoped (Detail Activity 후속용)
+//   - selectGlobalEvents(state): 전역 timeline (Workspace > History 후속용)
+export function selectEventsForBoard(
+  state: FlowBaseState,
+  boardId: string,
+): TimestampedEvent[] {
+  return state.events.filter((e) => e.boardId === boardId)
+}
+export function selectEventsForRow(
+  state: FlowBaseState,
+  boardId: string,
+  rowId: string,
+): TimestampedEvent[] {
+  return state.events.filter(
+    (e) =>
+      e.boardId === boardId &&
+      (e.rowId === rowId || e.rowIds?.includes(rowId)),
+  )
+}
+export function selectGlobalEvents(state: FlowBaseState): TimestampedEvent[] {
+  return state.events
+}
+
+// Workspace Memory — cell editor 드롭다운 "Recent" 섹션 노출용.
+// 컬럼 scope의 entries 중 frequency ≥ 2만, count desc · lastUsed desc 정렬.
+// `excludeValues`: 이미 column.options에 있는 값은 제외 (중복 노출 방지).
+export const MEMORY_MIN_COUNT = 2
+export function selectMemoryForColumn(
+  state: FlowBaseState,
+  col: ColumnDef,
+  excludeValues?: Set<string>,
+): MemoryEntry[] {
+  const scope = `${col.name}::${col.libraryFieldId ?? "_"}`
+  const list = state.workspaceMemory.byScope[scope] ?? []
+  return list
+    .filter((e) => e.count >= MEMORY_MIN_COUNT)
+    .filter((e) => !excludeValues?.has(e.value))
+    .sort((a, b) => b.count - a.count || b.lastUsedTs - a.lastUsedTs)
 }
 
 // status/priority는 의미 순서로, 그 외는 값 비교로 정렬.

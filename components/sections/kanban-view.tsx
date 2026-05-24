@@ -110,7 +110,7 @@ export function KanbanView() {
   }
 
   return (
-    <div className="grid flex-1 auto-cols-[minmax(260px,1fr)] grid-flow-col gap-3 overflow-auto bg-background p-4">
+    <div className="grid min-w-0 flex-1 auto-cols-[minmax(260px,1fr)] grid-flow-col gap-3 overflow-auto bg-background p-4">
       {groupValues.map((value) => {
         const items = rows.filter((r) => r[groupName] === value)
         const label = isStatusGroup
@@ -239,7 +239,7 @@ function KanbanCard({
       {(badge || date) && (
         <div className="flex items-center gap-1.5">
           {badge && (
-            <span className="rounded bg-chart-1/10 px-1.5 py-px text-[11px] font-medium text-chart-1">
+            <span className="whitespace-nowrap rounded bg-chart-1/10 px-1.5 py-px text-[11px] font-medium text-chart-1">
               {badge}
             </span>
           )}

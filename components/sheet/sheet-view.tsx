@@ -16,6 +16,7 @@ import {
 import type { ColumnDef, SortDir } from "@/types/flowbase"
 import { cn } from "@/lib/utils"
 import { AddColumnMenu } from "./add-column-menu"
+import { ColumnResizer } from "./column-resizer"
 import { EditableCell } from "./editable-cell"
 import { HeaderCell } from "./header-cell"
 import { NewRowStub } from "./new-row-stub"
@@ -54,12 +55,19 @@ export function SheetView() {
   const hiddenColumns = useFlowBase(
     (s) => s.viewSettings[s.activeBoardId]?.sheet?.hiddenColumns,
   )
+  // 사용자가 drag/auto-fit으로 조정한 컬럼 width. ColumnDef.width fallback.
+  const columnWidths = useFlowBase(
+    (s) => s.viewSettings[s.activeBoardId]?.sheet?.columnWidths,
+  )
   const columns: ColumnDef[] = useMemo(() => {
     const all = board?.columns ?? []
     if (!hiddenColumns || hiddenColumns.length === 0) return all
     const hide = new Set(hiddenColumns)
     return all.filter((c) => c.name === "id" || !hide.has(c.name))
   }, [board, hiddenColumns])
+
+  const widthOf = (c: ColumnDef) => columnWidths?.[c.name] ?? c.width ?? 140
+  const tableRef = useRef<HTMLTableElement>(null)
 
   const stopEdit = () => {
     setEditingCell(null)
@@ -115,16 +123,16 @@ export function SheetView() {
     console.info(`[sheet-view] button action "${col.buttonAction}" — Phase 2`)
   }
 
-  const totalWidth =
-    columns.reduce((acc, c) => acc + (c.width ?? 140), 0) + 120
+  const totalWidth = columns.reduce((acc, c) => acc + widthOf(c), 0) + 120
 
   return (
     <div
       ref={containerRef}
       tabIndex={0}
-      className="min-h-0 flex-1 overflow-auto bg-background outline-none"
+      className="min-h-0 min-w-0 flex-1 overflow-auto bg-background outline-none"
     >
       <table
+        ref={tableRef}
         className="border-separate border-spacing-0 table-fixed"
         style={{ width: `max(100%, ${totalWidth}px)` }}
       >
@@ -132,7 +140,7 @@ export function SheetView() {
           <col style={{ width: 40 }} />
           <col style={{ width: 36 }} />
           {columns.map((c) => (
-            <col key={c.name} style={{ width: c.width ?? 140 }} />
+            <col key={c.name} style={{ width: widthOf(c) }} />
           ))}
           <col style={{ width: 44 }} />
         </colgroup>
@@ -158,7 +166,8 @@ export function SheetView() {
             {columns.map((c) => (
               <th
                 key={c.name}
-                className="sticky top-0 z-10 border-b border-r border-border bg-surface px-2.5 py-2"
+                data-column={c.name}
+                className="sticky top-0 z-10 border-b border-r border-border bg-surface px-2.5 py-2 relative"
               >
                 <HeaderCell
                   col={c}
@@ -167,6 +176,7 @@ export function SheetView() {
                   }
                   onSort={() => handleSort(c.name)}
                 />
+                <ColumnResizer colName={c.name} tableRef={tableRef} />
               </th>
             ))}
             <th className="sticky top-0 z-10 border-b border-border bg-surface p-0">
@@ -209,6 +219,7 @@ export function SheetView() {
                   return (
                     <td
                       key={c.name}
+                      data-column={c.name}
                       onClick={() => {
                         setFocused({ row: row.id, col: c.name })
                         containerRef.current?.focus()

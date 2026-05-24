@@ -82,7 +82,7 @@ export function GalleryView() {
   }
 
   return (
-    <div className="flex-1 overflow-auto bg-background p-4">
+    <div className="min-w-0 flex-1 overflow-auto bg-background p-4">
       {rows.length === 0 ? (
         <div className="mx-auto mt-16 max-w-md rounded-lg border border-dashed border-border bg-card px-6 py-10 text-center text-[12.5px] text-muted-foreground">
           No items match the current filters.

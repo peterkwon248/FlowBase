@@ -6,7 +6,13 @@
 
 "use client"
 
-import { Layers, Network, Zap, type LucideIcon } from "lucide-react"
+import {
+  History as HistoryIcon,
+  Layers,
+  Network,
+  Zap,
+  type LucideIcon,
+} from "lucide-react"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { ActiveWorkspaceItem } from "@/types/flowbase"
@@ -30,6 +36,12 @@ const ITEMS: Item[] = [
     label: "Automations",
     desc: "Cross-table triggers · WHEN-THEN",
     Icon: Zap,
+  },
+  {
+    id: "history",
+    label: "History",
+    desc: "All activity · 90 days",
+    Icon: HistoryIcon,
   },
 ]
 

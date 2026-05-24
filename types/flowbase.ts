@@ -231,7 +231,7 @@ export interface WikiPage {
 // ─── Workspace — Automations ───
 // 출처: design-ref/prototype/automations.jsx
 
-export type ActiveWorkspaceItem = "schema" | "automations"
+export type ActiveWorkspaceItem = "schema" | "automations" | "history"
 
 export interface AutomationTrigger {
   table?: string // "interviews", "tasks", "—" 등; "—"는 시간 기반
@@ -274,6 +274,7 @@ export type ViewMode = "sheet" | "kanban" | "chart" | "grid" | "timeline"
 export interface SheetViewSettings {
   hiddenColumns?: string[]  // name list — 숨겨질 컬럼
   density?: "compact" | "normal"
+  columnWidths?: Record<string, number>  // column name → width(px). 사용자 조정값. 미설정 시 ColumnDef.width fallback.
 }
 
 export interface KanbanViewSettings {
@@ -396,6 +397,35 @@ export interface ChangeEvent {
   timestamp: number // 같은 이벤트 중복 처리 방지
 }
 
+// ─── EventStore — 통합 액션 timeline (Phase A 인프라) ───
+// 모든 사용자 액션의 시간순 single source of truth. 향후 derived views:
+//   - Workspace > History (전역 timeline UI)
+//   - Detail bar > Activity 탭 (row 단위 view)
+//   - AI panel > Timeline (kind=ai_* filter view)
+//   - WorkspaceMemory (frequency view — 현 Phase 1 코드는 별도 유지, 향후 derived 가능)
+// LOCK: append-only · 90일 expire · 1000개 cap · persist.
+// 호환: ChangeEvent와 별개로 유지. publishChange는 양쪽 다 push (ephemeral + persist).
+export type EventKind =
+  | "row_added"
+  | "row_updated"
+  | "ai_infer"  // pushAi(kind=infer) 흡수
+  | "ai_ask"    // pushAi(kind=ask) 흡수
+// 향후: row_deleted · comment_added · mention · snooze · column_added · ...
+
+export interface TimestampedEvent {
+  id: string
+  ts: number               // epoch ms
+  kind: EventKind
+  boardId?: string         // 없으면 워크스페이스 단위
+  rowId?: string           // 단일 행 대상일 때
+  rowIds?: string[]        // bulk (AI infer 등)
+  title?: string           // 표시용 (AI activity 흡수)
+  detail?: string
+  status?: AIHistoryStatus // ai_infer/ask 호환
+  prev?: TableRow          // row_updated
+  next?: TableRow          // row_added/updated
+}
+
 // 인메모리 nav-history 엔트리 — 헤더 시계/‹/› 버튼이 이 스택을 탐색.
 // 출처: design-ref/prototype/nav-history.jsx
 export interface NavEntry {
@@ -423,6 +453,21 @@ export type SortDir = "asc" | "desc"
 export type SortState = { key: string; dir: SortDir } | null
 
 export type CellCoord = { row: string; col: string }
+
+// ─── Workspace Memory — 자동 학습 cache (Library와 분리) ───
+// 셀에 입력된 값을 column scope별로 자동 기억. frequency 2+ 부터 cell editor의 "Recent" 섹션에 노출.
+// LOCK: Memory ≠ Library. promote는 명시 click 시만 (Phase 2 — Library OptionList bridge).
+// scope 키 = `{colName}::{libraryFieldId ?? "_"}` — 같은 colName이라도 다른 LibraryField 참조면 격리(cross-board 의미 충돌 방지).
+
+export interface MemoryEntry {
+  value: string         // 입력된 값 (string 정규화)
+  count: number         // 사용 횟수
+  lastUsedTs: number    // 최근 사용 시각 (epoch ms)
+}
+
+export interface WorkspaceMemory {
+  byScope: Record<string, MemoryEntry[]>
+}
 
 export interface PanelState {
   activityBar: boolean
@@ -460,6 +505,13 @@ export interface FlowBaseState {
 
   // View Display 옵션 (persist) — 보드별 + view별. Display 버튼에서 편집.
   viewSettings: Record<string, ViewSettings>
+
+  // Workspace Memory (persist) — 자동 학습 cache. Library와 분리.
+  workspaceMemory: WorkspaceMemory
+
+  // EventStore (persist) — 통합 액션 timeline. Phase A 인프라.
+  // 향후 Workspace > History · Detail Activity · AI Timeline 모두 이 source에서 derive.
+  events: TimestampedEvent[]
 
   // 전역 UI (persist)
   panels: PanelState
