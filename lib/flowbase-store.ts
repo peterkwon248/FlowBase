@@ -7,6 +7,7 @@
 
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
+import { toast } from "sonner"
 import type {
   ActiveWorkspaceItem,
   ActivityMode,
@@ -15,6 +16,7 @@ import type {
   ChangeEvent,
   ChartConfig,
   ColumnDef,
+  ExportedSnapshot,
   FilterCondition,
   FlowBaseState,
   LibraryCategoryId,
@@ -67,6 +69,31 @@ function nowIso(): string {
   return new Date().toISOString()
 }
 
+// ─── Members role enforcement helper ────────────────────────────────
+// viewer는 콘텐츠 mutation 차단. UI/view 상태(panels/filter/search/sort/viewSettings/
+// selected/focused/nav)는 자기 화면이라 viewer도 허용.
+// toast id로 폭주 방지 — 같은 id면 sonner가 새 토스트 안 만들고 기존 거 update.
+const VIEWER_TOAST_ID = "viewer-readonly"
+
+function isViewer(s: FlowBaseState): boolean {
+  if (!s.settings) return false
+  const cur = s.settings.members.find(
+    (m) => m.id === s.settings.currentUserId,
+  )
+  return !!cur && !roleCanEdit(cur.role)
+}
+
+function ensureCanEdit(s: FlowBaseState, action?: string): boolean {
+  if (!isViewer(s)) return true
+  toast.warning("Viewers can't edit", {
+    id: VIEWER_TOAST_ID,
+    description: action
+      ? `"${action}" is disabled in viewer mode.`
+      : "Switch to an editor role (Member/Admin/Owner) to make changes.",
+  })
+  return false
+}
+
 // 보드별 새 행 id — idPrefix + (기존 최대 번호 + 1). 프로토타입 INT-NNN 방식.
 function nextRowId(board: Board): string {
   const prefix = board.idPrefix ?? "ROW-"
@@ -113,9 +140,16 @@ export interface FlowBaseActions {
 
   // Data export — 전체 store 상태(persisted slice)를 JSON 문자열로.
   exportData: () => string
-  // Data import — exported JSON의 boards 머지 (id 충돌 시 새 id 부여).
-  // 반환: 새로 추가된 boardIds.
-  importBoards: (boards: Record<string, Board>) => string[]
+  // Data import — exported snapshot의 모든 메타 머지. id 충돌 정책:
+  //   - boards: 새 id 부여 (always add)
+  //   - library/wiki/automations: id 일치 항목 skip (no overwrite)
+  // 반환: 머지 카운트 요약.
+  importWorkspace: (snapshot: ExportedSnapshot) => {
+    boards: number
+    library: number
+    wiki: number
+    automations: number
+  }
 
   // Schema positions
   setSchemaPosition: (boardId: string, pos: { x: number; y: number }) => void
@@ -420,6 +454,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
 
         createBoard: (label, columns, rows) => {
+          if (!ensureCanEdit(get(), "Create board")) return ""
           const id = `board-${Date.now().toString(36)}`
           const ts = nowIso()
           const board: Board = {
@@ -442,6 +477,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
 
         deleteBoard: (boardId) => {
+          if (!ensureCanEdit(get(), "Delete board")) return
           set((s) => {
             const target = s.boards[boardId]
             if (!target) return s
@@ -501,6 +537,28 @@ export const useFlowBase = create<FlowBaseStore>()(
               viewByBoardId: nextViewByBoardId,
             }
           })
+          // 자동화 firedKeys 중 이 boardId 포함된 dueDate 키 cleanup
+          // (key 형식: `${ruleId}:${boardId}:${rowId}` — daily는 영향 ❌)
+          try {
+            const raw = localStorage.getItem(
+              "flowbase-automation-firedKeys-v1",
+            )
+            if (!raw) return
+            const arr = JSON.parse(raw)
+            if (!Array.isArray(arr)) return
+            const filtered = (arr as string[]).filter((k) => {
+              const parts = k.split(":")
+              return parts.length !== 3 || parts[1] !== boardId
+            })
+            if (filtered.length !== arr.length) {
+              localStorage.setItem(
+                "flowbase-automation-firedKeys-v1",
+                JSON.stringify(filtered),
+              )
+            }
+          } catch {
+            // silent — quota 등
+          }
         },
 
         restoreRow: (rowId) => {
@@ -628,23 +686,85 @@ export const useFlowBase = create<FlowBaseStore>()(
             },
           })),
 
-        importBoards: (importedBoards) => {
+        importWorkspace: (snapshot) => {
+          if (!ensureCanEdit(get(), "Import workspace")) {
+            return { boards: 0, library: 0, wiki: 0, automations: 0 }
+          }
           const s = get()
-          const addedIds: string[] = []
+          const summary = { boards: 0, library: 0, wiki: 0, automations: 0 }
+
+          // 1) Boards — id 충돌 시 새 id, 항상 추가
           const nextBoards = { ...s.boards }
           const nextViewByBoardId = { ...s.viewByBoardId }
-          for (const [importedId, board] of Object.entries(importedBoards)) {
-            // id 충돌 시 새 id 부여 (`${importedId}-imported-${ts}`)
+          for (const [importedId, board] of Object.entries(
+            snapshot.boards ?? {},
+          )) {
             let id = importedId
             if (nextBoards[id]) {
-              id = `${importedId}-imported-${Date.now().toString(36).slice(-4)}`
+              id = `${importedId}-imported-${Date.now().toString(36).slice(-4)}-${summary.boards}`
             }
             nextBoards[id] = { ...board, id, updatedAt: nowIso() }
             nextViewByBoardId[id] = nextViewByBoardId[id] ?? "sheet"
-            addedIds.push(id)
+            summary.boards += 1
           }
-          set({ boards: nextBoards, viewByBoardId: nextViewByBoardId })
-          return addedIds
+
+          // 2) Library — 카테고리별 id 일치 항목 skip, 신규만 추가
+          const nextLibrary = { ...s.library }
+          if (snapshot.library) {
+            const merge = <T extends { id: string }>(
+              cur: T[],
+              incoming: T[] | undefined,
+            ): T[] => {
+              if (!incoming) return cur
+              const existing = new Set(cur.map((x) => x.id))
+              const added = incoming.filter((x) => !existing.has(x.id))
+              summary.library += added.length
+              return [...cur, ...added]
+            }
+            nextLibrary.optionLists = merge(
+              nextLibrary.optionLists,
+              snapshot.library.optionLists,
+            )
+            nextLibrary.fields = merge(
+              nextLibrary.fields,
+              snapshot.library.fields,
+            )
+            nextLibrary.templates = merge(
+              nextLibrary.templates,
+              snapshot.library.templates,
+            )
+            nextLibrary.functions = merge(
+              nextLibrary.functions,
+              snapshot.library.functions,
+            )
+            nextLibrary.dashboards = merge(
+              nextLibrary.dashboards,
+              snapshot.library.dashboards,
+            )
+          }
+
+          // 3) Wiki — id 일치 skip
+          const existingWikiIds = new Set(s.wikiPages.map((p) => p.id))
+          const addedWiki = (snapshot.wikiPages ?? []).filter(
+            (p) => !existingWikiIds.has(p.id),
+          )
+          summary.wiki = addedWiki.length
+
+          // 4) Automations — id 일치 skip
+          const existingAutoIds = new Set(s.automations.map((a) => a.id))
+          const addedAutos = (snapshot.automations ?? []).filter(
+            (a) => !existingAutoIds.has(a.id),
+          )
+          summary.automations = addedAutos.length
+
+          set({
+            boards: nextBoards,
+            viewByBoardId: nextViewByBoardId,
+            library: nextLibrary,
+            wikiPages: [...s.wikiPages, ...addedWiki],
+            automations: [...s.automations, ...addedAutos],
+          })
+          return summary
         },
 
         exportData: () => {
@@ -793,6 +913,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           const s = get()
           const b = s.boards[s.activeBoardId]
           if (!b) return
+          if (!ensureCanEdit(s, "Add column")) return
           // 중복 이름 방어 — "name", "name 2", "name 3" 순으로 자동 증가
           let name = col.name
           let label = col.label || col.name
@@ -820,6 +941,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           const b = s.boards[s.activeBoardId]
           if (!b) return
           if (colName === "id") return // id 컬럼 보호
+          if (!ensureCanEdit(s, "Delete column")) return
           // 행에서 해당 키 제거
           const newRows: TableRow[] = b.rows.map((r) => {
             const next: TableRow = { ...r }
@@ -845,6 +967,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           if (!b) return
           if (colName === "id") return
           if (!newName.trim()) return
+          if (!ensureCanEdit(s, "Rename column")) return
           // 키 충돌 방어
           if (
             newName !== colName &&
@@ -888,6 +1011,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           const s = get()
           const b = s.boards[s.activeBoardId]
           if (!b) return
+          if (!ensureCanEdit(s, "Change column")) return
           set({
             boards: {
               ...s.boards,
@@ -907,6 +1031,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           const s = get()
           const b = s.boards[s.activeBoardId]
           if (!b) return ""
+          if (!ensureCanEdit(s, "Add chart")) return ""
           const id = `chart-${Date.now().toString(36).slice(-6)}`
           const full: ChartConfig = { ...chart, id }
           set({
@@ -925,6 +1050,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           const s = get()
           const b = s.boards[s.activeBoardId]
           if (!b) return
+          if (!ensureCanEdit(s, "Remove chart")) return
           set({
             boards: {
               ...s.boards,
@@ -940,6 +1066,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           const s = get()
           const b = s.boards[s.activeBoardId]
           if (!b) return
+          if (!ensureCanEdit(s, "Update chart")) return
           set({
             boards: {
               ...s.boards,
@@ -957,6 +1084,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           const s = get()
           const b = s.boards[s.activeBoardId]
           if (!b || !b.charts) return
+          if (!ensureCanEdit(s, "Move chart")) return
           const idx = b.charts.findIndex((c) => c.id === chartId)
           if (idx < 0) return
           const next = direction === "up" ? idx - 1 : idx + 1
@@ -1049,16 +1177,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         addRow: (row) => {
           const b = activeBoard()
           if (!b) return row?.id ?? "ROW-100"
-          // Viewer readonly 가드 (demo enforcement — Phase 2 W11에서 모든 mutation 적용)
-          const s = get()
-          const cur = s.settings.members.find(
-            (m) => m.id === s.settings.currentUserId,
-          )
-          if (cur && !roleCanEdit(cur.role)) {
-            // toast는 동기 import 불가 — 액션에서 silent fail + return placeholder.
-            // UI는 사용자 role 보고 버튼 disable 권장.
-            return row?.id ?? "ROW-100"
-          }
+          if (!ensureCanEdit(get(), "Add row")) return row?.id ?? ""
           pushUndo()
           const ts = nowIso()
           const id = row?.id ?? nextRowId(b)
@@ -1081,10 +1200,12 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
 
         // 명시 boardId — 자동화 "Add row to Tasks" 처리용. activeBoard 우회.
+        // 자동화 런타임도 호출하므로 viewer 가드 — 자동화 자체가 viewer에선 발화 ❌.
         addRowToBoard: (boardId, row) => {
           const s = get()
           const b = s.boards[boardId]
           if (!b) return null
+          if (!ensureCanEdit(s, "Add row")) return null
           const ts = nowIso()
           const id = row?.id ?? nextRowId(b)
           const newRow: TableRow = {
@@ -1120,6 +1241,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           if (!b) return null
           const src = b.rows.find((r) => r.id === rowId)
           if (!src) return null
+          if (!ensureCanEdit(get(), "Duplicate row")) return null
           pushUndo()
           const ts = nowIso()
           const newId = nextRowId(b)
@@ -1148,6 +1270,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           if (!b) return
           const prev = b.rows.find((r) => r.id === rowId)
           if (!prev) return
+          if (!ensureCanEdit(get(), "Edit cell")) return
           pushUndo()
           const next: TableRow = { ...prev, ...patch, updatedAt: nowIso() }
           setRows(b.rows.map((r) => (r.id === rowId ? next : r)))
@@ -1163,6 +1286,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         deleteRows: (rowIds) => {
           const b = activeBoard()
           if (!b || rowIds.length === 0) return
+          if (!ensureCanEdit(get(), "Delete rows")) return
           pushUndo()
           const targets = new Set(rowIds)
           const movedToTrash: TrashedRow[] = b.rows
@@ -1312,13 +1436,16 @@ export const useFlowBase = create<FlowBaseStore>()(
           set({ wikiSelectedId })
           pushNav()
         },
-        updateWikiPage: (id, patch) =>
+        updateWikiPage: (id, patch) => {
+          if (!ensureCanEdit(get(), "Edit wiki page")) return
           set((s) => ({
             wikiPages: s.wikiPages.map((p) =>
               p.id === id ? { ...p, ...patch } : p,
             ),
-          })),
+          }))
+        },
         addWikiPage: (init) => {
+          if (!ensureCanEdit(get(), "Add wiki page")) return ""
           const today = new Date().toISOString().slice(0, 10)
           const id = `wiki-${Date.now().toString(36).slice(-6)}`
           const newPage: WikiPage = {
@@ -1339,7 +1466,8 @@ export const useFlowBase = create<FlowBaseStore>()(
           return id
         },
         // 삭제 = trash 이동. 30일 후 cleanupExpiredTrash가 자동 영구 삭제.
-        deleteWikiPage: (id) =>
+        deleteWikiPage: (id) => {
+          if (!ensureCanEdit(get(), "Delete wiki page")) return
           set((s) => {
             const target = s.wikiPages.find((p) => p.id === id)
             if (!target) return s
@@ -1355,7 +1483,8 @@ export const useFlowBase = create<FlowBaseStore>()(
                 ...s.trashedWikiPages,
               ],
             }
-          }),
+          })
+        },
         setLibCategory: (libCategory) => {
           set({ libCategory, libAssetId: null })
           pushNav()

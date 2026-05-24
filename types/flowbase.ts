@@ -373,6 +373,17 @@ export interface WorkspaceSettings {
   currentUserId?: string
 }
 
+// Data export/import 스냅샷 형식 — store.exportData() 결과 + importWorkspace 입력.
+// boards 필수, 나머지는 옵션 (있는 것만 머지).
+export interface ExportedSnapshot {
+  exportedAt?: string
+  storeVersion?: number
+  boards?: Record<string, Board>
+  library?: Library
+  wikiPages?: WikiPage[]
+  automations?: AutomationRule[]
+}
+
 // 자동화 런타임이 listen하는 데이터 변경 이벤트 (ephemeral, persist ❌).
 // addRow/updateRow/commitAiCell가 끝에 publish. lib/automation-runtime이
 // useEffect로 받아 active rule 매칭 후 발화.

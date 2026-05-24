@@ -596,7 +596,7 @@ function DataTab() {
 }
 
 function ImportSection() {
-  const importBoards = useFlowBase((s) => s.importBoards)
+  const importWorkspace = useFlowBase((s) => s.importWorkspace)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -617,27 +617,44 @@ function ImportSection() {
           return
         }
         const boards = parsed.boards as Record<string, unknown>
-        const count = Object.keys(boards).length
-        if (count === 0) {
-          toast.warning("No boards in this file")
+        const boardCount = Object.keys(boards).length
+        const libCount =
+          (parsed.library?.optionLists?.length ?? 0) +
+          (parsed.library?.fields?.length ?? 0) +
+          (parsed.library?.templates?.length ?? 0) +
+          (parsed.library?.functions?.length ?? 0) +
+          (parsed.library?.dashboards?.length ?? 0)
+        const wikiCount = parsed.wikiPages?.length ?? 0
+        const autoCount = parsed.automations?.length ?? 0
+        const totalMeta = libCount + wikiCount + autoCount
+        if (boardCount === 0 && totalMeta === 0) {
+          toast.warning("No data to import")
           return
         }
         if (
           !window.confirm(
-            `Import ${count} board${count === 1 ? "" : "s"} from this file?\n\n(Existing data is preserved. ID conflicts get a new ID.)`,
+            `Import:\n${boardCount} board${boardCount === 1 ? "" : "s"}` +
+              `${libCount > 0 ? `\n${libCount} library asset${libCount === 1 ? "" : "s"}` : ""}` +
+              `${wikiCount > 0 ? `\n${wikiCount} wiki page${wikiCount === 1 ? "" : "s"}` : ""}` +
+              `${autoCount > 0 ? `\n${autoCount} automation${autoCount === 1 ? "" : "s"}` : ""}` +
+              `\n\nBoards always merge with new ID.\nLibrary/Wiki/Automations skip on ID conflict.`,
           )
         ) {
           return
         }
-        const addedIds = importBoards(boards as Record<string, never>)
+        const summary = importWorkspace(parsed)
         toast.success(
-          `Imported ${addedIds.length} board${addedIds.length === 1 ? "" : "s"}`,
+          `Imported ${summary.boards} board${summary.boards === 1 ? "" : "s"}` +
+            (summary.library > 0 ? `, ${summary.library} library` : "") +
+            (summary.wiki > 0 ? `, ${summary.wiki} wiki` : "") +
+            (summary.automations > 0
+              ? `, ${summary.automations} automation${summary.automations === 1 ? "" : "s"}`
+              : ""),
         )
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Unknown error"
         toast.error(`Import failed — ${msg}`)
       } finally {
-        // 같은 파일 다시 선택 가능하도록 reset
         if (fileInputRef.current) fileInputRef.current.value = ""
       }
     }
@@ -648,8 +665,9 @@ function ImportSection() {
     <div className="rounded-md border border-border-subtle bg-card p-3">
       <div className="mb-1 text-[12.5px] font-medium">Import workspace</div>
       <p className="mb-2.5 text-[11.5px] text-muted-foreground">
-        Import boards from a previously exported JSON. Existing data is
-        preserved; ID conflicts get a new ID.
+        Import boards, library, wiki, and automations from a previously
+        exported JSON. Boards always merge with new IDs; other assets skip on
+        ID conflict.
       </p>
       <input
         ref={fileInputRef}
