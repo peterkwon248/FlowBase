@@ -671,6 +671,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
 
         restoreBoard: (boardId) => {
+          if (!ensureCanEdit(get(), "Restore board")) return
           set((s) => {
             const trashed = s.trashedBoards.find(
               (t) => t.board.id === boardId,
@@ -690,6 +691,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
 
         permanentDeleteBoard: (boardId) => {
+          if (!ensureCanEdit(get(), "Permanently delete board")) return
           set((s) => {
             // dangling viewSettings · schemaPositions · viewByBoardId cleanup
             const nextViewSettings = { ...s.viewSettings }
@@ -739,6 +741,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
 
         restoreRow: (rowId) => {
+          if (!ensureCanEdit(get(), "Restore row")) return
           set((s) => {
             const trashed = s.trashedRows.find((t) => t.row.id === rowId)
             if (!trashed) return s
@@ -764,12 +767,14 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
 
         permanentDeleteRow: (rowId) => {
+          if (!ensureCanEdit(get(), "Permanently delete row")) return
           set((s) => ({
             trashedRows: s.trashedRows.filter((t) => t.row.id !== rowId),
           }))
         },
 
         restoreWikiPage: (pageId) => {
+          if (!ensureCanEdit(get(), "Restore wiki page")) return
           set((s) => {
             const trashed = s.trashedWikiPages.find(
               (t) => t.page.id === pageId,
@@ -793,6 +798,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
 
         permanentDeleteWikiPage: (pageId) => {
+          if (!ensureCanEdit(get(), "Permanently delete wiki page")) return
           set((s) => ({
             trashedWikiPages: s.trashedWikiPages.filter(
               (t) => t.page.id !== pageId,
@@ -800,8 +806,10 @@ export const useFlowBase = create<FlowBaseStore>()(
           }))
         },
 
-        emptyTrash: () =>
-          set({ trashedBoards: [], trashedRows: [], trashedWikiPages: [] }),
+        emptyTrash: () => {
+          if (!ensureCanEdit(get(), "Empty trash")) return
+          set({ trashedBoards: [], trashedRows: [], trashedWikiPages: [] })
+        },
 
         cleanupExpiredTrash: () => {
           const cutoff = Date.now() - TRASH_EXPIRY_MS
@@ -818,10 +826,17 @@ export const useFlowBase = create<FlowBaseStore>()(
           }))
         },
 
-        updateSettings: (patch) =>
-          set((s) => ({ settings: { ...s.settings, ...patch } })),
+        updateSettings: (patch) => {
+          // currentUserId 변경(데모 "Switch to")은 가드 우회 — viewer도 자기 role 둘러보기 가능.
+          // 그 외 settings 변경(workspaceLabel/themeAccent 등)은 가드.
+          const isOnlySwitch =
+            Object.keys(patch).length === 1 && "currentUserId" in patch
+          if (!isOnlySwitch && !ensureCanEdit(get(), "Update settings")) return
+          set((s) => ({ settings: { ...s.settings, ...patch } }))
+        },
 
         addMember: ({ name, email, role }) => {
+          if (!ensureCanEdit(get(), "Add member")) return ""
           const id = `mem-${Date.now().toString(36).slice(-6)}`
           const newMember: WorkspaceMember = {
             id,
@@ -840,7 +855,8 @@ export const useFlowBase = create<FlowBaseStore>()(
           return id
         },
 
-        updateMemberRole: (id, role) =>
+        updateMemberRole: (id, role) => {
+          if (!ensureCanEdit(get(), "Update member role")) return
           set((s) => ({
             settings: {
               ...s.settings,
@@ -851,9 +867,11 @@ export const useFlowBase = create<FlowBaseStore>()(
                   : m,
               ),
             },
-          })),
+          }))
+        },
 
-        removeMember: (id) =>
+        removeMember: (id) => {
+          if (!ensureCanEdit(get(), "Remove member")) return
           set((s) => ({
             settings: {
               ...s.settings,
@@ -861,7 +879,8 @@ export const useFlowBase = create<FlowBaseStore>()(
                 (m) => m.id !== id || m.role === "owner", // Owner 삭제 ❌
               ),
             },
-          })),
+          }))
+        },
 
         importWorkspace: (snapshot) => {
           const emptySummary = {
@@ -984,11 +1003,16 @@ export const useFlowBase = create<FlowBaseStore>()(
           return JSON.stringify(snapshot, null, 2)
         },
 
-        setSchemaPosition: (boardId, pos) =>
+        setSchemaPosition: (boardId, pos) => {
+          if (!ensureCanEdit(get(), "Move schema card")) return
           set((s) => ({
             schemaPositions: { ...s.schemaPositions, [boardId]: pos },
-          })),
-        resetSchemaPositions: () => set({ schemaPositions: {} }),
+          }))
+        },
+        resetSchemaPositions: () => {
+          if (!ensureCanEdit(get(), "Reset schema positions")) return
+          set({ schemaPositions: {} })
+        },
 
         setViewOption: (view, patch) => {
           const s = get()
@@ -1017,7 +1041,8 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
 
         // Automations — rule 토글: active ↔ paused. draft는 따로 명시적 변경.
-        toggleAutomationStatus: (id) =>
+        toggleAutomationStatus: (id) => {
+          if (!ensureCanEdit(get(), "Toggle automation")) return
           set((s) => ({
             automations: s.automations.map((r) => {
               if (r.id !== id) return r
@@ -1029,16 +1054,20 @@ export const useFlowBase = create<FlowBaseStore>()(
                     : "active"
               return { ...r, status: next }
             }),
-          })),
+          }))
+        },
 
-        deleteAutomation: (id) =>
+        deleteAutomation: (id) => {
+          if (!ensureCanEdit(get(), "Delete automation")) return
           set((s) => ({
             automations: s.automations.filter((r) => r.id !== id),
-          })),
+          }))
+        },
 
         // 테스트 실행 — runsThisWeek++, lastRun = "just now".
         // 실제 트리거 매치 로직은 future work (rule-engine.jsx). 이건 visual proof.
-        testRunAutomation: (id) =>
+        testRunAutomation: (id) => {
+          if (!ensureCanEdit(get(), "Test run automation")) return
           set((s) => ({
             automations: s.automations.map((r) =>
               r.id === id
@@ -1049,10 +1078,12 @@ export const useFlowBase = create<FlowBaseStore>()(
                   }
                 : r,
             ),
-          })),
+          }))
+        },
 
         // Suggestion accept — 새 룰로 promote (간소화: name/desc 기반 빈 룰).
-        acceptSuggestion: (id) =>
+        acceptSuggestion: (id) => {
+          if (!ensureCanEdit(get(), "Accept suggestion")) return
           set((s) => {
             const sug = s.suggestedAutomations.find((x) => x.id === id)
             if (!sug) return s
@@ -1082,14 +1113,17 @@ export const useFlowBase = create<FlowBaseStore>()(
                 (x) => x.id !== id,
               ),
             }
-          }),
+          })
+        },
 
-        dismissSuggestion: (id) =>
+        dismissSuggestion: (id) => {
+          if (!ensureCanEdit(get(), "Dismiss suggestion")) return
           set((s) => ({
             suggestedAutomations: s.suggestedAutomations.filter(
               (x) => x.id !== id,
             ),
-          })),
+          }))
+        },
 
         renameBoard: (boardId, label) => {
           set((s) => {
@@ -1313,6 +1347,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           const col = b.columns.find((c) => c.name === colName)
           if (!col) return null
           if (col.libraryFieldId) return col.libraryFieldId
+          if (!ensureCanEdit(s, "Promote column")) return null
           const fieldId = `fld-${Date.now().toString(36).slice(-6)}`
           const newField = {
             id: fieldId,
@@ -1353,6 +1388,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           const s = get()
           const b = s.boards[s.activeBoardId]
           if (!b) return
+          if (!ensureCanEdit(s, "Attach function")) return
           set({
             boards: {
               ...s.boards,
@@ -1569,6 +1605,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           if (!b) return
           const prev = b.rows.find((r) => r.id === rowId)
           if (!prev) return
+          if (!ensureCanEdit(get(), "Accept AI cell")) return
           pushUndo()
           const confirmKey =
             col === "theme" ? "themeConfirmed" : "sentimentConfirmed"
@@ -1593,6 +1630,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         dismissAiCell: (rowId, col) => {
           const b = activeBoard()
           if (!b) return
+          if (!ensureCanEdit(get(), "Dismiss AI cell")) return
           pushUndo()
           const confirmKey =
             col === "theme" ? "themeConfirmed" : "sentimentConfirmed"
@@ -1607,6 +1645,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         acceptAllAi: (col, results) => {
           const b = activeBoard()
           if (!b || results.length === 0) return
+          if (!ensureCanEdit(get(), "Accept all AI")) return
           pushUndo()
           const confirmKey =
             col === "theme" ? "themeConfirmed" : "sentimentConfirmed"
@@ -1632,6 +1671,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           const confirmKey =
             col === "theme" ? "themeConfirmed" : "sentimentConfirmed"
           if (!b.rows.some((r) => r[confirmKey] === false)) return
+          if (!ensureCanEdit(get(), "Dismiss all AI")) return
           pushUndo()
           setRows(
             b.rows.map((r) =>
