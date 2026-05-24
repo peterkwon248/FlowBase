@@ -4,6 +4,46 @@
 
 ---
 
+## 2026-05-24 (kkh94 머신, 폴리시 #9) — Filter text contains · Gallery cardFields reorder · Timeline month scale
+
+### 완료 (1 commit `1cb045e`)
+**3 폴리시 (NEXT-ACTION 우선순위 낮음 6~7 minimum).**
+
+1. **Filter text/email contains operator**
+   - `types.FilterCondition += { kind: 'contains', text: string }`.
+   - `isFilterable`에 text/email 추가 → ListStep에 노출.
+   - `selectVisibleRows` contains 분기 (case-insensitive includes).
+   - FilterMenu ContainsWidget — single text input.
+   - ActiveFilterChips contains 라벨.
+2. **Gallery cardFields reorder** (↑/↓ 버튼, dnd lib ❌)
+   - DisplayPopover GallerySection cardFields 재구성:
+     - 선택된 컬럼 우선 + ↑/↓ 버튼 (Chart reorder/Kanban 이동과 같은 패턴)
+     - 미선택 컬럼은 다음, 추가만 가능
+3. **Timeline month scale** (장기 timeline overview)
+   - `types.TimelineViewSettings.scale += 'month'`.
+   - COL_WIDTH_MONTH = 8px (week 14 / day 34보다 더 압축).
+   - DisplayPopover Timeline scale segmented에 month 추가.
+   - 부가: timeline-view.tsx의 colWidth/COL_WIDTH 상수 이름 정정 (이전 replace_all 부작용).
+
+### 큰 결정
+- **And/Or multi-condition per column은 후속** — 사용자 요청 "And/Or"의 정확한 의미 불명 (per-column or cross-column). 우선 단일 contains operator만 추가.
+- **Gallery reorder는 ↑/↓ 버튼** — Chart reorder/Kanban 이동과 같은 패턴 (dnd lib ❌). 일관성 확보.
+- **Timeline month는 colWidth만 변경** — 같은 day grid 유지 + 시각 압축. 진짜 month aggregation은 후속 (group by 컬럼 차원 추가 필요).
+- **legacy 상수 이름 정정** — 이전 세션 #6의 replace_all 부작용으로 colWidth_DAY/WEEK 잘못된 형식. tsc는 통과했지만 코드 컨벤션 깨짐 — 이번에 COL_WIDTH_DAY/WEEK/MONTH로 복원.
+
+### 검증
+- tsc 0 · vitest 44/44.
+
+### Watch Out
+- **Filter contains는 case-insensitive 단순 includes** — regex/exact match는 후속. text/email 외에는 적용 ❌.
+- **Gallery reorder는 cardFields 배열 순서가 의미 있음** — 기존 ?? auto-derive 결과는 그대로 (cardFields 명시 시만 reorder UI).
+- **Timeline month scale은 시각만 압축** — 행 수는 같음, day cell 8px. 30일+ 데이터에선 한 행에 cell 많아 horizontal scroll 길어짐 — zoom or month aggregation 후속.
+
+### 머신
+kkh94. main 머지·푸시 자동.
+
+---
+
 ## 2026-05-24 (kkh94 머신, 폴리시 #8) — Members enforcement 전체 · firedKeys dueDate cleanup · Data Import 메타 확장
 
 ### 완료 (1 commit `951e82e`)

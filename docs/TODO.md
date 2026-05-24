@@ -75,19 +75,26 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 - [x] **firedKeys dueDate cleanup** (permanentDeleteBoard)
 - [x] **Data Import 메타 포함** (importWorkspace · library/wiki/automations)
 
+## P2 — 폴리시 일괄 #9 (2026-05-24 — `1cb045e` 모두 완료)
+
+- [x] **Filter text/email contains operator**
+- [x] **Gallery cardFields reorder** (↑/↓ 버튼)
+- [x] **Timeline month scale** (COL_WIDTH_MONTH=8)
+
 ## P2 — 남은 폴리시
 
 - [ ] **남은 mutation enforcement** — commitAi/promote/attach/automation/settings/등 30+ 추가.
 - [ ] **UI 단 viewer disable** — button disabled / readonly 표시.
 - [ ] **Theme accent oklch 시각 튜닝** — light/dark 4 accent 브라우저 검증 후.
 - [ ] **Data Import skip summary** — id 충돌 skip 카운트 표시.
-- [ ] **Filter And/Or multi-condition per column** — ≥/≤/contains 등.
-- [ ] **Gallery/Timeline 커스터마이즈 후속** (카드 컬럼 reorder · Gantt 주 단위 group · zoom).
+- [ ] **Filter And/Or 본격** — multi-condition per column 또는 cross-column. operator 확장(=/≠/regex 등).
 - [ ] **Schema pinch-zoom 트랙패드** + 멀티 테이블 → N개 보드.
 - [ ] **MATCH_FROM_DROPDOWN sourceField 명시 선택**.
 - [ ] **Chart toolbar 터치 UX** — group-hover 한계.
 - [ ] **Wiki body diff/version history**.
 - [ ] **firedKeys runtime ref sync** — permanentDeleteBoard 후 즉시.
+- [ ] **Timeline real month aggregation** — month scale은 colWidth만, 실 month group은 후속.
+- [ ] **Gallery dnd reorder** (현재 ↑↓ 버튼만).
 
 ---
 

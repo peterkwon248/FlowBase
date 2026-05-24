@@ -1,19 +1,19 @@
 # NEXT-ACTION
 
 > 다음 세션 시작 시 이 파일부터 읽으세요.
-> 마지막 갱신: 2026-05-24 (kkh94 머신, 폴리시 #8 — Members enforcement 전체 · firedKeys dueDate cleanup · Data Import 메타 확장)
+> 마지막 갱신: 2026-05-24 (kkh94 머신, 폴리시 #9 — Filter text contains · Gallery cardFields reorder · Timeline month scale)
 
 ---
 
 ## 한 줄 요약
 
-**Members enforcement 핵심 14개 mutation 가드 + firedKeys dueDate cleanup + Data Import 메타 4종 확장 완료. 다음: 남은 mutation enforcement + Filter And/Or operators + Gallery/Timeline 후속 + UI 단 disable.**
+**Filter contains operator + Gallery cardFields ↑↓ reorder + Timeline month scale 완료. 다음: 남은 mutation enforcement · UI 단 viewer disable · Filter And/Or 본격 · 우선순위 낮음 마무리 (Schema pinch-zoom · 차트 터치 UX · Wiki diff).**
 
 ---
 
 ## ✅ 머지 완료
 
-- `origin/main = 951e82e` (push 후 머지).
+- `origin/main = 1cb045e` (push 후 머지).
 - 다른 머신: `git fetch && git checkout main && git pull && npm install`.
 
 ---
@@ -45,13 +45,15 @@
 
 ## ✅ 이번 세션 완료 (1 commit)
 
-### `951e82e` — 폴리시 일괄 #8
-1. **Members enforcement 전체 mutation 확장** — ensureCanEdit helper + 14개 mutation 가드.
-2. **firedKeys dueDate cleanup** — permanentDeleteBoard에서 3-part key 정리.
-3. **Data Import 메타 확장** — importBoards → importWorkspace(boards/library/wiki/automations).
+### `1cb045e` — 폴리시 일괄 #9
+1. **Filter text/email contains operator** — FilterCondition += contains kind, ContainsWidget, chip 라벨.
+2. **Gallery cardFields reorder** — ↑/↓ 버튼, 선택순서 의미 (dnd lib ❌).
+3. **Timeline month scale** — COL_WIDTH_MONTH=8 + DisplayPopover scale segmented += month.
 
-### 직전 `568526d` — 폴리시 일괄 #7 (이전 세션, 같은 날)
-- Filter cascade hover 복원, legacy 제거, permanentDeleteBoard dangling cleanup, firedKeys persist, Theme accent 4 프리셋, Data Import boards-only, Members 깊이 minimum.
+### 직전 commits (이전 세션, 같은 날)
+- `951e82e` 폴리시 #8: Members enforcement 14 mutation · firedKeys dueDate cleanup · Data Import 메타 확장
+- `568526d` 폴리시 #7: Filter cascade hover · legacy 제거 · firedKeys persist · Theme accent · Data Import 기본 · Members 깊이 minimum
+- `a818f82` 깊이 #6: Timeline Gantt · Filter 2-step · Display 옵션 · Chart reorder · Library 점프
 
 ---
 
