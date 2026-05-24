@@ -16,7 +16,7 @@ import {
   ContextMenuShortcut,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
-import { useFlowBase } from "@/lib/flowbase-store"
+import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { toast } from "sonner"
 
 interface RowContextMenuProps {
@@ -31,6 +31,7 @@ export function RowContextMenu({ rowId, children }: RowContextMenuProps) {
   const duplicateRow = useFlowBase((s) => s.duplicateRow)
   const togglePanel = useFlowBase((s) => s.togglePanel)
   const panels = useFlowBase((s) => s.panels)
+  const isViewer = useFlowBase(selectIsViewer)
 
   // 메뉴 열릴 때 호출 — 우클릭 행이 선택에 없으면 선택 교체, 있으면 유지.
   const ensureSelected = () => {
@@ -90,7 +91,11 @@ export function RowContextMenu({ rowId, children }: RowContextMenuProps) {
           <span>Open in detail bar</span>
           <ContextMenuShortcut>⌘I</ContextMenuShortcut>
         </ContextMenuItem>
-        <ContextMenuItem onSelect={handleDuplicate} className="gap-2">
+        <ContextMenuItem
+          onSelect={handleDuplicate}
+          disabled={isViewer}
+          className="gap-2"
+        >
           <FilePlus2
             className="size-3.5 text-muted-foreground"
             strokeWidth={1.75}
@@ -105,6 +110,7 @@ export function RowContextMenu({ rowId, children }: RowContextMenuProps) {
         <ContextMenuSeparator />
         <ContextMenuItem
           onSelect={handleDelete}
+          disabled={isViewer}
           className="gap-2 text-destructive focus:text-destructive"
         >
           <Trash2 className="size-3.5" strokeWidth={1.75} />

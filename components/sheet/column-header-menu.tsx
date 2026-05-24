@@ -51,7 +51,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { TYPE_ICON } from "@/components/sheet/header-cell"
-import { useFlowBase } from "@/lib/flowbase-store"
+import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
+import { cn } from "@/lib/utils"
 import type { ColumnDef, ColumnType } from "@/types/flowbase"
 
 const CHANGEABLE_TYPES: { type: ColumnType; label: string }[] = [
@@ -71,6 +72,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
   const promoteColumn = useFlowBase((s) => s.promoteColumnToLibraryField)
   const attachFunction = useFlowBase((s) => s.attachFunctionToColumn)
   const library = useFlowBase((s) => s.library)
+  const isViewer = useFlowBase(selectIsViewer)
 
   const [renameOpen, setRenameOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -100,9 +102,13 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            title="Column options"
+            title={isViewer ? "Viewers can't modify columns" : "Column options"}
+            disabled={isViewer}
             onClick={(e) => e.stopPropagation()}
-            className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+            className={cn(
+              "flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-foreground/[0.06] hover:text-foreground",
+              isViewer && "cursor-not-allowed opacity-40",
+            )}
             data-column-menu={col.name}
           >
             <MoreHorizontal className="size-3.5" strokeWidth={2} />

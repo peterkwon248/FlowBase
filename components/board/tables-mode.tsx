@@ -24,9 +24,11 @@ import { GalleryView } from "@/components/sections/gallery-view"
 import { KanbanView } from "@/components/sections/kanban-view"
 import { TimelineView } from "@/components/sections/timeline-view"
 import { SheetView } from "@/components/sheet/sheet-view"
+import { cn } from "@/lib/utils"
 import {
   selectActiveBoard,
   selectActiveView,
+  selectIsViewer,
   useFlowBase,
 } from "@/lib/flowbase-store"
 
@@ -41,6 +43,8 @@ export function TablesMode() {
   const deleteRows = useFlowBase((s) => s.deleteRows)
   const addRow = useFlowBase((s) => s.addRow)
   const undo = useFlowBase((s) => s.undo)
+  const isViewer = useFlowBase(selectIsViewer)
+  const viewerCls = isViewer ? "cursor-not-allowed opacity-50" : ""
 
   const rowCount = board?.rows.length ?? 0
   const colCount = board?.columns.length ?? 0
@@ -95,7 +99,12 @@ export function TablesMode() {
                 <button
                   type="button"
                   onClick={() => deleteRows(selectedRowIds)}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.05]"
+                  disabled={isViewer}
+                  title={isViewer ? "Viewers can't delete" : undefined}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.05]",
+                    viewerCls,
+                  )}
                 >
                   <Trash2 className="size-3" />
                   Delete {selectedCount} rows
@@ -105,7 +114,12 @@ export function TablesMode() {
             <button
               type="button"
               onClick={() => setImportOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.05]"
+              disabled={isViewer}
+              title={isViewer ? "Viewers can't import" : undefined}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.05]",
+                viewerCls,
+              )}
             >
               <Upload className="size-3" />
               Import
@@ -121,7 +135,12 @@ export function TablesMode() {
             <button
               type="button"
               onClick={() => addRow()}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground"
+              disabled={isViewer}
+              title={isViewer ? "Viewers can't add rows" : undefined}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground",
+                viewerCls,
+              )}
             >
               <Plus className="size-3" />
               New row

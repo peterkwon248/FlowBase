@@ -25,8 +25,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useFlowBase } from "@/lib/flowbase-store"
+import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import type { ColumnDef, ColumnType } from "@/types/flowbase"
+import { cn } from "@/lib/utils"
 
 const BASIC_TYPES: {
   type: ColumnType
@@ -66,6 +67,7 @@ function slugify(name: string): string {
 export function AddColumnMenu() {
   const library = useFlowBase((s) => s.library)
   const addColumn = useFlowBase((s) => s.addColumn)
+  const isViewer = useFlowBase(selectIsViewer)
 
   const handleBasic = (
     type: ColumnType,
@@ -109,8 +111,12 @@ export function AddColumnMenu() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          title="Add column"
-          className="flex h-full w-full items-center justify-center text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
+          title={isViewer ? "Viewers can't add columns" : "Add column"}
+          disabled={isViewer}
+          className={cn(
+            "flex h-full w-full items-center justify-center text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground",
+            isViewer && "cursor-not-allowed opacity-50",
+          )}
           data-action="add-column"
         >
           <Plus className="size-4" strokeWidth={2} />

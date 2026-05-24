@@ -2022,6 +2022,15 @@ export function selectActiveBoard(state: FlowBaseState): Board | undefined {
   return state.boards[state.activeBoardId]
 }
 
+// 현재 로그인 사용자가 viewer면 true — UI button/menu disable에 사용.
+// roleCanEdit(role): owner/admin/member ✅, viewer ❌. primitive boolean 반환이라 zustand 직접 구독 안전.
+export function selectIsViewer(state: FlowBaseState): boolean {
+  const cur = state.settings.members.find(
+    (m) => m.id === state.settings.currentUserId,
+  )
+  return !!cur && !roleCanEdit(cur.role)
+}
+
 export function selectActiveView(state: FlowBaseState): ViewMode {
   return state.viewByBoardId[state.activeBoardId] ?? "sheet"
 }
