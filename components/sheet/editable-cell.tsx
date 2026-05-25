@@ -18,10 +18,11 @@ import { Clock } from "lucide-react"
 import { STATUS_LABELS, type ColumnDef, type TableRow, type TicketStatus } from "@/types/flowbase"
 import { toast } from "sonner"
 import { MEMORY_MIN_COUNT, useFlowBase } from "@/lib/flowbase-store"
+import { coerceMultiValue } from "@/lib/multi-select"
 import { statusBgClass, statusColorClass } from "@/lib/tokens"
 import { cn } from "@/lib/utils"
 import { AiPendingMark } from "./ai-pending-mark"
-import { CellPopover, type CellOption } from "./cell-popover"
+import { CellPopover, MultiCellPopover, type CellOption } from "./cell-popover"
 
 const STATUS_ENUM: TicketStatus[] = ["미처리", "진행중", "대기", "완료"]
 
@@ -67,6 +68,8 @@ export function EditableCell(props: EditableCellProps) {
       return <ButtonCell {...props} />
     case "select":
       return <SelectCell {...props} />
+    case "multiSelect":
+      return <MultiSelectCell {...props} />
     default:
       return <TextCell {...props} />
   }
@@ -448,6 +451,125 @@ function SelectCell({
         trigger={trigger}
       />
     </AiPendingMark>
+  )
+}
+
+// ── multiSelect ────────────────────────────────────────────────────
+// cell = string[]. trigger = chip 여러 개 (whitespace-nowrap LOCK).
+// popover toggle = MultiCellPopover. "+ Add new"로 col.options 즉시 확장.
+function MultiSelectCell({
+  col,
+  row,
+  editing,
+  onStartEdit,
+  onStopEdit,
+  onUpdate,
+}: EditableCellProps) {
+  const raw = row[col.name]
+  const values = useMemo(() => coerceMultiValue(raw), [raw])
+  const options: CellOption[] = (col.options ?? []).map((o) => ({
+    value: o,
+    label: o,
+  }))
+
+  // Workspace Memory Recent — col.options에 없는 frequency 2+ 학습 값.
+  const memoryByScope = useFlowBase((s) => s.workspaceMemory.byScope)
+  const recent: CellOption[] | undefined = useMemo(() => {
+    const scope = `${col.name}::${col.libraryFieldId ?? "_"}`
+    const list = memoryByScope[scope] ?? []
+    if (list.length === 0) return undefined
+    const excluded = new Set(col.options ?? [])
+    const filtered = list
+      .filter((e) => e.count >= MEMORY_MIN_COUNT)
+      .filter((e) => !excluded.has(e.value))
+      .sort((a, b) => b.count - a.count || b.lastUsedTs - a.lastUsedTs)
+      .slice(0, 5)
+    if (filtered.length === 0) return undefined
+    return filtered.map((e) => ({ value: e.value, label: e.value }))
+  }, [memoryByScope, col.name, col.libraryFieldId, col.options])
+
+  const updateColumn = useFlowBase((s) => s.updateColumn)
+  const addOptionToLibraryField = useFlowBase((s) => s.addOptionToLibraryField)
+
+  // multi-click 사이 stale closure 방지 — values는 row prop의 snapshot이라
+  // 같은 tick에 두 번 click하면 두 번째가 첫 번째 결과를 못 봄. store에서 최신 row 읽기.
+  const currentValues = (): string[] => {
+    const s = useFlowBase.getState()
+    const b = s.boards[s.activeBoardId]
+    const cur = b?.rows.find((r) => r.id === row.id)
+    return coerceMultiValue(cur?.[col.name])
+  }
+
+  const handleToggle = (v: string) => {
+    const arr = currentValues()
+    const next = arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]
+    onUpdate({ [col.name]: next })
+  }
+
+  // "+ Add new" — col.options에 추가 + 즉시 toggle on. Library link 있으면 sync.
+  const handleAddNew = (v: string) => {
+    const existing = col.options ?? []
+    if (!existing.includes(v)) {
+      updateColumn(col.name, { options: [...existing, v] })
+      if (col.libraryFieldId) addOptionToLibraryField(col.libraryFieldId, v)
+    }
+    const arr = currentValues()
+    if (!arr.includes(v)) onUpdate({ [col.name]: [...arr, v] })
+  }
+
+  // Recent "+" promote — col.options에 추가 (toggle은 별도).
+  const handlePromote = (v: string) => {
+    const existing = col.options ?? []
+    if (existing.includes(v)) {
+      toast.info(`"${v}" is already in ${col.label || col.name} options.`)
+      return
+    }
+    updateColumn(col.name, { options: [...existing, v] })
+    let libSynced = false
+    if (col.libraryFieldId) {
+      libSynced = addOptionToLibraryField(col.libraryFieldId, v)
+    }
+    toast.success(`Saved "${v}" as ${col.label || col.name} option`, {
+      description: libSynced
+        ? "Also synced to Library (linked column)."
+        : "Available in this column from now on.",
+    })
+  }
+
+  const trigger = (
+    <button
+      type="button"
+      className="flex w-full flex-wrap items-center gap-1 rounded text-left"
+    >
+      {values.length === 0 ? (
+        <span className="text-[13px] text-muted-foreground">—</span>
+      ) : (
+        values.map((v) => (
+          <span
+            key={v}
+            className="inline-flex items-center whitespace-nowrap rounded border border-border-subtle bg-muted px-1.5 py-0.5 text-xs text-foreground"
+          >
+            {v}
+          </span>
+        ))
+      )}
+    </button>
+  )
+
+  return (
+    <MultiCellPopover
+      open={editing}
+      onOpenChange={(o) => (o ? onStartEdit() : onStopEdit())}
+      label={col.label?.trim() || undefined}
+      width={220}
+      options={options}
+      values={values}
+      onToggle={handleToggle}
+      onAddNew={handleAddNew}
+      recent={recent}
+      onPromote={handlePromote}
+      trigger={trigger}
+    />
   )
 }
 

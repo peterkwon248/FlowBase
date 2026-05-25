@@ -14,6 +14,7 @@ import {
   List,
   Plus,
   Sparkles,
+  Tags,
   Type,
   User,
 } from "lucide-react"
@@ -46,6 +47,13 @@ const BASIC_TYPES: {
     Icon: List,
     defaultLabel: "Select",
     defaults: { options: ["Option 1", "Option 2"] },
+  },
+  {
+    type: "multiSelect",
+    label: "Multi-select",
+    Icon: Tags,
+    defaultLabel: "Tags",
+    defaults: { options: ["Tag 1", "Tag 2"] },
   },
   {
     type: "status",

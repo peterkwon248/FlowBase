@@ -61,6 +61,7 @@ const CHANGEABLE_TYPES: { type: ColumnType; label: string }[] = [
   { type: "date", label: "Date" },
   { type: "email", label: "Email" },
   { type: "select", label: "Select" },
+  { type: "multiSelect", label: "Multi-select" },
   { type: "status", label: "Status" },
   { type: "avatar", label: "Person" },
 ]
@@ -157,9 +158,11 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
             </DropdownMenuSubContent>
           </DropdownMenuSub>
 
-          {/* A3-1: Library OptionList을 select/status 컬럼에 적용 (개별 적용 UI). */}
+          {/* A3-1: Library OptionList을 select/multiSelect/status 컬럼에 적용 (개별 적용 UI). */}
           {/* 깊은 link(optionListId 참조)는 후속 — 현재는 col.options 덮어쓰기. */}
-          {(col.type === "select" || col.type === "status") && (
+          {(col.type === "select" ||
+            col.type === "multiSelect" ||
+            col.type === "status") && (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger className="gap-2">
                 <List
