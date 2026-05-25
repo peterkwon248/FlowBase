@@ -18,13 +18,15 @@ export type TicketPriority = "Urgent" | "High" | "Med" | "Low"
 
 export type Sentiment = "Positive" | "Mixed" | "Negative"
 
-// 셀 타입 — 프로토타입 cell-types.jsx + tables-data.jsx 기준 10종
+// 셀 타입 — 프로토타입 cell-types.jsx + tables-data.jsx 기준 + multiSelect (Notion/Airtable 호환)
+// multiSelect: cell = string[] (여러 태그). select와 options 재사용. Status는 단일 select 격리 LOCK.
 export type ColumnType =
   | "text"
   | "num"
   | "date"
   | "email"
   | "select"
+  | "multiSelect"
   | "status"
   | "avatar"
   | "reaction"
@@ -38,7 +40,7 @@ export interface ColumnDef {
   width?: number // px
   mono?: boolean // 모노스페이스 표시
   ai?: boolean // AI 추론 컬럼 (theme/sentiment)
-  options?: string[] // type === "select"
+  options?: string[] // type === "select" | "multiSelect"
   subtitleField?: string // type === "avatar" — 부제 컬럼명
   fk?: string // type === "fk" — 대상 보드 id
   buttonLabel?: string // type === "button"

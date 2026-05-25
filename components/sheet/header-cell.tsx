@@ -17,6 +17,7 @@ import {
   MousePointerClick,
   SmilePlus,
   Sparkles,
+  Tags,
   Type,
   User,
 } from "lucide-react"
@@ -31,6 +32,7 @@ export const TYPE_ICON: Record<ColumnType, typeof Type> = {
   date: Calendar,
   email: AtSign,
   select: List,
+  multiSelect: Tags,
   status: CircleDot,
   avatar: User,
   reaction: SmilePlus,

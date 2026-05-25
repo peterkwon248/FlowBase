@@ -45,6 +45,12 @@ import type {
   WorkspaceSettings,
 } from "@/types/flowbase"
 import { roleCanEdit } from "@/types/flowbase"
+import {
+  coerceMultiValue,
+  multiFirst,
+  multiToSingle,
+  singleToMulti,
+} from "@/lib/multi-select"
 import { createSeedLibrary } from "@/lib/flowbase-library-seed"
 import { createSeedBoard } from "@/lib/flowbase-seed"
 import { createSeedTasksBoard } from "@/lib/flowbase-tasks-seed"
@@ -388,11 +394,17 @@ function snapshotStateFromStore(s: FlowBaseState): SnapshotState {
 // ─── Workspace Memory — 자동 학습 cache ───
 // LOCK: Memory ≠ Library. 자동 학습, frequency 2+ 부터 노출(selector), 30일 expire + 50개 cap.
 // scope 키 = `{colName}::{libraryFieldId ?? "_"}` — 같은 colName이라도 다른 LibraryField면 격리.
-// 학습 대상 type: text · select · status (Phase 1). num/date/email/avatar/reaction/button/fk 제외.
+// 학습 대상 type: text · select · status · multiSelect (배열 unpack).
+// num/date/email/avatar/reaction/button/fk 제외.
 
 const MEMORY_EXPIRE_MS = 30 * 24 * 60 * 60 * 1000 // 30일
 const MEMORY_CAP_PER_SCOPE = 50
-const MEMORY_LEARN_TYPES = new Set<ColumnType>(["text", "select", "status"])
+const MEMORY_LEARN_TYPES = new Set<ColumnType>([
+  "text",
+  "select",
+  "status",
+  "multiSelect",
+])
 // B1-3: frequency 도달 시 Library promote bridge toast 권유. LOCK: 자동 등록 ❌, 명시 click 시만.
 const PROMOTE_BRIDGE_COUNT = 5
 
@@ -463,94 +475,106 @@ function learnFromPatch(
   const byScope = { ...state.workspaceMemory.byScope }
 
   for (const [colName, raw] of Object.entries(patch)) {
-    if (typeof raw !== "string") continue
-    const value = raw.trim()
-    if (!value) continue
     const col = board.columns.find((c) => c.name === colName)
     if (!col || !MEMORY_LEARN_TYPES.has(col.type)) continue
-    const scope = memoryScopeKey(col)
-    const list = byScope[scope] ? [...byScope[scope]] : []
-    const idx = list.findIndex((e) => e.value === value)
-    let nextCount: number
-    if (idx >= 0) {
-      nextCount = list[idx].count + 1
-      list[idx] = {
-        ...list[idx],
-        count: nextCount,
-        lastUsedTs: now,
+    // multiSelect는 array — 각 원소를 별 학습. 그 외는 단일 string.
+    const valuesToLearn: string[] = []
+    if (col.type === "multiSelect") {
+      for (const item of coerceMultiValue(raw)) {
+        const trimmed = item.trim()
+        if (trimmed) valuesToLearn.push(trimmed)
       }
     } else {
-      nextCount = 1
-      list.push({ value, count: 1, lastUsedTs: now })
+      if (typeof raw !== "string") continue
+      const trimmed = raw.trim()
+      if (trimmed) valuesToLearn.push(trimmed)
     }
-    // expire + cap: 30일 이전 제거 + lastUsed 기준 상위 N개
+    if (valuesToLearn.length === 0) continue
+    const scope = memoryScopeKey(col)
+    const list = byScope[scope] ? [...byScope[scope]] : []
+    for (const value of valuesToLearn) {
+      const idx = list.findIndex((e) => e.value === value)
+      let nextCount: number
+      if (idx >= 0) {
+        nextCount = list[idx].count + 1
+        list[idx] = {
+          ...list[idx],
+          count: nextCount,
+          lastUsedTs: now,
+        }
+      } else {
+        nextCount = 1
+        list.push({ value, count: 1, lastUsedTs: now })
+      }
+
+      // B1-3: promote bridge toast — frequency 정확 5 도달 시 + col.options에 없으면 권유.
+      // toast click 시 col.options에 추가 (A3-1과 같은 동작, "Save as option" 자동 진입점).
+      // LOCK: 자동 등록 ❌, 명시 click 시만. dedupe = toast id로 같은 (scope,value) 중복 ❌.
+      if (
+        nextCount === PROMOTE_BRIDGE_COUNT &&
+        !(col.options ?? []).includes(value)
+      ) {
+        const colName_ = col.name
+        const colLabel = col.label || col.name
+        const boardId_ = boardId
+        toast(`"${value}" used ${PROMOTE_BRIDGE_COUNT} times`, {
+          id: `promote-${scope}-${value}`,
+          description: `Save to ${colLabel} options?`,
+          action: {
+            label: "Save",
+            onClick: () => {
+              const s = useFlowBase.getState()
+              const b = s.boards[boardId_]
+              const c = b?.columns.find((x) => x.name === colName_)
+              if (!c) return
+              const existing = c.options ?? []
+              if (existing.includes(value)) {
+                toast.info(`Already in ${colLabel} options.`)
+                return
+              }
+              // updateColumn은 activeBoard 기준이라 boardId 일치 확인 — 안 맞으면 직접 set
+              if (s.activeBoardId === boardId_) {
+                s.updateColumn(colName_, { options: [...existing, value] })
+              } else {
+                // 다른 보드 — 직접 patch (드문 케이스, ensureCanEdit 우회)
+                useFlowBase.setState({
+                  boards: {
+                    ...s.boards,
+                    [boardId_]: {
+                      ...b!,
+                      columns: b!.columns.map((x) =>
+                        x.name === colName_
+                          ? { ...x, options: [...existing, value] }
+                          : x,
+                      ),
+                      updatedAt: new Date().toISOString(),
+                    },
+                  },
+                })
+              }
+              // F2: col.libraryFieldId 있으면 Library OptionList에도 sync
+              let libSynced = false
+              if (c.libraryFieldId) {
+                libSynced = useFlowBase
+                  .getState()
+                  .addOptionToLibraryField(c.libraryFieldId, value)
+              }
+              toast.success(
+                libSynced
+                  ? `Saved "${value}" to ${colLabel} + Library`
+                  : `Saved "${value}" to ${colLabel}`,
+              )
+            },
+          },
+        })
+      }
+    }
+    // expire + cap: 30일 이전 제거 + lastUsed 기준 상위 N개. 컬럼 단위로 한 번에 적용.
     const filtered = list
       .filter((e) => e.lastUsedTs > cutoff)
       .sort((a, b) => b.lastUsedTs - a.lastUsedTs)
       .slice(0, MEMORY_CAP_PER_SCOPE)
     byScope[scope] = filtered
-
-    // B1-3: promote bridge toast — frequency 정확 5 도달 시 + col.options에 없으면 권유.
-    // toast click 시 col.options에 추가 (A3-1과 같은 동작, "Save as option" 자동 진입점).
-    // LOCK: 자동 등록 ❌, 명시 click 시만. dedupe = toast id로 같은 (scope,value) 중복 ❌.
-    if (
-      nextCount === PROMOTE_BRIDGE_COUNT &&
-      !(col.options ?? []).includes(value)
-    ) {
-      const colName_ = col.name
-      const colLabel = col.label || col.name
-      const boardId_ = boardId
-      toast(`"${value}" used ${PROMOTE_BRIDGE_COUNT} times`, {
-        id: `promote-${scope}-${value}`,
-        description: `Save to ${colLabel} options?`,
-        action: {
-          label: "Save",
-          onClick: () => {
-            const s = useFlowBase.getState()
-            const b = s.boards[boardId_]
-            const c = b?.columns.find((x) => x.name === colName_)
-            if (!c) return
-            const existing = c.options ?? []
-            if (existing.includes(value)) {
-              toast.info(`Already in ${colLabel} options.`)
-              return
-            }
-            // updateColumn은 activeBoard 기준이라 boardId 일치 확인 — 안 맞으면 직접 set
-            if (s.activeBoardId === boardId_) {
-              s.updateColumn(colName_, { options: [...existing, value] })
-            } else {
-              // 다른 보드 — 직접 patch (드문 케이스, ensureCanEdit 우회)
-              useFlowBase.setState({
-                boards: {
-                  ...s.boards,
-                  [boardId_]: {
-                    ...b!,
-                    columns: b!.columns.map((x) =>
-                      x.name === colName_
-                        ? { ...x, options: [...existing, value] }
-                        : x,
-                    ),
-                    updatedAt: new Date().toISOString(),
-                  },
-                },
-              })
-            }
-            // F2: col.libraryFieldId 있으면 Library OptionList에도 sync
-            let libSynced = false
-            if (c.libraryFieldId) {
-              libSynced = useFlowBase
-                .getState()
-                .addOptionToLibraryField(c.libraryFieldId, value)
-            }
-            toast.success(
-              libSynced
-                ? `Saved "${value}" to ${colLabel} + Library`
-                : `Saved "${value}" to ${colLabel}`,
-            )
-          },
-        },
-      })
-    }
   }
   return {
     byScope,
@@ -1337,6 +1361,36 @@ export const useFlowBase = create<FlowBaseStore>()(
           const b = s.boards[s.activeBoardId]
           if (!b) return
           if (!ensureCanEdit(s, "Change column")) return
+          // select ⇄ multiSelect type 전환 시 cell value 자동 마이그레이션.
+          //   select → multiSelect: 단일 string → [string]
+          //   multiSelect → select: array → 첫 값만 (나머지 데이터 손실 → toast 안내)
+          // 그 외 type 전환은 cell 변환 ❌ (raw 그대로, UI 단에서 렌더 분기).
+          const prevCol = b.columns.find((c) => c.name === colName)
+          const prevType = prevCol?.type
+          const nextType = patch.type
+          let nextRows: TableRow[] = b.rows
+          if (prevType && nextType && prevType !== nextType) {
+            if (prevType === "select" && nextType === "multiSelect") {
+              nextRows = b.rows.map((r) => {
+                if (!(colName in r)) return r
+                return { ...r, [colName]: singleToMulti(r[colName]) }
+              })
+            } else if (prevType === "multiSelect" && nextType === "select") {
+              let lossy = false
+              nextRows = b.rows.map((r) => {
+                if (!(colName in r)) return r
+                const arr = Array.isArray(r[colName]) ? (r[colName] as unknown[]) : null
+                if (arr && arr.length > 1) lossy = true
+                return { ...r, [colName]: multiToSingle(r[colName]) }
+              })
+              if (lossy) {
+                toast.warning("Multi-select → Single select: extra values dropped", {
+                  id: `migrate-${b.id}-${colName}`,
+                  description: `${prevCol?.label || colName}: only the first value of each row was kept.`,
+                })
+              }
+            }
+          }
           set({
             boards: {
               ...s.boards,
@@ -1345,6 +1399,7 @@ export const useFlowBase = create<FlowBaseStore>()(
                 columns: b.columns.map((c) =>
                   c.name === colName ? { ...c, ...patch } : c,
                 ),
+                rows: nextRows,
                 updatedAt: nowIso(),
               },
             },
@@ -2432,6 +2487,7 @@ export function selectMemoryForColumn(
 }
 
 // status/priority는 의미 순서로, 그 외는 값 비교로 정렬.
+// multiSelect는 first-value 정렬 (빈 배열은 마지막 — 빈 문자열은 ASCII 정렬 자연 마지막 가까움).
 function compareRows(a: TableRow, b: TableRow, key: string, dir: SortDir): number {
   let av: unknown = a[key]
   let bv: unknown = b[key]
@@ -2441,6 +2497,15 @@ function compareRows(a: TableRow, b: TableRow, key: string, dir: SortDir): numbe
   } else if (key === "priority") {
     av = PRIORITY_RANK[String(av)] ?? 99
     bv = PRIORITY_RANK[String(bv)] ?? 99
+  } else if (Array.isArray(av) || Array.isArray(bv)) {
+    // multiSelect 또는 잡종 — 첫 값으로 비교. 빈 배열 → "" (정렬상 자연스럽게 앞으로 가지만, 의도는 last).
+    const afirst = multiFirst(av)
+    const bfirst = multiFirst(bv)
+    // 빈 값은 정렬상 마지막으로 (asc/desc 무관 — direction 전 처리).
+    const aw = afirst === "" ? "￿" : afirst
+    const bw = bfirst === "" ? "￿" : bfirst
+    const cmp = aw < bw ? -1 : aw > bw ? 1 : 0
+    return dir === "asc" ? cmp : -cmp
   }
   let cmp: number
   if (typeof av === "number" && typeof bv === "number") {
@@ -2472,11 +2537,22 @@ export function selectVisibleRows(state: FlowBaseState): TableRow[] {
       if (cond.kind === "in") {
         if (cond.values.length === 0) continue
         const allowed = new Set(cond.values)
-        rows = rows.filter((r) => allowed.has(String(r[col] ?? "")))
+        // multiSelect: ANY-match (cell의 배열 원소 중 하나라도 allowed에 있으면 통과).
+        // 그 외: 단일 값 == allowed.
+        rows = rows.filter((r) => {
+          const v = r[col]
+          if (Array.isArray(v)) return v.some((x) => allowed.has(String(x ?? "")))
+          return allowed.has(String(v ?? ""))
+        })
       } else if (cond.kind === "not_in") {
         if (cond.values.length === 0) continue
         const excluded = new Set(cond.values)
-        rows = rows.filter((r) => !excluded.has(String(r[col] ?? "")))
+        // multiSelect: NONE-match (cell의 배열 원소 중 하나라도 excluded면 차단).
+        rows = rows.filter((r) => {
+          const v = r[col]
+          if (Array.isArray(v)) return !v.some((x) => excluded.has(String(x ?? "")))
+          return !excluded.has(String(v ?? ""))
+        })
       } else if (cond.kind === "range") {
         const { min, max } = cond
         if (min === undefined && max === undefined) continue
