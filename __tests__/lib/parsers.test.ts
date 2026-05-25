@@ -204,6 +204,15 @@ describe("boardToTable", () => {
     expect(t.rows[0][1]).toBe('{"positive":3,"mixed":0,"negative":1}')
     expect(t.rows[0][2]).toBe("")
   })
+  it("UTF-8 BOM (0xFEFF) 자동 strip — Excel/Notion export 호환", () => {
+    const bomText = "﻿a,b,c\n1,2,3"
+    const result = parseDelimited(bomText, ",")
+    expect(result[0]).toEqual(["a", "b", "c"])
+    expect(result[1]).toEqual(["1", "2", "3"])
+  })
+  it("BOM이 detectFormat에도 영향 ❌", () => {
+    expect(detectFormat("﻿a,b,c\n1,2,3")).toBe("csv")
+  })
   it("multiSelect 배열은 ', ' join (round-trip 호환)", () => {
     const b: Board = {
       id: "b3",

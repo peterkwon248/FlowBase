@@ -260,3 +260,46 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* G7-B2: Print / Save as PDF — Dashboard 위주.
+ * Activity bar · Sidebar · Header · AI panel · Detail bar 숨김.
+ * Chart 색 보존(print-color-adjust). Chart card는 페이지 사이 자르지 않음.
+ * Body는 print 시 root container의 h-[100dvh] overflow-hidden을 풀어줌. */
+@media print {
+  /* Chrome — sidebar/activity/header/panels 숨김 (커스텀 클래스로 마크) */
+  [data-print-hide],
+  nav[role="navigation"] > [data-activity-bar],
+  aside,
+  header,
+  .sticky.top-0,
+  [data-ai-panel],
+  [data-detail-bar] {
+    display: none !important;
+  }
+  /* 색 강제 보존 — chart palette */
+  * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  /* root container — h-[100dvh] overflow-hidden 풀기 */
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  /* dashboard chart card — 페이지 사이 자르지 않음 */
+  [data-chart-card] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 8mm;
+  }
+  /* Chart toolbar (move/rename/remove) 숨김 */
+  [data-chart-toolbar] {
+    display: none !important;
+  }
+  /* Toaster · Dialog 등 overlay 숨김 */
+  [data-sonner-toaster],
+  [role="dialog"] {
+    display: none !important;
+  }
+}

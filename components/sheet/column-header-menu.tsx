@@ -9,6 +9,7 @@
 import { useState } from "react"
 import {
   Check,
+  Highlighter,
   Link2,
   List,
   MoreHorizontal,
@@ -17,6 +18,7 @@ import {
   Sparkles,
   Trash2,
   Type,
+  Wand2,
 } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -74,6 +76,68 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
   const attachFunction = useFlowBase((s) => s.attachFunctionToColumn)
   const library = useFlowBase((s) => s.library)
   const isViewer = useFlowBase(selectIsViewer)
+  // B3: AI 타입 제안 — sample rows 가져오기 위해 active board rows 구독.
+  const boardRows = useFlowBase((s) => s.boards[s.activeBoardId]?.rows ?? [])
+  // G3-3: source field 선택용 columns
+  const boardCols = useFlowBase((s) => s.boards[s.activeBoardId]?.columns ?? [])
+  const [suggesting, setSuggesting] = useState(false)
+
+  const handleSuggestType = async () => {
+    if (suggesting) return
+    setSuggesting(true)
+    const tid = toast.loading("Analyzing column…")
+    try {
+      const samples = boardRows
+        .slice(0, 20)
+        .map((r) => r[col.name])
+        .filter((v) => v != null && v !== "")
+      const res = await fetch("/api/ai/suggest-column-type", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          columnName: col.name,
+          columnLabel: col.label,
+          currentType: col.type,
+          sampleValues: samples,
+        }),
+      })
+      const data = (await res.json()) as {
+        type?: string
+        confidence?: number
+        reasoning?: string
+        error?: string
+      }
+      toast.dismiss(tid)
+      if (!res.ok || !data.type) {
+        toast.error(data.error || "AI suggestion failed")
+        return
+      }
+      if (data.type === col.type) {
+        toast.info(`AI agrees: ${col.type} is already the best type`, {
+          description: data.reasoning,
+        })
+        return
+      }
+      toast(`Suggested type: ${data.type}`, {
+        description: data.reasoning || `Currently: ${col.type}`,
+        duration: 12000,
+        action: {
+          label: "Apply",
+          onClick: () => {
+            updateColumn(col.name, {
+              type: data.type as ColumnDef["type"],
+            })
+            toast.success(`Changed ${col.label || col.name} → ${data.type}`)
+          },
+        },
+      })
+    } catch (err) {
+      toast.dismiss(tid)
+      toast.error(err instanceof Error ? err.message : "AI call failed")
+    } finally {
+      setSuggesting(false)
+    }
+  }
 
   const [renameOpen, setRenameOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -119,6 +183,15 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
           <DropdownMenuItem onSelect={openRename} className="gap-2">
             <Pencil className="size-3.5 text-muted-foreground" />
             Rename
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => handleSuggestType()}
+            disabled={suggesting}
+            className="gap-2"
+            data-action="suggest-column-type-ai"
+          >
+            <Wand2 className="size-3.5 text-primary" strokeWidth={1.75} />
+            <span>{suggesting ? "Suggesting…" : "Suggest type (AI)"}</span>
           </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="gap-2">
@@ -322,6 +395,182 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
               })}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
+
+          {/* G7-A3: Conditional formatting — quick preset (sheet cell tone). */}
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="gap-2">
+              <Highlighter
+                className="size-3.5 text-muted-foreground"
+                strokeWidth={1.75}
+              />
+              <span>Highlight</span>
+              {col.formatRules && col.formatRules.length > 0 && (
+                <span className="ml-auto rounded bg-primary/15 px-1 py-px text-[9.5px] text-primary">
+                  {col.formatRules.length}
+                </span>
+              )}
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent
+              className="w-48"
+              data-column-highlight={col.name}
+            >
+              <DropdownMenuItem
+                onSelect={() => {
+                  const v = prompt(`Highlight cells where ${col.label || col.name} < `, "0")
+                  if (v == null) return
+                  const n = Number(v)
+                  if (!Number.isFinite(n)) {
+                    toast.error("Enter a valid number")
+                    return
+                  }
+                  updateColumn(col.name, {
+                    formatRules: [
+                      ...(col.formatRules ?? []),
+                      { kind: "lt", value: n, tone: "amber" },
+                    ],
+                  })
+                  toast.success(`Highlight < ${n} as amber`)
+                }}
+                className="gap-2"
+              >
+                <span className="inline-block size-2.5 rounded-sm bg-amber-400" />
+                <span>Low (&lt; value)</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  const v = prompt(`Highlight cells where ${col.label || col.name} > `, "100")
+                  if (v == null) return
+                  const n = Number(v)
+                  if (!Number.isFinite(n)) {
+                    toast.error("Enter a valid number")
+                    return
+                  }
+                  updateColumn(col.name, {
+                    formatRules: [
+                      ...(col.formatRules ?? []),
+                      { kind: "gt", value: n, tone: "emerald" },
+                    ],
+                  })
+                  toast.success(`Highlight > ${n} as green`)
+                }}
+                className="gap-2"
+              >
+                <span className="inline-block size-2.5 rounded-sm bg-emerald-400" />
+                <span>High (&gt; value)</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  const v = prompt(`Highlight cells where ${col.label || col.name} contains: `, "")
+                  if (v == null || !v) return
+                  updateColumn(col.name, {
+                    formatRules: [
+                      ...(col.formatRules ?? []),
+                      { kind: "contains", value: v, tone: "blue" },
+                    ],
+                  })
+                  toast.success(`Highlight "${v}" as blue`)
+                }}
+                className="gap-2"
+              >
+                <span className="inline-block size-2.5 rounded-sm bg-blue-400" />
+                <span>Contains text</span>
+              </DropdownMenuItem>
+              {col.formatRules && col.formatRules.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      updateColumn(col.name, { formatRules: undefined })
+                      toast.info("Cleared highlight rules")
+                    }}
+                    className="gap-2 text-muted-foreground"
+                  >
+                    <Trash2 className="size-3" />
+                    <span>Clear all rules</span>
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+
+          {/* G3-3: MATCH_FROM_DROPDOWN sourceField 명시 선택. functionId 있을 때만 노출. */}
+          {col.functionId && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="gap-2">
+                <Type
+                  className="size-3.5 text-muted-foreground"
+                  strokeWidth={1.75}
+                />
+                <span>Source field</span>
+                {col.functionSourceField && (
+                  <span className="ml-auto rounded bg-muted px-1 py-px font-mono text-[9.5px] text-muted-foreground">
+                    {col.functionSourceField}
+                  </span>
+                )}
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent
+                className="w-52"
+                data-column-source-field={col.name}
+              >
+                <DropdownMenuItem
+                  onSelect={() => {
+                    updateColumn(col.name, { functionSourceField: undefined })
+                    toast.info("Source field reset to auto-detect")
+                  }}
+                  className="gap-2"
+                >
+                  <span className="flex size-3.5 items-center justify-center">
+                    {!col.functionSourceField && (
+                      <Check className="size-3 text-primary" strokeWidth={3} />
+                    )}
+                  </span>
+                  <span className="text-muted-foreground">Auto</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {boardCols
+                  .filter(
+                    (c) =>
+                      c.name !== col.name &&
+                      c.name !== "id" &&
+                      (c.type === "text" ||
+                        c.type === "select" ||
+                        c.type === "status" ||
+                        c.type === "multiSelect"),
+                  )
+                  .map((c) => {
+                    const on = col.functionSourceField === c.name
+                    return (
+                      <DropdownMenuItem
+                        key={c.name}
+                        onSelect={() => {
+                          updateColumn(col.name, { functionSourceField: c.name })
+                          toast.success(
+                            `Source set to "${c.label || c.name}"`,
+                          )
+                        }}
+                        className="gap-2"
+                      >
+                        <span className="flex size-3.5 items-center justify-center">
+                          {on && (
+                            <Check
+                              className="size-3 text-primary"
+                              strokeWidth={3}
+                            />
+                          )}
+                        </span>
+                        <span className="flex-1 truncate">
+                          {c.label || c.name}
+                        </span>
+                        <span className="rounded bg-muted px-1 py-px font-mono text-[9.5px] text-muted-foreground">
+                          {c.type}
+                        </span>
+                      </DropdownMenuItem>
+                    )
+                  })}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
+
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onSelect={() => setConfirmDelete(true)}

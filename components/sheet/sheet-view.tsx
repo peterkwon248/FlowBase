@@ -9,11 +9,16 @@
 
 import { Fragment, useDeferredValue, useMemo, useRef, useState } from "react"
 import { useVirtualizer } from "@tanstack/react-virtual"
+import { Plus, Sparkles } from "lucide-react"
+import { Kbd } from "@/components/ui/kbd"
 import {
   selectActiveBoard,
+  selectIsViewer,
   selectVisibleRows,
   useFlowBase,
 } from "@/lib/flowbase-store"
+import { FORMAT_TONE_BG, evalFormatRules } from "@/lib/conditional-format"
+import { computeAllOutliers } from "@/lib/outlier"
 import type { ColumnDef, SortDir, TableRow } from "@/types/flowbase"
 import { STATUS_LABELS, type TicketStatus } from "@/types/flowbase"
 import { cn } from "@/lib/utils"
@@ -59,6 +64,7 @@ export function SheetView() {
   const focusedCell = useFlowBase((s) => s.focusedCell)
   const setSort = useFlowBase((s) => s.setSort)
   const setSelected = useFlowBase((s) => s.setSelected)
+  const isViewer = useFlowBase(selectIsViewer)
   const setFocused = useFlowBase((s) => s.setFocused)
   const updateRow = useFlowBase((s) => s.updateRow)
   const addRow = useFlowBase((s) => s.addRow)
@@ -162,6 +168,23 @@ export function SheetView() {
 
   const totalWidth = columns.reduce((acc, c) => acc + widthOf(c), 0) + 120
 
+  // G1-4: numeric 컬럼 outlier (z-score 2σ). 알림 + "Show only" 진입점.
+  // board 전체 rows 기준 (filter 적용 X) — outlier 자체는 객관적 통계.
+  const outlierResults = useMemo(
+    () => (board ? computeAllOutliers(board.columns, board.rows) : []),
+    [board],
+  )
+  // 첫 outlier 컬럼만 표시 (시각 혼잡 회피)
+  const firstOutlier = outlierResults[0]
+  // G4-1: cell-level outlier mark — "rowId::colName" set. 모든 outlier 컬럼 통합.
+  const outlierCellSet = useMemo(() => {
+    const s = new Set<string>()
+    for (const o of outlierResults) {
+      for (const rid of o.rowIds) s.add(`${rid}::${o.col}`)
+    }
+    return s
+  }, [outlierResults])
+
   return (
     <div
       ref={setContainerRef}
@@ -171,6 +194,43 @@ export function SheetView() {
       data-sheet-group={sheetGroupBy ?? ""}
       className="min-h-0 min-w-0 flex-1 overflow-auto bg-background outline-none"
     >
+      {firstOutlier && (
+        <div
+          data-sheet-outlier-alert
+          className="sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-amber-300/60 bg-amber-50 px-4 py-1.5 text-[11.5px] text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300"
+        >
+          <span>
+            <span className="font-semibold tabular-nums">{firstOutlier.rowIds.length}</span>{" "}
+            outlier{firstOutlier.rowIds.length === 1 ? "" : "s"} in{" "}
+            <span className="font-medium">
+              {board?.columns.find((c) => c.name === firstOutlier.col)?.label ||
+                firstOutlier.col}
+            </span>{" "}
+            <span className="text-amber-700/70 dark:text-amber-400/70">
+              (z-score &gt; {firstOutlier.threshold}σ)
+            </span>
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSelected(firstOutlier.rowIds)}
+              className="rounded border border-amber-400 bg-white/60 px-2 py-0.5 text-[11px] font-medium hover:bg-white dark:bg-amber-900/20 dark:hover:bg-amber-900/40"
+              data-action="select-outliers"
+            >
+              Select outliers
+            </button>
+            {selectedRowIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelected([])}
+                className="text-[11px] underline opacity-70 hover:opacity-100"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       <table
         ref={tableRef}
         className="border-separate border-spacing-0 table-fixed"
@@ -261,20 +321,34 @@ export function SheetView() {
                       const isEditing =
                         editingCell?.row === row.id &&
                         editingCell.col === c.name
+                      // G4-1: cell-level outlier dot — numeric만 + outlierCellSet 포함.
+                      const isOutlier = outlierCellSet.has(`${row.id}::${c.name}`)
+                      // G7-A3: conditional formatting tone
+                      const formatTone = evalFormatRules(row[c.name], c.formatRules)
                       return (
                         <td
                           key={c.name}
                           data-column={c.name}
+                          data-outlier={isOutlier ? "true" : undefined}
+                          data-format-tone={formatTone ?? undefined}
                           onClick={() => {
                             setFocused({ row: row.id, col: c.name })
                             containerRef.current?.focus()
                           }}
                           className={cn(
                             "relative border-b border-r border-border-subtle px-2.5 py-2 align-middle",
+                            formatTone && FORMAT_TONE_BG[formatTone],
                             isFocused &&
                               "z-[1] ring-2 ring-inset ring-primary",
                           )}
                         >
+                          {isOutlier && (
+                            <span
+                              aria-label="Outlier"
+                              title="Value is more than 2σ from mean"
+                              className="pointer-events-none absolute right-1 top-1 inline-block size-1.5 rounded-full bg-amber-500 dark:bg-amber-400"
+                            />
+                          )}
                           <EditableCell
                             col={c}
                             row={row}
@@ -381,11 +455,56 @@ export function SheetView() {
             <tr>
               <td
                 colSpan={columns.length + 3}
-                className="px-4 py-10 text-center text-[12.5px] text-muted-foreground"
+                className="px-4 py-12 text-center"
               >
-                {search || filter.length > 0
-                  ? "No rows match the filter."
-                  : "No rows yet."}
+                {search || filter.length > 0 ? (
+                  <span className="text-[12.5px] text-muted-foreground">
+                    No rows match the filter.
+                  </span>
+                ) : (
+                  // P1: onboarding hints — 빈 보드에 진입점들 (Add · Import · AI)
+                  <div className="mx-auto flex max-w-md flex-col items-center gap-3">
+                    <div className="text-[13.5px] font-semibold">
+                      Start adding data
+                    </div>
+                    <div className="text-[11.5px] text-muted-foreground">
+                      Type below, drop a CSV, or generate with AI
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => addRow()}
+                        disabled={isViewer}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                        data-action="onboarding-add-row"
+                      >
+                        <Plus className="size-3" strokeWidth={2.5} />
+                        Add first row
+                        <Kbd className="ml-1 text-[10px]">⌘N</Kbd>
+                      </button>
+                      <span className="text-[10.5px] text-muted-foreground">
+                        or
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          (
+                            document.querySelector(
+                              '[data-action="open-generate-board"]',
+                            ) as HTMLButtonElement | null
+                          )?.click()
+                        }
+                        className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/[0.05] px-3 py-1.5 text-[12px] text-primary hover:border-primary/50"
+                      >
+                        <Sparkles className="size-3" strokeWidth={2} />
+                        Generate with AI
+                      </button>
+                    </div>
+                    <div className="mt-1 text-[10.5px] text-muted-foreground/70">
+                      Tip: drop a .csv/.xlsx into this window to import
+                    </div>
+                  </div>
+                )}
               </td>
             </tr>
           )}

@@ -325,7 +325,13 @@ function runMatchFromDropdown(
   if (!board || !col.options || col.options.length === 0) {
     return { changed: false }
   }
-  const sourceField = findSourceField(board, col.name)
+  // G3-3: 사용자 명시 sourceField 우선. 없으면 자동 fallback.
+  const explicit = col.functionSourceField
+  const sourceField =
+    (explicit &&
+      board.columns.find((c) => c.name === explicit && c.name !== col.name)
+        ?.name) ||
+    findSourceField(board, col.name)
   if (!sourceField) return { changed: false }
   const sourceText = String(row[sourceField] ?? "").toLowerCase()
   if (!sourceText) return { changed: false }

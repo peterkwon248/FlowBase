@@ -312,10 +312,13 @@ function FilterColSub({
   const removeColumnCondition = useFlowBase((s) => s.removeColumnCondition)
   // 첫 cond — 기본 widget이 편집
   const cond = conds?.[0]
-  // 두 번째 cond — 있으면 "Exclude" 섹션 추가 표시
-  const secondCond = conds?.[1]
-  const hasSecond = secondCond !== undefined
+  // 두 번째 이후 cond — sub menu 안에 array loop으로 표시 (Exclude #N / Match #N).
+  // chip 외에 sub menu에서 직접 편집/제거 가능 (RecentFilter restore 시 자동 채워진 3+ cond UI).
+  const extraConds = conds && conds.length > 1 ? conds.slice(1) : []
   const supportsSecond = defaultSecondCondForType(option.col.type) !== null
+  // "+Add another" 진입점 — 직전 cond와 반대 kind를 자동 default (or 같은 type이면 그룹 추가).
+  const lastCond = conds && conds.length > 0 ? conds[conds.length - 1] : undefined
+  const canAddAnother = supportsSecond && activeCount > 0
 
   return (
     <DropdownMenuSub>
@@ -422,121 +425,73 @@ function FilterColSub({
           />
         )}
 
-        {/* "+ Add exclude" — 두 번째 cond 추가 진입점 (status/select/text/email만) */}
-        {supportsSecond && !hasSecond && activeCount > 0 && (
+        {/* 두 번째 이후 cond — array loop으로 모두 표시 (Exclude #N / Match #N). */}
+        {extraConds.map((c, i) => {
+          const condIdx = i + 1
+          // 같은 kind family 이전 카운트 → #N 표시 (kind family 첫 등장은 #1, 두 번째는 #2…)
+          const isExclude = c.kind === "not_in" || c.kind === "not_contains"
+          const family = isExclude ? "exclude" : "match"
+          const sameFamilyBefore = (conds ?? [])
+            .slice(0, condIdx)
+            .filter((p) => {
+              const pIsExclude = p.kind === "not_in" || p.kind === "not_contains"
+              const pFamily = pIsExclude ? "exclude" : "match"
+              return pFamily === family
+            }).length
+          const headerLabel = isExclude ? "Exclude" : "Match"
+          const headerSuffix = sameFamilyBefore > 0 ? ` #${sameFamilyBefore + 1}` : ""
+          return (
+            <ExtraCondBlock
+              key={condIdx}
+              option={option}
+              cond={c}
+              condIdx={condIdx}
+              header={`${headerLabel}${headerSuffix}`}
+              onChange={(next) =>
+                setColumnCondition(option.col.name, next, condIdx)
+              }
+              onRemove={() =>
+                removeColumnCondition(option.col.name, condIdx)
+              }
+            />
+          )
+        })}
+
+        {/* "+ Add another condition" — 직전 cond와 반대 kind 기본 (의미: in + not_in 결합).
+            이미 같은 kind family가 있으면 같은 family 추가도 가능 (사용자 명시 의도). */}
+        {canAddAnother && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onSelect={(e) => {
                 e.preventDefault()
-                const def = defaultSecondCondForType(option.col.type)
-                if (def) addColumnCondition(option.col.name, def)
+                // 직전 cond가 in/contains이면 not_*, not_*이면 in/contains로 전환 추가.
+                // num/date(supportsSecond=false)는 진입점 자체 ❌라 여기 도달 ❌.
+                const baseDef = defaultSecondCondForType(option.col.type)
+                if (!baseDef) return
+                let nextDef: FilterCondition = baseDef
+                if (lastCond) {
+                  if (lastCond.kind === "not_in") {
+                    nextDef = { kind: "in", values: [] }
+                  } else if (lastCond.kind === "not_contains") {
+                    nextDef = { kind: "contains", text: "" }
+                  }
+                  // in/contains이면 baseDef(not_*) 그대로
+                }
+                addColumnCondition(option.col.name, nextDef)
               }}
               className="gap-2 text-[12px] text-muted-foreground"
-              data-add-exclude={option.col.name}
+              data-add-condition={option.col.name}
             >
               <Plus className="size-3.5" strokeWidth={2} />
-              {option.col.type === "status" ||
-              option.col.type === "select" ||
-              option.col.type === "multiSelect"
-                ? "Add exclude values"
-                : "Add exclude text"}
+              {extraConds.length === 0
+                ? option.col.type === "status" ||
+                  option.col.type === "select" ||
+                  option.col.type === "multiSelect"
+                  ? "Add exclude values"
+                  : "Add exclude text"
+                : "Add another condition"}
             </DropdownMenuItem>
-          </>
-        )}
-
-        {/* 두 번째 cond widget — Exclude 섹션 */}
-        {hasSecond && (
-          <>
-            <DropdownMenuSeparator />
-            <div className="flex items-center justify-between gap-2 px-2 pb-1 pt-1.5">
-              <span className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
-                Exclude
-              </span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  removeColumnCondition(option.col.name, 1)
-                }}
-                className="flex size-4 items-center justify-center rounded text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
-                title="Remove exclude condition"
-                data-remove-exclude={option.col.name}
-              >
-                <X className="size-2.5" strokeWidth={2.5} />
-              </button>
-            </div>
-            {option.values &&
-              (secondCond.kind === "not_in" || secondCond.kind === "in") && (
-                <div className="max-h-44 overflow-y-auto">
-                  {option.values.map((v) => {
-                    const checked = secondCond.values.includes(v.id)
-                    return (
-                      <DropdownMenuItem
-                        key={`exclude-${v.id}`}
-                        onSelect={(e) => {
-                          e.preventDefault()
-                          const cur = secondCond.values
-                          const next = checked
-                            ? cur.filter((x) => x !== v.id)
-                            : [...cur, v.id]
-                          setColumnCondition(
-                            option.col.name,
-                            { kind: "not_in", values: next },
-                            1,
-                          )
-                        }}
-                        className="gap-2"
-                        data-filter-exclude-value={v.id}
-                      >
-                        <span
-                          className={cn(
-                            "flex size-3.5 shrink-0 items-center justify-center rounded border",
-                            checked
-                              ? "border-rose-500 bg-rose-500 text-white"
-                              : "border-border",
-                          )}
-                        >
-                          {checked && (
-                            <Check className="size-2.5" strokeWidth={3} />
-                          )}
-                        </span>
-                        <span className="flex-1 truncate">{v.label}</span>
-                        <span className="text-[10.5px] tabular-nums text-muted-foreground">
-                          {v.count}
-                        </span>
-                      </DropdownMenuItem>
-                    )
-                  })}
-                </div>
-              )}
-            {(option.col.type === "text" || option.col.type === "email") &&
-              (secondCond.kind === "not_contains" ||
-                secondCond.kind === "contains") && (
-                <div className="px-2 pb-1.5 pt-1">
-                  <Input
-                    type="text"
-                    placeholder="Excludes…"
-                    value={
-                      secondCond.kind === "not_contains" ||
-                      secondCond.kind === "contains"
-                        ? secondCond.text
-                        : ""
-                    }
-                    onChange={(e) =>
-                      setColumnCondition(
-                        option.col.name,
-                        { kind: "not_contains", text: e.target.value },
-                        1,
-                      )
-                    }
-                    onClick={(e) => e.stopPropagation()}
-                    data-filter-exclude-text
-                    className="h-7 text-[12px]"
-                  />
-                </div>
-              )}
           </>
         )}
 
@@ -885,5 +840,102 @@ function Chip({
         <X className="size-2.5" strokeWidth={2.5} />
       </button>
     </span>
+  )
+}
+
+// ─── ExtraCondBlock — cond[1+] sub-menu 표시 (3+ cond UI 편집 진입점) ───
+// cond.kind에 따라 위젯 분기 — in/not_in 체크박스 리스트, contains/not_contains text input.
+// header에 "Exclude"/"Match" + 인덱스 #N 표시. 우측 X 버튼 (cond 제거).
+// range/date-range는 도달 ❌ (supportsSecond 진입점이 status/select/multi/text/email만 허용).
+function ExtraCondBlock({
+  option,
+  cond,
+  condIdx,
+  header,
+  onChange,
+  onRemove,
+}: {
+  option: ColumnOption
+  cond: FilterCondition
+  condIdx: number
+  header: string
+  onChange: (next: FilterCondition) => void
+  onRemove: () => void
+}) {
+  const isExclude = cond.kind === "not_in" || cond.kind === "not_contains"
+  const accentBox = isExclude
+    ? "border-rose-500 bg-rose-500 text-white"
+    : "border-primary bg-primary text-primary-foreground"
+  return (
+    <>
+      <DropdownMenuSeparator />
+      <div className="flex items-center justify-between gap-2 px-2 pb-1 pt-1.5">
+        <span className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
+          {header}
+        </span>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onRemove()
+          }}
+          className="flex size-4 items-center justify-center rounded text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
+          title={`Remove ${header.toLowerCase()} condition`}
+          data-remove-cond={`${option.col.name}-${condIdx}`}
+        >
+          <X className="size-2.5" strokeWidth={2.5} />
+        </button>
+      </div>
+      {option.values && (cond.kind === "in" || cond.kind === "not_in") && (
+        <div className="max-h-44 overflow-y-auto">
+          {option.values.map((v) => {
+            const checked = cond.values.includes(v.id)
+            return (
+              <DropdownMenuItem
+                key={`${condIdx}-${v.id}`}
+                onSelect={(e) => {
+                  e.preventDefault()
+                  const cur = cond.values
+                  const next = checked
+                    ? cur.filter((x) => x !== v.id)
+                    : [...cur, v.id]
+                  onChange({ kind: cond.kind, values: next })
+                }}
+                className="gap-2"
+                data-filter-extra-value={`${condIdx}-${v.id}`}
+              >
+                <span
+                  className={cn(
+                    "flex size-3.5 shrink-0 items-center justify-center rounded border",
+                    checked ? accentBox : "border-border",
+                  )}
+                >
+                  {checked && <Check className="size-2.5" strokeWidth={3} />}
+                </span>
+                <span className="flex-1 truncate">{v.label}</span>
+                <span className="text-[10.5px] tabular-nums text-muted-foreground">
+                  {v.count}
+                </span>
+              </DropdownMenuItem>
+            )
+          })}
+        </div>
+      )}
+      {(option.col.type === "text" || option.col.type === "email") &&
+        (cond.kind === "contains" || cond.kind === "not_contains") && (
+          <div className="px-2 pb-1.5 pt-1">
+            <Input
+              type="text"
+              placeholder={isExclude ? "Excludes…" : "Contains…"}
+              value={cond.text}
+              onChange={(e) => onChange({ kind: cond.kind, text: e.target.value })}
+              onClick={(e) => e.stopPropagation()}
+              data-filter-extra-text={`${option.col.name}-${condIdx}`}
+              className="h-7 text-[12px]"
+            />
+          </div>
+        )}
+    </>
   )
 }

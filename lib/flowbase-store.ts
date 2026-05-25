@@ -1412,7 +1412,8 @@ export const useFlowBase = create<FlowBaseStore>()(
           const b = s.boards[s.activeBoardId]
           if (!b) return ""
           if (!ensureCanEdit(s, "Add chart")) return ""
-          const id = `chart-${Date.now().toString(36).slice(-6)}`
+          // D5: 같은 tick에 여러 addChart 호출 시 id 중복 방지. random suffix.
+          const id = `chart-${Date.now().toString(36).slice(-6)}-${Math.random().toString(36).slice(2, 6)}`
           const full: ChartConfig = { ...chart, id }
           set({
             boards: {
@@ -1749,6 +1750,29 @@ export const useFlowBase = create<FlowBaseStore>()(
             selectedRowIds: s.selectedRowIds.filter((id) => !targets.has(id)),
             trashedRows: [...movedToTrash, ...s.trashedRows],
           }))
+          // G4-4: 삭제 row의 dueDate firedKey cleanup (`${ruleId}:${boardId}:${rowId}` 3-part).
+          // permanentDeleteRow 가 따로 있지만 trash로 이동 시도 row가 다시 안 살아날 가능성 — clean.
+          try {
+            if (typeof window === "undefined") return
+            const raw = localStorage.getItem("flowbase-automation-firedKeys-v1")
+            if (!raw) return
+            const arr = JSON.parse(raw) as unknown
+            if (!Array.isArray(arr)) return
+            const before = arr.length
+            const filtered = (arr as string[]).filter((k) => {
+              const parts = k.split(":")
+              return parts.length !== 3 || !targets.has(parts[2])
+            })
+            if (filtered.length !== before) {
+              localStorage.setItem(
+                "flowbase-automation-firedKeys-v1",
+                JSON.stringify(filtered),
+              )
+              window.dispatchEvent(new CustomEvent("flowbase-firedkeys-changed"))
+            }
+          } catch {
+            // silent
+          }
         },
 
         // AI 추천 수용 — 값 설정 + confirmed=true

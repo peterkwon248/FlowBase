@@ -8,7 +8,8 @@
 "use client"
 
 import { useState } from "react"
-import { MoreHorizontal, Plus, Upload } from "lucide-react"
+import { MoreHorizontal, Plus, Sparkles, Upload } from "lucide-react"
+import { GenerateBoardDialog } from "@/components/board/generate-board-dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +34,8 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
 
   // 인라인 이름 변경 중인 보드 id (Q1 — 인라인)
   const [editingId, setEditingId] = useState<string | null>(null)
+  // G6-2: AI 보드 템플릿 generator dialog
+  const [generateOpen, setGenerateOpen] = useState(false)
 
   const boardList = Object.values(boards)
 
@@ -65,6 +68,15 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
         >
           <Plus className="size-3.5" />
           New board
+        </button>
+        <button
+          type="button"
+          onClick={() => setGenerateOpen(true)}
+          data-action="open-generate-board"
+          className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/[0.05] px-2.5 py-1.5 text-[13px] text-primary hover:border-primary/50 hover:bg-primary/[0.08]"
+        >
+          <Sparkles className="size-3.5" />
+          Generate with AI
         </button>
         <button
           type="button"
@@ -168,6 +180,10 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
       </nav>
 
       <div className="flex-1" />
+      <GenerateBoardDialog
+        open={generateOpen}
+        onOpenChange={setGenerateOpen}
+      />
     </aside>
   )
 }

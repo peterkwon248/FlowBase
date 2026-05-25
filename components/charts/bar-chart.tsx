@@ -24,11 +24,18 @@ export interface BarDatum {
   value: number
 }
 
-export function BarChart({ data }: { data: BarDatum[] }) {
+export function BarChart({
+  data,
+  onBarClick,
+}: {
+  data: BarDatum[]
+  // G1-2 drill-down — bar click 시 label 반환
+  onBarClick?: (label: string) => void
+}) {
   if (data.length === 0) {
     return (
       <div className="py-8 text-center text-xs text-muted-foreground">
-        집계할 값이 없습니다.
+        No data
       </div>
     )
   }
@@ -47,7 +54,18 @@ export function BarChart({ data }: { data: BarDatum[] }) {
             axisLine={{ stroke: "var(--border)" }}
             tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
           />
-          <Bar dataKey="value" radius={[3, 3, 0, 0]} maxBarSize={64} isAnimationActive={false}>
+          <Bar
+            dataKey="value"
+            radius={[3, 3, 0, 0]}
+            maxBarSize={64}
+            isAnimationActive={false}
+            onClick={
+              onBarClick
+                ? (entry: { label: string }) => onBarClick(entry.label)
+                : undefined
+            }
+            cursor={onBarClick ? "pointer" : "default"}
+          >
             {data.map((d, i) => (
               <Cell key={d.label} fill={PALETTE[i % PALETTE.length]} />
             ))}

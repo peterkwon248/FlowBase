@@ -114,6 +114,18 @@ export function SnapshotsView() {
   const [deleteTarget, setDeleteTarget] = useState<Snapshot | null>(null)
   const [renameTarget, setRenameTarget] = useState<Snapshot | null>(null)
   const [compareTarget, setCompareTarget] = useState<Snapshot | null>(null)
+  // G3-1: A vs B compare (임의 두 snapshot). compareA 단독이면 vs current (기존).
+  // compareB 있으면 A vs B로 SnapshotCompareDialog에 compareWith 전달.
+  const [compareA, setCompareA] = useState<string>("")
+  const [compareB, setCompareB] = useState<string>("")
+  const [compareDualOpen, setCompareDualOpen] = useState(false)
+  const snapById = useMemo(() => {
+    const m = new Map<string, Snapshot>()
+    for (const s of snapshots) m.set(s.id, s)
+    return m
+  }, [snapshots])
+  const snapA = snapById.get(compareA) ?? null
+  const snapB = snapById.get(compareB) ?? null
 
   // store raw slices — Restore preview diff 계산용
   const boards = useFlowBase((s) => s.boards)
@@ -218,6 +230,50 @@ export function SnapshotsView() {
           Manual save points for the whole workspace. Restore brings everything back
           — your current state is auto-saved so you can always undo.
         </p>
+        {/* G3-1: A vs B compare — 최소 2개 snapshot 있을 때만 노출 */}
+        {snapshots.length >= 2 && (
+          <div className="mt-3 flex flex-wrap items-center gap-1.5 pl-[38px] text-[11.5px]">
+            <span className="text-muted-foreground">Compare</span>
+            <select
+              value={compareA}
+              onChange={(e) => setCompareA(e.target.value)}
+              data-compare-a
+              className="rounded border border-border-subtle bg-card px-1.5 py-0.5 text-[11.5px]"
+            >
+              <option value="">(A)</option>
+              {snapshots.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <span className="text-muted-foreground">vs</span>
+            <select
+              value={compareB}
+              onChange={(e) => setCompareB(e.target.value)}
+              data-compare-b
+              className="rounded border border-border-subtle bg-card px-1.5 py-0.5 text-[11.5px]"
+            >
+              <option value="">(B)</option>
+              {snapshots.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={!snapA || !snapB || compareA === compareB}
+              onClick={() => setCompareDualOpen(true)}
+              className="h-6 px-2 text-[11px]"
+              data-action="compare-dual"
+            >
+              <GitCompare className="mr-1 size-3" strokeWidth={1.75} />
+              Compare
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* List */}
@@ -310,7 +366,7 @@ export function SnapshotsView() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Compare dialog */}
+      {/* Compare dialog (vs current) */}
       {compareTarget && (
         <SnapshotCompareDialog
           snap={compareTarget}
@@ -321,6 +377,16 @@ export function SnapshotsView() {
             setCompareTarget(null)
             setRestoreTarget(t)
           }}
+        />
+      )}
+
+      {/* G3-1: A vs B Compare dialog (두 임의 snapshot) */}
+      {snapA && snapB && compareDualOpen && (
+        <SnapshotCompareDialog
+          snap={snapA}
+          compareWith={snapB}
+          open={compareDualOpen}
+          onOpenChange={setCompareDualOpen}
         />
       )}
 

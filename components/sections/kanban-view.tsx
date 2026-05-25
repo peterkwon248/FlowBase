@@ -256,7 +256,7 @@ function KanbanCard({
         </span>
         <span className="flex-1" />
         {priority && (
-          <span className="inline-flex items-center gap-1 text-[10.5px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1 whitespace-nowrap text-[10.5px] text-muted-foreground">
             <span
               className={cn(
                 "size-1.5 rounded-full",

@@ -44,6 +44,8 @@ interface SnapshotCompareDialogProps {
   open: boolean
   onOpenChange: (o: boolean) => void
   onRestore?: () => void
+  // G3-1: 두 snapshot 비교. compareWith 있으면 snap ↔ compareWith, 없으면 snap ↔ current.
+  compareWith?: Snapshot
 }
 
 // 현재 store state에서 SnapshotState slice 추출 (store helper와 같음 — UI 안에서만 쓰니 인라인).
@@ -69,19 +71,20 @@ export function SnapshotCompareDialog({
   open,
   onOpenChange,
   onRestore,
+  compareWith,
 }: SnapshotCompareDialogProps) {
   // store의 raw 슬라이스 구독 — re-render 트리거. (다이얼로그 닫혀 있어도 hook 안전 호출.)
-  // boards 변하면 diff 재계산.
+  // boards 변하면 diff 재계산. (compareWith 있을 때는 변경 무관 — snapshot은 immutable.)
   const boards = useFlowBase((s) => s.boards)
   const wikiPages = useFlowBase((s) => s.wikiPages)
   const automations = useFlowBase((s) => s.automations)
 
   const diff = useMemo(() => {
     if (!open) return null
-    return diffSnapshotStates(snap.state, currentSnapshotState())
-    // diff 의존: snapshot.state는 immutable · 현재 state는 slices 의존
+    const right = compareWith ? compareWith.state : currentSnapshotState()
+    return diffSnapshotStates(snap.state, right)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, snap.id, boards, wikiPages, automations])
+  }, [open, snap.id, compareWith?.id, boards, wikiPages, automations])
 
   if (!diff) return null
 
@@ -108,7 +111,8 @@ export function SnapshotCompareDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bookmark className="size-4 text-chart-4" strokeWidth={1.75} />
-            Compare "{snap.label}" with current
+            Compare "{snap.label}" with{" "}
+            {compareWith ? `"${compareWith.label}"` : "current"}
           </DialogTitle>
           <DialogDescription className="text-[12px]">
             {summarizeDiff(diff)}
@@ -117,7 +121,9 @@ export function SnapshotCompareDialog({
 
         {diff.identical ? (
           <div className="rounded-md border border-dashed border-border bg-card px-6 py-10 text-center text-[12.5px] text-muted-foreground">
-            This snapshot matches your current workspace state exactly.
+            {compareWith
+              ? `These two snapshots are identical.`
+              : `This snapshot matches your current workspace state exactly.`}
           </div>
         ) : (
           <div className="max-h-[60vh] overflow-y-auto pr-1">

@@ -12,12 +12,14 @@ import { BoardHeader } from "@/components/board/board-header"
 import { TablesMode } from "@/components/board/tables-mode"
 import { WorkspaceMode } from "@/components/board/workspace-mode"
 import { InboxView } from "@/components/inbox/inbox-view"
+import { KeyboardShortcutsDialog } from "@/components/board/keyboard-shortcuts-dialog"
 import { LibraryMode } from "@/components/library/library-mode"
 import { SearchMode } from "@/components/search/search-mode"
 import { SearchPalette } from "@/components/search/search-palette"
 import { Toaster } from "@/components/ui/sonner"
 import { WikiMode } from "@/components/wiki/wiki-mode"
 import { AutomationRuntime } from "@/lib/automation-runtime"
+import { AutoBackupRuntime } from "@/lib/auto-backup"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { useKeyboardShortcuts } from "@/lib/keyboard-shortcuts"
 
@@ -79,6 +81,8 @@ export default function Home() {
 
       <SearchPalette />
       <AutomationRuntime />
+      <AutoBackupRuntime />
+      <KeyboardShortcutsDialog />
       <Toaster />
     </div>
   )

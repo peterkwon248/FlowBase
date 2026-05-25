@@ -81,6 +81,13 @@ export function useKeyboardShortcuts(): void {
         return
       }
 
+      // P2: ⌘/ (또는 ⌘?) — 단축키 docs 모달 토글. 편집 중에도 동작 (셸 단축키).
+      if (mod && (e.key === "/" || e.key === "?")) {
+        e.preventDefault()
+        window.dispatchEvent(new CustomEvent("flowbase-toggle-shortcuts-help"))
+        return
+      }
+
       // ⌘D — 선택 행 복제. 셀 편집 중에는 입력기에 양보.
       if (mod && !e.shiftKey && e.key.toLowerCase() === "d") {
         if (editing) return

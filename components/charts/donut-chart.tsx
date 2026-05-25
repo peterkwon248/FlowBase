@@ -4,6 +4,7 @@
 "use client"
 
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts"
+import { cn } from "@/lib/utils"
 
 const PALETTE = [
   "var(--chart-1)",
@@ -18,14 +19,21 @@ export interface DonutDatum {
   value: number
 }
 
-export function DonutChart({ data }: { data: DonutDatum[] }) {
+export function DonutChart({
+  data,
+  onSliceClick,
+}: {
+  data: DonutDatum[]
+  // G1-2 drill-down — slice click 시 label 반환
+  onSliceClick?: (label: string) => void
+}) {
   const items = data.filter((d) => d.value > 0)
   const total = items.reduce((s, d) => s + d.value, 0)
 
   if (items.length === 0) {
     return (
       <div className="py-8 text-center text-xs text-muted-foreground">
-        집계할 값이 없습니다.
+        No data
       </div>
     )
   }
@@ -44,6 +52,12 @@ export function DonutChart({ data }: { data: DonutDatum[] }) {
               paddingAngle={2}
               strokeWidth={0}
               isAnimationActive={false}
+              onClick={
+                onSliceClick
+                  ? (entry: { label: string }) => onSliceClick(entry.label)
+                  : undefined
+              }
+              cursor={onSliceClick ? "pointer" : "default"}
             >
               {items.map((d, i) => (
                 <Cell key={d.label} fill={PALETTE[i % PALETTE.length]} />
@@ -53,12 +67,19 @@ export function DonutChart({ data }: { data: DonutDatum[] }) {
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-xl font-bold tabular-nums">{total}</span>
-          <span className="text-[11px] text-muted-foreground">합계</span>
+          <span className="text-[11px] text-muted-foreground">Total</span>
         </div>
       </div>
       <ul className="flex flex-1 flex-col gap-1.5">
         {items.map((d, i) => (
-          <li key={d.label} className="flex items-center gap-2 text-xs">
+          <li
+            key={d.label}
+            className={cn(
+              "flex items-center gap-2 text-xs",
+              onSliceClick && "cursor-pointer hover:bg-foreground/[0.04] rounded px-1",
+            )}
+            onClick={onSliceClick ? () => onSliceClick(d.label) : undefined}
+          >
             <span
               aria-hidden
               className="size-2 shrink-0 rounded-[2px]"

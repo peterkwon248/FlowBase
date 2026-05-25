@@ -9,9 +9,14 @@ import { useEffect, useMemo, useState } from "react"
 import {
   Activity,
   BarChart3,
+  BarChartHorizontal,
   CircleDot,
+  Filter,
   Grid2x2,
   Layers,
+  ScatterChart as ScatterIcon,
+  Table,
+  Target,
   TrendingUp,
   type LucideIcon,
 } from "lucide-react"
@@ -33,9 +38,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { AGG_FN_LABELS } from "@/lib/chart-aggregate"
 import { selectActiveBoard, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
-import type { ChartType, ChartWidth, ColumnDef } from "@/types/flowbase"
+import type { AggFn, ChartType, ChartWidth, ColumnDef, TimeScale } from "@/types/flowbase"
 
 interface ChartTypeOption {
   type: ChartType
@@ -100,6 +106,47 @@ const TYPE_OPTIONS: ChartTypeOption[] = [
     needsGroupBy: true,
     defaultWidth: "half",
   },
+  {
+    type: "scatter",
+    label: "Scatter plot",
+    desc: "Numeric × numeric — correlation (ROI vs spend, score vs hours)",
+    Icon: ScatterIcon,
+    sourceAccept: ["num"],
+    defaultWidth: "half",
+  },
+  {
+    type: "histogram",
+    label: "Histogram",
+    desc: "Numeric distribution — bins auto from data range",
+    Icon: BarChartHorizontal,
+    sourceAccept: ["num"],
+    defaultWidth: "half",
+  },
+  {
+    type: "pivot",
+    label: "Pivot table",
+    desc: "Two categoricals × aggregate (status × dept = Sum of price)",
+    Icon: Table,
+    sourceAccept: ["status", "select", "multiSelect"],
+    needsGroupBy: true,
+    defaultWidth: "full",
+  },
+  {
+    type: "bullet",
+    label: "Bullet",
+    desc: "Single value + goal + optional reference (Q1 actual vs quota)",
+    Icon: Target,
+    sourceAccept: ["status", "select", "multiSelect", "num", "text", "date"],
+    defaultWidth: "half",
+  },
+  {
+    type: "funnel",
+    label: "Funnel",
+    desc: "Stage drop-off (Lead → Qualified → Demo → Closed)",
+    Icon: Filter,
+    sourceAccept: ["status", "select"],
+    defaultWidth: "half",
+  },
 ]
 
 // 위 한 줄 SAFETY: donut의 width를 정정
@@ -127,6 +174,14 @@ export function AddChartDialog({
   const [groupCol, setGroupCol] = useState<string>("")
   const [title, setTitle] = useState<string>("")
   const [width, setWidth] = useState<ChartWidth>("half")
+  // D1: 집계 함수 + 값 컬럼 (count 외 sum/avg/min/max/median 시 numeric valueCol 필수)
+  const [aggFn, setAggFn] = useState<AggFn>("count")
+  const [valueCol, setValueCol] = useState<string>("")
+  // D4: time scale (line chart 한정 — day/week/month/quarter/year)
+  const [timeScale, setTimeScale] = useState<TimeScale>("week")
+  // G1-3: goal (KPI 한정 — progress bar 표시)
+  const [goal, setGoal] = useState<string>("")
+  const [goalLabel, setGoalLabel] = useState<string>("")
 
   const meta = useMemo(
     () => TYPE_OPTIONS.find((t) => t.type === type)!,
@@ -146,9 +201,29 @@ export function AddChartDialog({
       (c) =>
         c.name !== "id" &&
         c.name !== sourceCol &&
-        (c.type === "status" || c.type === "select"),
+        (c.type === "status" ||
+          c.type === "select" ||
+          c.type === "multiSelect"),
     )
   }, [board, sourceCol])
+
+  // D1: numeric 컬럼 list (sum/avg/min/max/median 대상)
+  const numericOptions = useMemo(() => {
+    if (!board) return []
+    return board.columns.filter((c) => c.name !== "id" && c.type === "num")
+  }, [board])
+
+  // aggFn 지원 chart type: kpi/bar/donut/line/pivot/bullet. stacked/heatmap/scatter/histogram/funnel은 count fixed.
+  const supportsAggFn =
+    type === "kpi" ||
+    type === "bar" ||
+    type === "donut" ||
+    type === "line" ||
+    type === "pivot" ||
+    type === "bullet"
+  // valueCol 필요: aggFn 외 + scatter(yCol numeric).
+  const isScatter = type === "scatter"
+  const needsValueCol = isScatter || (supportsAggFn && aggFn !== "count")
 
   // 다이얼로그 열릴 때마다 적절한 default 다시 계산
   useEffect(() => {
@@ -157,6 +232,11 @@ export function AddChartDialog({
       setWidth("half")
       setTitle("")
       setGroupCol("")
+      setAggFn("count")
+      setValueCol("")
+      setTimeScale("week")
+      setGoal("")
+      setGoalLabel("")
       const firstSource = board?.columns.find(
         (c) =>
           c.name !== "id" &&
@@ -165,6 +245,25 @@ export function AddChartDialog({
       setSourceCol(firstSource?.name ?? "")
     }
   }, [open, board])
+
+  // aggFn 변경: count로 돌아가면 valueCol clear. count 외이고 valueCol 없으면 첫 numeric로 fill.
+  useEffect(() => {
+    if (aggFn === "count") {
+      if (valueCol) setValueCol("")
+      return
+    }
+    if (!valueCol && numericOptions.length > 0) {
+      setValueCol(numericOptions[0].name)
+    }
+  }, [aggFn, valueCol, numericOptions])
+
+  // type 변경 시 aggFn 지원 ❌ chart면 count로 reset.
+  useEffect(() => {
+    if (!supportsAggFn && aggFn !== "count") {
+      setAggFn("count")
+      setValueCol("")
+    }
+  }, [supportsAggFn, aggFn])
 
   // type 바뀔 때 sourceCol 초기화 (호환 불일치 시) + width 디폴트
   useEffect(() => {
@@ -188,17 +287,30 @@ export function AddChartDialog({
     board.columns.find((c) => c.name === n)?.label ?? n
 
   const canCreate =
-    sourceCol !== "" && (!meta.needsGroupBy || groupCol !== "")
+    sourceCol !== "" &&
+    (!meta.needsGroupBy || groupCol !== "") &&
+    (!needsValueCol || valueCol !== "")
 
   const create = () => {
     if (!canCreate) return
     const finalTitle = title.trim() || `${meta.label}: ${sourceLabel(sourceCol)}`
+    const goalNum = type === "kpi" && goal.trim() ? Number(goal) : undefined
     addChart({
       type,
       title: finalTitle,
       sourceCol,
-      groupByCol: meta.needsGroupBy ? groupCol : undefined,
+      // F1: line type도 optional groupBy 허용 (multi-series).
+      groupByCol:
+        meta.needsGroupBy || (type === "line" && groupCol)
+          ? groupCol || undefined
+          : undefined,
       width,
+      aggFn: supportsAggFn ? aggFn : undefined,
+      valueCol: needsValueCol ? valueCol : undefined,
+      timeScale: type === "line" ? timeScale : undefined,
+      goal: goalNum && Number.isFinite(goalNum) && goalNum > 0 ? goalNum : undefined,
+      goalLabel:
+        type === "kpi" && goalLabel.trim() ? goalLabel.trim() : undefined,
     })
     onOpenChange(false)
   }
@@ -306,6 +418,158 @@ export function AddChartDialog({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          )}
+
+          {/* F1: line chart는 groupBy 선택적 (multi-series). "None"이면 single line. */}
+          {type === "line" && !meta.needsGroupBy && groupOptions.length > 0 && (
+            <div className="space-y-1.5">
+              <Label htmlFor="chart-line-group" className="text-[12px]">
+                Series by (optional)
+              </Label>
+              <Select
+                value={groupCol || "__none__"}
+                onValueChange={(v) => setGroupCol(v === "__none__" ? "" : v)}
+              >
+                <SelectTrigger
+                  id="chart-line-group"
+                  data-add-chart-series
+                  className="h-8 text-[12.5px]"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">
+                    None · single line
+                  </SelectItem>
+                  {groupOptions.map((c) => (
+                    <SelectItem key={c.name} value={c.name}>
+                      {c.label || c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* D1: Aggregate function — KPI/Bar/Donut/Line만 노출. count default. */}
+          {supportsAggFn && (
+            <div className="space-y-1.5">
+              <Label htmlFor="chart-agg" className="text-[12px]">
+                Aggregate
+              </Label>
+              <Select
+                value={aggFn}
+                onValueChange={(v) => setAggFn(v as AggFn)}
+              >
+                <SelectTrigger
+                  id="chart-agg"
+                  data-add-chart-agg
+                  className="h-8 text-[12.5px]"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(["count", "sum", "avg", "min", "max", "median"] as AggFn[]).map(
+                    (fn) => (
+                      <SelectItem key={fn} value={fn}>
+                        {AGG_FN_LABELS[fn]}
+                      </SelectItem>
+                    ),
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* D4: line chart 시간 bucket scale */}
+          {type === "line" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="chart-scale" className="text-[12px]">
+                Time scale
+              </Label>
+              <Select
+                value={timeScale}
+                onValueChange={(v) => setTimeScale(v as TimeScale)}
+              >
+                <SelectTrigger
+                  id="chart-scale"
+                  data-add-chart-scale
+                  className="h-8 text-[12.5px]"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">Daily · 14 days</SelectItem>
+                  <SelectItem value="week">Weekly · 8 weeks</SelectItem>
+                  <SelectItem value="month">Monthly · 6 months</SelectItem>
+                  <SelectItem value="quarter">Quarterly · 4 quarters</SelectItem>
+                  <SelectItem value="year">Yearly · 3 years</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* D1: aggFn !== count일 때 numeric valueCol 필수. D2 scatter는 yCol numeric. */}
+          {needsValueCol && (
+            <div className="space-y-1.5">
+              <Label htmlFor="chart-value" className="text-[12px]">
+                {isScatter ? "Y axis (numeric)" : "Value column (numeric)"}
+              </Label>
+              <Select value={valueCol} onValueChange={setValueCol}>
+                <SelectTrigger
+                  id="chart-value"
+                  data-add-chart-value
+                  className="h-8 text-[12.5px]"
+                >
+                  <SelectValue
+                    placeholder={
+                      numericOptions.length === 0
+                        ? "No numeric columns"
+                        : "Pick a numeric column"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {numericOptions.map((c) => (
+                    <SelectItem key={c.name} value={c.name}>
+                      {c.label || c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* G1-3: KPI goal (progress bar) · G7-A1 Bullet도 goal 사용 */}
+          {(type === "kpi" || type === "bullet") && (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="chart-goal" className="text-[12px]">
+                  Goal (optional)
+                </Label>
+                <Input
+                  id="chart-goal"
+                  type="number"
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                  placeholder="e.g. 100000"
+                  className="h-8 text-[12.5px]"
+                  data-add-chart-goal
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="chart-goal-label" className="text-[12px]">
+                  Goal label
+                </Label>
+                <Input
+                  id="chart-goal-label"
+                  value={goalLabel}
+                  onChange={(e) => setGoalLabel(e.target.value)}
+                  placeholder="Q1 quota"
+                  className="h-8 text-[12.5px]"
+                />
+              </div>
             </div>
           )}
 

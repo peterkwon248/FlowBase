@@ -19,8 +19,11 @@ export interface SerializableTable {
 }
 
 // CSV(',') 또는 TSV('\t') — quote("") 이스케이프 처리 포함
+// G4-3: UTF-8 BOM (0xFEFF) 자동 strip — Excel/Notion export가 자주 BOM 포함.
 export function parseDelimited(text: string, delim: string): string[][] {
-  const lines = text
+  // BOM strip (첫 char가 0xFEFF면 제거)
+  const cleaned = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text
+  const lines = cleaned
     .replace(/\r\n?/g, "\n")
     .split("\n")
     .filter((l) => l.length > 0)
@@ -69,9 +72,10 @@ export function parseMarkdownTable(text: string): string[][] | null {
     .map(splitCells)
 }
 
-// 텍스트 포맷 자동 감지
+// 텍스트 포맷 자동 감지 (BOM 무시)
 export function detectFormat(text: string): ImportFormat | null {
-  const t = text.trim()
+  const cleaned = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text
+  const t = cleaned.trim()
   if (!t) return null
   if (/^\|.+\|/m.test(t) && /[-:]+/.test(t)) return "md"
   const firstLine = t.split("\n")[0]

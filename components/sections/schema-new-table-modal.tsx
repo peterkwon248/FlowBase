@@ -107,6 +107,28 @@ export function NewTableModal({
 
   const create = () => {
     if (!canCreate || selected === null) return
+    // G3-2: multiTable template — name을 prefix로 N개 board 일괄 생성.
+    if (selected.kind === "template") {
+      const tpl = library.templates.find((t) => t.id === selected.id)
+      if (
+        tpl &&
+        tpl.multiTable &&
+        tpl.tables &&
+        tpl.tables.length > 0
+      ) {
+        const prefix = name.trim()
+        let firstId = ""
+        for (const t of tpl.tables) {
+          const boardLabel = prefix ? `${prefix} · ${t.label}` : t.label
+          const id = createBoard(boardLabel, t.columns, [])
+          if (!firstId) firstId = id
+        }
+        if (firstId) switchBoard(firstId)
+        setActivityMode("tables")
+        onOpenChange(false)
+        return
+      }
+    }
     let columns: ColumnDef[] = FALLBACK_COLUMNS
     if (selected.kind === "template") {
       const tpl = library.templates.find((t) => t.id === selected.id)
@@ -183,7 +205,7 @@ export function NewTableModal({
                       <div className="mt-0.5 flex flex-wrap gap-1">
                         {isMulti && (
                           <span className="rounded bg-primary/15 px-1.5 py-0 text-[10px] font-semibold text-primary">
-                            {tpl.tables?.length ?? 0} tables (first used)
+                            Creates {tpl.tables?.length ?? 0} boards
                           </span>
                         )}
                         <span className="rounded bg-muted px-1.5 py-0 text-[10px] text-muted-foreground">

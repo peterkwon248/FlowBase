@@ -47,7 +47,19 @@ export interface ColumnDef {
   buttonAction?: string // type === "button" — 액션 식별자
   libraryFieldId?: string // Promote to Library 후 연결된 LibraryField id
   functionId?: string // Attach function — Library function id (실행은 향후)
+  // G3-3: MATCH_FROM_DROPDOWN sourceField 명시. 미설정이면 첫 text/select column auto.
+  functionSourceField?: string
+  // G7-A3: cell value 룰 기반 색 강조. sheet view에서 적용.
+  formatRules?: FormatRule[]
 }
+
+// G7-A3 Conditional formatting
+export type FormatTone = "red" | "amber" | "emerald" | "blue"
+export type FormatRule =
+  | { kind: "lt"; value: number; tone: FormatTone } // value < N
+  | { kind: "gt"; value: number; tone: FormatTone } // value > N
+  | { kind: "eq"; value: string; tone: FormatTone } // value === X
+  | { kind: "contains"; value: string; tone: FormatTone } // text 포함
 
 // reaction 셀(votes) 값
 export interface Votes {
@@ -89,8 +101,26 @@ export type ChartType =
   | "line"
   | "stacked-bar"
   | "heatmap"
+  | "scatter"   // D2 — numeric × numeric 상관 (sourceCol=xCol, valueCol=yCol)
+  | "histogram" // D3 — numeric 분포 (sourceCol=numeric, auto bin)
+  | "pivot"     // G1-1 — rowField(sourceCol) × colField(groupByCol) × aggFn(valueCol)
+  | "bullet"    // G7-A1 — aggFn(valueCol) vs goal + 선택 reference. KPI 강화 변형.
+  | "funnel"    // G7-A2 — stage(sourceCol)별 count 단계 drop-off.
 
 export type ChartWidth = "quarter" | "half" | "two-thirds" | "full"
+
+// Line chart 시간 bucket 단위 — daily/weekly/monthly/quarterly/yearly. default weekly(호환).
+export type TimeScale = "day" | "week" | "month" | "quarter" | "year"
+
+// 집계 함수 — 도메인 무관 fit의 핵심. count(현행) 외에 numeric 컬럼 통계 노출.
+// 사용처: KPI 단일 값 · Bar/Donut group별 값 · Line 시간 bucket 값.
+//   count   = row 수 (valueCol 무관, default)
+//   sum     = valueCol 합
+//   avg     = valueCol 산술 평균
+//   min/max = valueCol 최소/최대
+//   median  = valueCol 중앙값 (홀수 가운데 / 짝수 두 값 평균)
+// status/select 컬럼에는 sum 등 의미 ❌ — UI 단에서 aggFn!==count면 valueCol 강제 노출.
+export type AggFn = "count" | "sum" | "avg" | "min" | "max" | "median"
 
 export interface ChartConfig {
   id: string
@@ -99,6 +129,19 @@ export interface ChartConfig {
   sourceCol: string // 주요 컬럼 (categorical 또는 numeric 또는 date)
   groupByCol?: string // stacked-bar용 두 번째 categorical
   width: ChartWidth
+  // 집계 옵션 — undefined === "count" 호환 (마이그레이션 ❌).
+  aggFn?: AggFn
+  // sum/avg/min/max/median 대상 numeric 컬럼. aggFn === "count"면 무시.
+  valueCol?: string
+  // line chart 시간 bucket. undefined = "week" 호환.
+  timeScale?: TimeScale
+  // G1-3: 목표값 — KPI tile에서 progress bar 표시 (값/goal * 100%).
+  goal?: number
+  // 목표 라벨 (예: "Q1 quota") — UI 표시 용. 미설정 시 "goal" default.
+  goalLabel?: string
+  // G7-A1 Bullet — 선택 reference (이전 기간/팀 평균) 마커. 선 또는 작은 marker.
+  referenceValue?: number
+  referenceLabel?: string
 }
 
 export interface Board {
