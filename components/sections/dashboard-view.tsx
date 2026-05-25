@@ -96,6 +96,16 @@ function aggregate(rows: TableRow[], field: string): Agg[] {
   for (const r of rows) {
     const v = r[field]
     if (v == null || v === "") continue
+    // multiSelect cell — 배열 원소 각각 +1 (Notion 패턴). 합계가 rows.length 초과 가능.
+    if (Array.isArray(v)) {
+      for (const item of v) {
+        if (item == null) continue
+        const k = String(item).trim()
+        if (!k) continue
+        counts.set(k, (counts.get(k) ?? 0) + 1)
+      }
+      continue
+    }
     const k = String(v)
     counts.set(k, (counts.get(k) ?? 0) + 1)
   }
@@ -175,7 +185,11 @@ export function DashboardView() {
   const hasCustomCharts = customCharts.length > 0
 
   const categorical = board.columns.filter(
-    (c) => (c.type === "status" || c.type === "select") && c.name !== "id",
+    (c) =>
+      (c.type === "status" ||
+        c.type === "select" ||
+        c.type === "multiSelect") &&
+      c.name !== "id",
   )
   const numeric = board.columns.filter((c) => c.type === "num")
   const dateCol = board.columns.find((c) => c.type === "date")

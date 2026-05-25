@@ -56,7 +56,9 @@ export function GalleryView() {
             .filter((c): c is ColumnDef => !!c)
         : cols
             .filter((c) => c !== headerCol)
-            .filter((c) => ["status", "select", "date", "num"].includes(c.type))
+            .filter((c) =>
+              ["status", "select", "multiSelect", "date", "num"].includes(c.type),
+            )
             .slice(0, 4)
     return { headerCol, bodyCols }
   }, [board, settings])
@@ -192,6 +194,27 @@ function GalleryCardField({ col, row }: { col: ColumnDef; row: TableRow }) {
   const Icon = TYPE_ICON[col.type] ?? User
   const value = row[col.name]
   if (value == null || value === "") return null
+  if (Array.isArray(value) && value.length === 0) return null
+
+  if (col.type === "multiSelect") {
+    const arr = (value as unknown[]).map((v) => String(v ?? "")).filter(Boolean)
+    if (arr.length === 0) return null
+    return (
+      <div className="flex items-start gap-1.5 text-[11.5px]">
+        <span className="shrink-0 text-muted-foreground">{col.label}:</span>
+        <span className="flex flex-wrap gap-1">
+          {arr.map((v) => (
+            <span
+              key={v}
+              className="inline-flex items-center whitespace-nowrap rounded border border-border-subtle bg-muted px-1.5 py-0 text-[10.5px] text-foreground"
+            >
+              {v}
+            </span>
+          ))}
+        </span>
+      </div>
+    )
+  }
 
   if (col.type === "status") {
     const s = String(value) as TicketStatus

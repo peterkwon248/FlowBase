@@ -54,7 +54,7 @@ const TYPE_OPTIONS: ChartTypeOption[] = [
     label: "KPI tile",
     desc: "Single number — distinct count of a column",
     Icon: Activity,
-    sourceAccept: ["status", "select", "num", "text", "date"],
+    sourceAccept: ["status", "select", "multiSelect", "num", "text", "date"],
     defaultWidth: "quarter",
   },
   {
@@ -62,7 +62,7 @@ const TYPE_OPTIONS: ChartTypeOption[] = [
     label: "Bar chart",
     desc: "Vertical bars — categorical distribution",
     Icon: BarChart3,
-    sourceAccept: ["status", "select"],
+    sourceAccept: ["status", "select", "multiSelect"],
     defaultWidth: "half",
   },
   {
@@ -70,7 +70,7 @@ const TYPE_OPTIONS: ChartTypeOption[] = [
     label: "Donut chart",
     desc: "Ring slices — categorical share",
     Icon: CircleDot,
-    sourceAccept: ["status", "select"],
+    sourceAccept: ["status", "select", "multiSelect"],
     defaultWidth: "one-third" as ChartWidth,
     // SAFETY: ChartWidth doesn't include 'one-third' — use 'quarter'
   },
@@ -87,7 +87,7 @@ const TYPE_OPTIONS: ChartTypeOption[] = [
     label: "Stacked bar",
     desc: "Categories stacked by a second dimension",
     Icon: Layers,
-    sourceAccept: ["status", "select"],
+    sourceAccept: ["status", "select", "multiSelect"],
     needsGroupBy: true,
     defaultWidth: "half",
   },
@@ -96,7 +96,7 @@ const TYPE_OPTIONS: ChartTypeOption[] = [
     label: "Heatmap",
     desc: "Two-dimensional grid — count intensity per cell",
     Icon: Grid2x2,
-    sourceAccept: ["status", "select"],
+    sourceAccept: ["status", "select", "multiSelect"],
     needsGroupBy: true,
     defaultWidth: "half",
   },
@@ -159,7 +159,8 @@ export function AddChartDialog({
       setGroupCol("")
       const firstSource = board?.columns.find(
         (c) =>
-          c.name !== "id" && (c.type === "status" || c.type === "select"),
+          c.name !== "id" &&
+          (c.type === "status" || c.type === "select" || c.type === "multiSelect"),
       )
       setSourceCol(firstSource?.name ?? "")
     }

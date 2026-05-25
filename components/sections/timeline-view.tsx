@@ -82,7 +82,9 @@ function pickColumns(board: { columns: ColumnDef[] } | undefined) {
     cols.find((c) => c.name === "assignee") ??
     cols.find(
       (c) =>
-        (c.type === "select" || c.type === "text") &&
+        (c.type === "select" ||
+          c.type === "multiSelect" ||
+          c.type === "text") &&
         c.name !== "id" &&
         c.name !== titleCol?.name &&
         c.name !== statusCol?.name &&
@@ -328,7 +330,13 @@ function GanttRow({
     ? (String(row[statusCol.name] ?? "") as TicketStatus | "")
     : ""
   const priority = priorityCol ? String(row[priorityCol.name] ?? "") : ""
-  const subtitle = subtitleCol ? String(row[subtitleCol.name] ?? "") : ""
+  // multiSelect cell이면 첫 값만 (Gantt 한 행이라 단일 표시).
+  const subtitle = (() => {
+    if (!subtitleCol) return ""
+    const v = row[subtitleCol.name]
+    if (Array.isArray(v)) return v.length > 0 ? String(v[0]) : ""
+    return v == null ? "" : String(v)
+  })()
   const title =
     (titleCol ? String(row[titleCol.name] ?? "") : "") || String(row.id)
 

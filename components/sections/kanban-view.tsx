@@ -15,6 +15,7 @@ import {
   selectVisibleRows,
   useFlowBase,
 } from "@/lib/flowbase-store"
+import { coerceMultiValue, multiIncludes } from "@/lib/multi-select"
 import { priorityDotClass, statusColorClass } from "@/lib/tokens"
 import { cn } from "@/lib/utils"
 import { STATUS_LABELS, type ColumnDef, type TableRow, type TicketStatus } from "@/types/flowbase"
@@ -38,7 +39,10 @@ function deriveCardConfig(columns: ColumnDef[]): CardConfig {
   const textCols = usable.filter(
     (c) => c.type === "text" && c.name !== titleName,
   )
-  const badge = usable.find((c) => c.type === "select")
+  // badge — select 우선, 없으면 multiSelect(첫 값만 사용)
+  const badge =
+    usable.find((c) => c.type === "select") ??
+    usable.find((c) => c.type === "multiSelect")
   const date = usable.find((c) => c.type === "date")
   return {
     titleField: titleName,
@@ -52,7 +56,10 @@ function deriveCardConfig(columns: ColumnDef[]): CardConfig {
 function cellText(row: TableRow, field: string | null): string {
   if (!field) return ""
   const v = row[field]
-  return v == null ? "" : String(v)
+  if (v == null) return ""
+  // multiSelect cell — 첫 값만 (badge 등 단일 표시 자리). 전체 join이 필요한 경우는 caller 책임.
+  if (Array.isArray(v)) return v.length > 0 ? String(v[0]) : ""
+  return String(v)
 }
 
 export function KanbanView() {
@@ -81,22 +88,32 @@ export function KanbanView() {
 
   // groupBy 컬럼 결정 — 옵션 우선, fallback first status col.
   const groupCol =
-    board.columns.find((c) => c.name === groupByOpt && (c.type === "status" || c.type === "select")) ??
+    board.columns.find(
+      (c) =>
+        c.name === groupByOpt &&
+        (c.type === "status" ||
+          c.type === "select" ||
+          c.type === "multiSelect"),
+    ) ??
     board.columns.find((c) => c.type === "status") ??
     null
   const groupName = groupCol?.name ?? "status"
   const isStatusGroup = groupCol?.type === "status"
+  const isMultiGroup = groupCol?.type === "multiSelect"
 
-  // group values: status면 STATUS_OPTIONS (LOCK), select면 options 또는 unique
+  // group values: status면 STATUS_OPTIONS (LOCK).
+  // select/multiSelect면 col.options + 실제 cell 값 union (multi는 cell array unpack).
   const groupValues: string[] = isStatusGroup
     ? [...STATUS_OPTIONS]
     : groupCol
       ? Array.from(
           new Set([
             ...(groupCol.options ?? []),
-            ...rows
-              .map((r) => r[groupName])
-              .filter((v): v is string => typeof v === "string" && !!v),
+            ...rows.flatMap((r) => {
+              const v = r[groupName]
+              if (isMultiGroup) return coerceMultiValue(v)
+              return typeof v === "string" && v ? [v] : []
+            }),
           ]),
         )
       : [...STATUS_OPTIONS]
@@ -112,7 +129,11 @@ export function KanbanView() {
   return (
     <div className="grid min-w-0 flex-1 auto-cols-[minmax(260px,1fr)] grid-flow-col gap-3 overflow-auto bg-background p-4">
       {groupValues.map((value) => {
-        const items = rows.filter((r) => r[groupName] === value)
+        // multiSelect: cell array가 value 포함하면 노출 (한 row가 여러 칸 가능 — Notion 패턴).
+        // 그 외: 단일 equality.
+        const items = isMultiGroup
+          ? rows.filter((r) => multiIncludes(r[groupName], value))
+          : rows.filter((r) => r[groupName] === value)
         const label = isStatusGroup
           ? STATUS_LABELS[value as TicketStatus] ?? value
           : value
@@ -148,7 +169,27 @@ export function KanbanView() {
                   cfg={cfg}
                   selected={selectedRowIds.includes(row.id)}
                   onToggleSelect={() => toggleSelect(row.id)}
-                  onMove={(to) => updateRow(row.id, { [groupName]: to })}
+                  onMove={(to) => {
+                    if (isMultiGroup) {
+                      // multiSelect 이동 — 현 카드가 노출된 그룹 값(=value)을 to로 replace,
+                      // 나머지 값 보존. 이미 to 있으면 단순 remove(현재 칸에서 빠지지만 to 칸엔 유지).
+                      const arr = coerceMultiValue(row[groupName])
+                      const next: string[] = []
+                      const seen = new Set<string>()
+                      for (const v of arr) {
+                        const replaced = v === value ? to : v
+                        if (!seen.has(replaced)) {
+                          seen.add(replaced)
+                          next.push(replaced)
+                        }
+                      }
+                      // current cell에 value가 없었다면 to만 추가 (방어, 일반적으론 항상 있음)
+                      if (!seen.has(to)) next.push(to)
+                      updateRow(row.id, { [groupName]: next })
+                    } else {
+                      updateRow(row.id, { [groupName]: to })
+                    }
+                  }}
                 />
               ))}
               {items.length === 0 && (

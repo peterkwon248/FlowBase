@@ -164,7 +164,9 @@ function SheetSection({ board }: { board: { columns: ColumnDef[] } }) {
 
   // GroupBy — status/select 컬럼만 (Kanban 패턴 답습)
   const groupable = board.columns.filter(
-    (c) => c.name !== "id" && (c.type === "status" || c.type === "select"),
+    (c) =>
+      c.name !== "id" &&
+      (c.type === "status" || c.type === "select" || c.type === "multiSelect"),
   )
   const groupBy = settings?.groupBy ?? "_none"
 
@@ -372,7 +374,9 @@ function KanbanSection({ board }: { board: { columns: ColumnDef[] } }) {
   const setViewOption = useFlowBase((s) => s.setViewOption)
 
   const groupable = board.columns.filter(
-    (c) => c.name !== "id" && (c.type === "status" || c.type === "select"),
+    (c) =>
+      c.name !== "id" &&
+      (c.type === "status" || c.type === "select" || c.type === "multiSelect"),
   )
 
   const defaultGroup =
