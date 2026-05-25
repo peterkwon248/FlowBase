@@ -13,7 +13,7 @@
 
 import type React from "react"
 import { useMemo } from "react"
-import { Check, Filter as FilterIcon, X } from "lucide-react"
+import { Check, Filter as FilterIcon, Plus, X } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -259,7 +259,25 @@ export function FilterMenu() {
 }
 
 // ─── Sub per column ───────────────────────────────────────
-// 컬럼당 multiple condition array — UI는 첫 element만 (minimum). 추가 cond는 ActiveFilterChips에서 표시.
+// 컬럼당 multiple condition (AND) — 첫 cond는 기본 widget, 두 번째 cond는 옵션(반대 kind 추가).
+// num/date는 single cond로 충분(range/date-range가 양끝 표현). status/select/text/email은 두 번째 cond 의미 있음.
+//
+// column type별 "두 번째 cond" 기본 kind:
+//   - status/select: not_in (반대 — 의미: A & B이지만 C는 아님)
+//   - text/email: not_contains
+//   - num/date: 추가 ❌ (단일 cond로 충분)
+function defaultSecondCondForType(
+  colType: ColumnDef["type"],
+): FilterCondition | null {
+  if (colType === "status" || colType === "select") {
+    return { kind: "not_in", values: [] }
+  }
+  if (colType === "text" || colType === "email") {
+    return { kind: "not_contains", text: "" }
+  }
+  return null
+}
+
 function FilterColSub({
   option,
   conds,
@@ -271,8 +289,14 @@ function FilterColSub({
   const activeCount = activeCountOf(conds)
   const toggleColumnInValue = useFlowBase((s) => s.toggleColumnInValue)
   const setColumnCondition = useFlowBase((s) => s.setColumnCondition)
-  // UI에서는 첫 cond만 처리 — 첫 in/not_in 또는 첫 cond
+  const addColumnCondition = useFlowBase((s) => s.addColumnCondition)
+  const removeColumnCondition = useFlowBase((s) => s.removeColumnCondition)
+  // 첫 cond — 기본 widget이 편집
   const cond = conds?.[0]
+  // 두 번째 cond — 있으면 "Exclude" 섹션 추가 표시
+  const secondCond = conds?.[1]
+  const hasSecond = secondCond !== undefined
+  const supportsSecond = defaultSecondCondForType(option.col.type) !== null
 
   return (
     <DropdownMenuSub>
@@ -379,11 +403,133 @@ function FilterColSub({
           />
         )}
 
+        {/* "+ Add exclude" — 두 번째 cond 추가 진입점 (status/select/text/email만) */}
+        {supportsSecond && !hasSecond && activeCount > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault()
+                const def = defaultSecondCondForType(option.col.type)
+                if (def) addColumnCondition(option.col.name, def)
+              }}
+              className="gap-2 text-[12px] text-muted-foreground"
+              data-add-exclude={option.col.name}
+            >
+              <Plus className="size-3.5" strokeWidth={2} />
+              {option.col.type === "status" || option.col.type === "select"
+                ? "Add exclude values"
+                : "Add exclude text"}
+            </DropdownMenuItem>
+          </>
+        )}
+
+        {/* 두 번째 cond widget — Exclude 섹션 */}
+        {hasSecond && (
+          <>
+            <DropdownMenuSeparator />
+            <div className="flex items-center justify-between gap-2 px-2 pb-1 pt-1.5">
+              <span className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
+                Exclude
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  removeColumnCondition(option.col.name, 1)
+                }}
+                className="flex size-4 items-center justify-center rounded text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
+                title="Remove exclude condition"
+                data-remove-exclude={option.col.name}
+              >
+                <X className="size-2.5" strokeWidth={2.5} />
+              </button>
+            </div>
+            {option.values &&
+              (secondCond.kind === "not_in" || secondCond.kind === "in") && (
+                <div className="max-h-44 overflow-y-auto">
+                  {option.values.map((v) => {
+                    const checked = secondCond.values.includes(v.id)
+                    return (
+                      <DropdownMenuItem
+                        key={`exclude-${v.id}`}
+                        onSelect={(e) => {
+                          e.preventDefault()
+                          const cur = secondCond.values
+                          const next = checked
+                            ? cur.filter((x) => x !== v.id)
+                            : [...cur, v.id]
+                          setColumnCondition(
+                            option.col.name,
+                            { kind: "not_in", values: next },
+                            1,
+                          )
+                        }}
+                        className="gap-2"
+                        data-filter-exclude-value={v.id}
+                      >
+                        <span
+                          className={cn(
+                            "flex size-3.5 shrink-0 items-center justify-center rounded border",
+                            checked
+                              ? "border-rose-500 bg-rose-500 text-white"
+                              : "border-border",
+                          )}
+                        >
+                          {checked && (
+                            <Check className="size-2.5" strokeWidth={3} />
+                          )}
+                        </span>
+                        <span className="flex-1 truncate">{v.label}</span>
+                        <span className="text-[10.5px] tabular-nums text-muted-foreground">
+                          {v.count}
+                        </span>
+                      </DropdownMenuItem>
+                    )
+                  })}
+                </div>
+              )}
+            {(option.col.type === "text" || option.col.type === "email") &&
+              (secondCond.kind === "not_contains" ||
+                secondCond.kind === "contains") && (
+                <div className="px-2 pb-1.5 pt-1">
+                  <Input
+                    type="text"
+                    placeholder="Excludes…"
+                    value={
+                      secondCond.kind === "not_contains" ||
+                      secondCond.kind === "contains"
+                        ? secondCond.text
+                        : ""
+                    }
+                    onChange={(e) =>
+                      setColumnCondition(
+                        option.col.name,
+                        { kind: "not_contains", text: e.target.value },
+                        1,
+                      )
+                    }
+                    onClick={(e) => e.stopPropagation()}
+                    data-filter-exclude-text
+                    className="h-7 text-[12px]"
+                  />
+                </div>
+              )}
+          </>
+        )}
+
         {activeCount > 0 && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onSelect={() => setColumnCondition(option.col.name, null)}
+              onSelect={() => {
+                // 모든 cond 제거 — splice 후 shift되므로 index=0로 N번 호출
+                const total = conds?.length ?? 0
+                for (let i = 0; i < total; i++) {
+                  setColumnCondition(option.col.name, null, 0)
+                }
+              }}
               className="gap-2 text-muted-foreground"
             >
               <X className="size-3.5" />

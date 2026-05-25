@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useFlowBase } from "@/lib/flowbase-store"
+import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import type { WikiPage } from "@/types/flowbase"
 
 export function WikiPageContextMenu({
@@ -49,6 +49,7 @@ export function WikiPageContextMenu({
   const wikiPages = useFlowBase((s) => s.wikiPages)
   const updateWikiPage = useFlowBase((s) => s.updateWikiPage)
   const deleteWikiPage = useFlowBase((s) => s.deleteWikiPage)
+  const isViewer = useFlowBase(selectIsViewer)
 
   const [renameOpen, setRenameOpen] = useState(false)
   const [draftTitle, setDraftTitle] = useState(page.title)
@@ -83,12 +84,16 @@ export function WikiPageContextMenu({
           {children}
         </ContextMenuTrigger>
         <ContextMenuContent className="w-48">
-          <ContextMenuItem onSelect={openRename} className="gap-2">
+          <ContextMenuItem
+            onSelect={openRename}
+            disabled={isViewer}
+            className="gap-2"
+          >
             <Pencil className="size-3.5 text-muted-foreground" />
             Rename
           </ContextMenuItem>
           <ContextMenuSub>
-            <ContextMenuSubTrigger className="gap-2">
+            <ContextMenuSubTrigger className="gap-2" disabled={isViewer}>
               <FolderInput className="size-3.5 text-muted-foreground" />
               <span>Move to</span>
             </ContextMenuSubTrigger>
@@ -100,6 +105,7 @@ export function WikiPageContextMenu({
                 <ContextMenuItem
                   key={cat}
                   onSelect={() => updateWikiPage(page.id, { category: cat })}
+                  disabled={isViewer}
                   className="gap-2"
                   data-wiki-move-to={cat}
                 >
@@ -124,6 +130,7 @@ export function WikiPageContextMenu({
           <ContextMenuSeparator />
           <ContextMenuItem
             onSelect={() => setConfirmDelete(true)}
+            disabled={isViewer}
             className="gap-2 text-destructive focus:text-destructive"
           >
             <Trash2 className="size-3.5" />

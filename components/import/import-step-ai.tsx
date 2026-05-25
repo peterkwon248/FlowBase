@@ -28,13 +28,13 @@ export function ImportStepAi({
   return (
     <div className="flex flex-col gap-3.5">
       <div className="flex items-center gap-2.5">
-        <span className="text-[13px] font-medium">AI 컬럼 추천</span>
+        <span className="text-[13px] font-medium">Suggest AI columns</span>
         <span className="text-[11.5px] text-muted-foreground">
-          추가하면 초안으로 들어가고, 보드에서 행별로 확정합니다.
+          Added as drafts — confirm per row in the board.
         </span>
       </div>
 
-      {/* AI 요약 */}
+      {/* AI summary */}
       <div
         className={cn(
           "flex items-start gap-2 rounded-lg border border-border-subtle p-3",
@@ -44,26 +44,26 @@ export function ImportStepAi({
         <Sparkles className="mt-0.5 size-3.5 shrink-0 text-primary" />
         <div className="flex-1">
           <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-            AI 요약
+            AI summary
           </div>
           <div className="text-[13px] leading-relaxed">
             {analyzeError
-              ? "AI 분석에 실패했습니다 — 아래 컬럼을 직접 선택하세요."
-              : summary?.summary || "데이터를 분석하지 못했습니다."}
+              ? "AI analysis failed — pick columns manually below."
+              : summary?.summary || "Couldn't analyze the data."}
           </div>
         </div>
       </div>
 
       <AiColumnCard
         title="Theme"
-        detail="각 행을 상위 테마(Pricing · Onboarding · Features 등)로 분류. 자유 텍스트 컬럼에서 추론."
+        detail="Classify each row into a top-level theme (Pricing, Onboarding, Features, etc.). Inferred from free-text columns."
         recommended={summary?.suggestTheme === true}
         on={aiTheme}
         onToggle={onToggleTheme}
       />
       <AiColumnCard
         title="Sentiment"
-        detail="각 행을 Positive / Mixed / Negative로 점수화. 피드백·인용문이 있을 때 유용."
+        detail="Score each row as Positive / Mixed / Negative. Useful when rows have feedback or quotes."
         recommended={summary?.suggestSentiment === true}
         on={aiSentiment}
         onToggle={onToggleSentiment}
@@ -71,8 +71,8 @@ export function ImportStepAi({
 
       <div className="flex items-center gap-1.5 rounded-lg bg-muted p-3 text-[11.5px] text-muted-foreground">
         <Check className="size-3 shrink-0" />
-        자동 적용 ❌ — AI 컬럼은 <i className="px-0.5">pending</i>으로 추가됩니다.
-        보드에서 셀별로 확정하세요.
+        Not auto-applied — AI columns are added as <i className="px-0.5">pending</i>.
+        Confirm per cell in the board.
       </div>
     </div>
   )
@@ -117,7 +117,7 @@ function AiColumnCard({
           <span className="text-[13.5px] font-semibold">{title}</span>
           {recommended && (
             <span className="rounded bg-primary/15 px-1.5 py-px text-[10px] font-semibold text-primary">
-              추천
+              Recommended
             </span>
           )}
         </div>

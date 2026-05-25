@@ -15,6 +15,7 @@ import { EdgeCollapse } from "@/components/board/edge-collapse"
 import { ExpandTab } from "@/components/board/expand-tab"
 import { BulkEditMenu } from "@/components/board/bulk-edit-menu"
 import { DisplayMenu } from "@/components/board/display-menu"
+import { ExportMenu } from "@/components/board/export-menu"
 import { ActiveFilterChips, FilterMenu } from "@/components/board/filter-menu"
 import { FilterChips } from "@/components/board/filter-chips"
 import { ViewSwitcher } from "@/components/board/view-switcher"
@@ -73,8 +74,9 @@ export function TablesMode() {
         </div>
       )}
 
-      {/* 보드 영역 */}
-      <div className="relative flex min-w-0 flex-1 flex-col">
+      {/* 보드 영역 — min-h-0 LOCK (CLAUDE.md): flex-col 자식 컨테이너는 min-h-0 명시.
+          빠지면 child(table)의 intrinsic height가 부모 늘림 → overflow-auto 무력화 → virtual scrolling 무효. */}
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
         {/* 보드 타이틀 블록 */}
         <div className="min-w-0 shrink-0 px-6 pb-2 pt-5">
           <div className="mb-1.5 flex min-w-0 items-center gap-2.5">
@@ -124,6 +126,7 @@ export function TablesMode() {
               <Upload className="size-3" />
               Import
             </button>
+            <ExportMenu />
             <button
               type="button"
               onClick={() => undo()}

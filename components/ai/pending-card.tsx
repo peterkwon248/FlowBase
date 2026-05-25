@@ -23,6 +23,7 @@ interface PendingCardProps {
   column: AiColumn
   count: number
   busy: boolean
+  disabled?: boolean // viewer mode 등 — disable + cursor-not-allowed
   onApply: () => void
   onDismiss: () => void
 }
@@ -31,9 +32,12 @@ export function PendingCard({
   column,
   count,
   busy,
+  disabled,
   onApply,
   onDismiss,
 }: PendingCardProps) {
+  const blocked = busy || disabled
+  const viewerTitle = disabled ? "Viewers can't edit" : undefined
   return (
     <div className="mb-1.5 rounded-lg border border-primary/30 bg-card p-3">
       <div className="mb-1.5 flex items-center gap-1.5">
@@ -52,8 +56,9 @@ export function PendingCard({
         <button
           type="button"
           onClick={onApply}
-          disabled={busy}
-          className="inline-flex items-center gap-1 rounded-md border border-primary bg-primary px-2.5 py-1 text-[11.5px] font-medium text-primary-foreground disabled:opacity-60"
+          disabled={blocked}
+          title={viewerTitle}
+          className="inline-flex items-center gap-1 rounded-md border border-primary bg-primary px-2.5 py-1 text-[11.5px] font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? (
             <Loader2 className="size-3 animate-spin" />
@@ -65,8 +70,9 @@ export function PendingCard({
         <button
           type="button"
           onClick={onDismiss}
-          disabled={busy}
-          className="rounded-md border border-border px-2.5 py-1 text-[11.5px] text-muted-foreground hover:bg-foreground/[0.05] disabled:opacity-60"
+          disabled={blocked}
+          title={viewerTitle}
+          className="rounded-md border border-border px-2.5 py-1 text-[11.5px] text-muted-foreground hover:bg-foreground/[0.05] disabled:cursor-not-allowed disabled:opacity-60"
         >
           Dismiss
         </button>

@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
-import { useFlowBase } from "@/lib/flowbase-store"
+import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import type {
   TrashedBoard,
   TrashedRow,
@@ -62,6 +62,8 @@ export function TrashDialog({
   )
   const emptyTrash = useFlowBase((s) => s.emptyTrash)
   const cleanupExpiredTrash = useFlowBase((s) => s.cleanupExpiredTrash)
+  const isViewer = useFlowBase(selectIsViewer)
+  const viewerTitle = isViewer ? "Viewers can't edit" : undefined
 
   // 다이얼로그 열 때 만료된 항목 자동 정리
   useEffect(() => {
@@ -132,6 +134,7 @@ export function TrashDialog({
             items={trashedBoards}
             onRestore={restoreBoard}
             onDelete={permanentDeleteBoard}
+            disabled={isViewer}
           />
         )}
         {tab === "rows" && (
@@ -139,6 +142,7 @@ export function TrashDialog({
             items={trashedRows}
             onRestore={restoreRow}
             onDelete={permanentDeleteRow}
+            disabled={isViewer}
           />
         )}
         {tab === "wiki" && (
@@ -146,6 +150,7 @@ export function TrashDialog({
             items={trashedWikiPages}
             onRestore={restoreWikiPage}
             onDelete={permanentDeleteWikiPage}
+            disabled={isViewer}
           />
         )}
 
@@ -154,7 +159,9 @@ export function TrashDialog({
             <Button
               variant="ghost"
               onClick={() => emptyTrash()}
-              className="text-destructive hover:bg-destructive/15 hover:text-destructive"
+              disabled={isViewer}
+              title={viewerTitle}
+              className="text-destructive hover:bg-destructive/15 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
             >
               Empty trash
             </Button>
@@ -212,10 +219,12 @@ function BoardsList({
   items,
   onRestore,
   onDelete,
+  disabled,
 }: {
   items: TrashedBoard[]
   onRestore: (id: string) => void
   onDelete: (id: string) => void
+  disabled?: boolean
 }) {
   if (items.length === 0) return <EmptyState kind="boards" />
   return (
@@ -236,6 +245,7 @@ function BoardsList({
           <ActionButtons
             onRestore={() => onRestore(t.board.id)}
             onDelete={() => onDelete(t.board.id)}
+            disabled={disabled}
           />
         </div>
       ))}
@@ -247,10 +257,12 @@ function RowsList({
   items,
   onRestore,
   onDelete,
+  disabled,
 }: {
   items: TrashedRow[]
   onRestore: (id: string) => void
   onDelete: (id: string) => void
+  disabled?: boolean
 }) {
   // 같은 보드 행은 그룹화 표시 — hook은 early return 전 항상 호출
   const grouped = useMemo(() => {
@@ -296,6 +308,7 @@ function RowsList({
                 <ActionButtons
                   onRestore={() => onRestore(t.row.id)}
                   onDelete={() => onDelete(t.row.id)}
+                  disabled={disabled}
                 />
               </div>
             ))}
@@ -310,10 +323,12 @@ function WikiList({
   items,
   onRestore,
   onDelete,
+  disabled,
 }: {
   items: TrashedWikiPage[]
   onRestore: (id: string) => void
   onDelete: (id: string) => void
+  disabled?: boolean
 }) {
   // 카테고리별 그룹화 — RowsList(보드별)와 동형. hook은 early return 전 항상 호출.
   const grouped = useMemo(() => {
@@ -355,6 +370,7 @@ function WikiList({
                 <ActionButtons
                   onRestore={() => onRestore(t.page.id)}
                   onDelete={() => onDelete(t.page.id)}
+                  disabled={disabled}
                 />
               </div>
             ))}
@@ -376,25 +392,30 @@ function firstReadableField(row: Record<string, unknown>): string {
 function ActionButtons({
   onRestore,
   onDelete,
+  disabled,
 }: {
   onRestore: () => void
   onDelete: () => void
+  disabled?: boolean
 }) {
+  const viewerTitle = disabled ? "Viewers can't edit" : undefined
   return (
     <>
       <button
         type="button"
-        title="Restore"
+        title={viewerTitle ?? "Restore"}
         onClick={onRestore}
-        className="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+        disabled={disabled}
+        className="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
       >
         <RotateCcw className="size-3.5" strokeWidth={1.75} />
       </button>
       <button
         type="button"
-        title="Delete forever"
+        title={viewerTitle ?? "Delete forever"}
         onClick={onDelete}
-        className="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
+        disabled={disabled}
+        className="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Trash2 className="size-3.5" strokeWidth={1.75} />
       </button>

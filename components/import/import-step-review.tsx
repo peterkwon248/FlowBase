@@ -15,7 +15,9 @@ export interface WizardColumn {
   type: ColumnType
 }
 
-// 사용자가 Review에서 고를 수 있는 타입 (avatar/reaction/button/fk는 import 비대상)
+// 사용자가 Review에서 고를 수 있는 타입.
+// Im-3 후속: avatar 추가 — Notion/Airtable의 Person/Assigned to 컬럼을 자연 매핑.
+// reaction/button/fk는 여전히 비대상 (cell value가 복합 객체).
 const TYPE_OPTIONS: ColumnType[] = [
   "text",
   "num",
@@ -23,6 +25,7 @@ const TYPE_OPTIONS: ColumnType[] = [
   "email",
   "select",
   "status",
+  "avatar",
 ]
 
 interface ImportStepReviewProps {
@@ -51,9 +54,9 @@ export function ImportStepReview({
   return (
     <div className="flex flex-col gap-3.5">
       <div className="flex items-center gap-3">
-        <span className="text-[13px] font-medium">컬럼 검토</span>
+        <span className="text-[13px] font-medium">Review columns</span>
         <span className="text-[11.5px] text-muted-foreground">
-          타입은 자동 감지됩니다 — 클릭해서 변경하세요.
+          Type auto-detected — click to change.
         </span>
         <div className="flex-1" />
         <label className="inline-flex cursor-pointer items-center gap-1.5 text-[12.5px]">
@@ -62,7 +65,7 @@ export function ImportStepReview({
             checked={headerRow}
             onChange={onToggleHeader}
           />
-          첫 행이 헤더
+          First row is header
         </label>
       </div>
 
@@ -135,8 +138,8 @@ export function ImportStepReview({
       </div>
 
       <span className="text-[11.5px] tabular-nums text-muted-foreground">
-        {dataRows.length}행 · {columns.length}컬럼
-        {dataRows.length > 8 && ` · 미리보기는 8행`}
+        {dataRows.length} rows · {columns.length} columns
+        {dataRows.length > 8 && ` · previewing 8 rows`}
       </span>
     </div>
   )

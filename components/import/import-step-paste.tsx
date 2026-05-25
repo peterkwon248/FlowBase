@@ -6,12 +6,23 @@
 
 import { useRef } from "react"
 import { Check, Sparkles, Upload } from "lucide-react"
-import type { ParsedTable } from "@/lib/parsers"
+import { toast } from "sonner"
+import {
+  IMPORT_LIMITS,
+  checkFileSize,
+  formatBytes,
+} from "@/lib/import-limits"
+import {
+  IMPORT_SOURCE_LABELS,
+  type ImportSource,
+} from "@/lib/import-normalizers"
+import { stringifyDelimited, type ParsedTable } from "@/lib/parsers"
 
 interface ImportStepPasteProps {
   raw: string
   parsed: ParsedTable | null
   columnCount: number
+  source?: ImportSource
   onChange: (text: string) => void
   onUseSample: () => void
 }
@@ -20,15 +31,54 @@ export function ImportStepPaste({
   raw,
   parsed,
   columnCount,
+  source = "generic",
   onChange,
   onUseSample,
 }: ImportStepPasteProps) {
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const handleFile = (file: File | undefined) => {
+  const handleFile = async (file: File | undefined) => {
     if (!file) return
+    // 1) file size pre-check — hard block / warn confirm
+    const sizeCheck = checkFileSize(file)
+    if (!sizeCheck.ok) {
+      toast.error(sizeCheck.message)
+      return
+    }
+    if (sizeCheck.warn) {
+      const proceed = window.confirm(
+        `${sizeCheck.message}\n\nProceed anyway?`,
+      )
+      if (!proceed) return
+    }
+
+    // 2) xlsx (Excel) — binary. Web Worker로 parse → CSV로 변환 후 기존 flow에 합류.
+    // transferable buffer로 worker에 zero-copy 전달. UI freeze ❌.
+    const isXlsx =
+      /\.xlsx?$/i.test(file.name) ||
+      file.type.includes("spreadsheetml") ||
+      file.type.includes("ms-excel")
+    if (isXlsx) {
+      try {
+        const buf = await file.arrayBuffer()
+        const { parseXlsxAsync } = await import("@/lib/xlsx-loader")
+        const table = await parseXlsxAsync(buf)
+        if (table.headers.length === 0 && table.rows.length === 0) {
+          toast.warning("Empty Excel file — no rows found.")
+          onChange("")
+          return
+        }
+        onChange(stringifyDelimited(table, ","))
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "unknown error"
+        toast.error(`Failed to read Excel file — ${msg}`)
+      }
+      return
+    }
+    // 3) 텍스트(CSV/TSV/MD/TXT) — 기존 reader
     const reader = new FileReader()
     reader.onload = () => onChange(String(reader.result ?? ""))
+    reader.onerror = () => toast.error("Failed to read file.")
     reader.readAsText(file)
   }
 
@@ -37,15 +87,15 @@ export function ImportStepPaste({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <span className="text-[13px] font-medium">데이터 붙여넣기</span>
+        <span className="text-[13px] font-medium">Paste data</span>
         <span className="text-[11.5px] text-muted-foreground">
-          CSV · TSV · Markdown 표 — 포맷 자동 감지
+          CSV · TSV · Markdown · Excel — auto-detect format
         </span>
         <div className="flex-1" />
         <input
           ref={fileRef}
           type="file"
-          accept=".csv,.tsv,.txt"
+          accept=".csv,.tsv,.txt,.md,.markdown,.xlsx,.xls"
           className="hidden"
           onChange={(e) => handleFile(e.target.files?.[0])}
         />
@@ -55,7 +105,7 @@ export function ImportStepPaste({
           className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[11.5px] text-muted-foreground hover:bg-foreground/[0.05]"
         >
           <Upload className="size-3" />
-          파일 선택
+          Choose file
         </button>
         <button
           type="button"
@@ -63,7 +113,7 @@ export function ImportStepPaste({
           className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[11.5px] text-muted-foreground hover:bg-foreground/[0.05]"
         >
           <Sparkles className="size-3 text-primary" />
-          샘플 사용
+          Use sample
         </button>
       </div>
 
@@ -72,7 +122,7 @@ export function ImportStepPaste({
         value={raw}
         onChange={(e) => onChange(e.target.value)}
         placeholder={
-          "여기에 행을 붙여넣으세요 — Google Sheets · Excel · Notion · CSV 어디서든…\n\nname, company, date, quote\nLee Junho, Petal, 2026-05-18, 가격이 부담스러워요…"
+          "Paste rows here — from Google Sheets, Excel, Notion, CSV, anywhere…\n\nname, company, date, quote\nLee Junho, Petal, 2026-05-18, Pricing is a bit steep…"
         }
         className="h-60 w-full resize-y rounded-lg border border-border bg-card p-3 font-mono text-[12.5px] leading-relaxed outline-none focus:ring-1 focus:ring-ring"
       />
@@ -81,17 +131,32 @@ export function ImportStepPaste({
         <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/[0.06] px-3 py-2.5 text-[12.5px]">
           <Check className="size-3.5 shrink-0 text-primary" />
           <span className="font-medium">
-            {parsed?.format?.toUpperCase()} 감지 — {parsed?.rows.length}행 ·{" "}
-            {columnCount}컬럼
+            {parsed?.format?.toUpperCase()} detected — {parsed?.rows.length}{" "}
+            rows · {columnCount} columns
           </span>
+          {source !== "generic" && (
+            <span
+              data-import-source={source}
+              className="ml-auto rounded bg-primary/15 px-1.5 py-0.5 text-[10.5px] font-semibold text-primary"
+            >
+              {IMPORT_SOURCE_LABELS[source]}
+            </span>
+          )}
         </div>
       )}
       {!detected && raw.trim() !== "" && (
         <div className="rounded-md border border-border bg-muted px-3 py-2.5 text-[12.5px] text-muted-foreground">
-          데이터를 인식하지 못했습니다 — CSV · TSV · Markdown 표 형식인지
-          확인하세요.
+          Couldn't parse — verify CSV, TSV, or Markdown table format.
         </div>
       )}
+
+      <div className="text-[10.5px] leading-relaxed text-muted-foreground/80">
+        Limits: up to {formatBytes(IMPORT_LIMITS.FILE_HARD_BYTES)} per file ·{" "}
+        {IMPORT_LIMITS.ROW_HARD.toLocaleString()} rows ·{" "}
+        {IMPORT_LIMITS.CELL_HARD.toLocaleString()} cells. Above{" "}
+        {formatBytes(IMPORT_LIMITS.FILE_WARN_BYTES)} or{" "}
+        {IMPORT_LIMITS.ROW_WARN.toLocaleString()} rows may slow the page.
+      </div>
     </div>
   )
 }

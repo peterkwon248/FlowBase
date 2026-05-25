@@ -4,13 +4,17 @@
 
 import { describe, expect, it } from "vitest"
 import {
+  boardToTable,
   detectFormat,
   inferType,
   normalizeHeader,
   parseAny,
   parseDelimited,
   parseMarkdownTable,
+  stringifyDelimited,
+  stringifyMarkdownTable,
 } from "@/lib/parsers"
+import type { Board } from "@/types/flowbase"
 
 const CSV = `id,name,date,quote
 INT-101,Lee Junho,2026-05-18,"가격이 부담, 무료 플랜?"
@@ -89,5 +93,115 @@ describe("normalizeHeader", () => {
     expect(normalizeHeader("Customer Name", 0)).toBe("customer_name")
     expect(normalizeHeader("", 2)).toBe("col_3")
     expect(normalizeHeader("   ", 4)).toBe("col_5")
+  })
+})
+
+describe("stringifyDelimited", () => {
+  it("기본 CSV 출력", () => {
+    const out = stringifyDelimited(
+      { headers: ["id", "name"], rows: [["1", "Lee"], ["2", "Mira"]] },
+      ",",
+    )
+    expect(out).toBe("id,name\n1,Lee\n2,Mira")
+  })
+  it("delim/quote/newline 포함 셀은 따옴표로 감싸고 \" → \"\" 이스케이프", () => {
+    const out = stringifyDelimited(
+      {
+        headers: ["a", "b"],
+        rows: [["he said \"hi\"", "with, comma"], ["line\nbreak", "ok"]],
+      },
+      ",",
+    )
+    expect(out).toBe(
+      'a,b\n"he said ""hi""","with, comma"\n"line\nbreak",ok',
+    )
+  })
+  it("CSV round-trip — parse → stringify → parse 동치", () => {
+    const original = `id,name,quote\nINT-101,Lee,"가격이 부담, 무료 플랜?"\nINT-102,Mira,새 컬럼`
+    const parsed = parseDelimited(original, ",")
+    const [headers, ...rows] = parsed
+    const re = stringifyDelimited({ headers, rows }, ",")
+    expect(parseDelimited(re, ",")).toEqual(parsed)
+  })
+  it("TSV — \\t delim도 동작한다", () => {
+    const out = stringifyDelimited(
+      { headers: ["a", "b"], rows: [["1", "2"]] },
+      "\t",
+    )
+    expect(out).toBe("a\tb\n1\t2")
+  })
+})
+
+describe("stringifyMarkdownTable", () => {
+  it("기본 pipe table 출력 (separator 포함)", () => {
+    const out = stringifyMarkdownTable({
+      headers: ["id", "name"],
+      rows: [["1", "Lee"], ["2", "Mira"]],
+    })
+    expect(out).toBe(
+      "| id | name |\n| --- | --- |\n| 1 | Lee |\n| 2 | Mira |",
+    )
+  })
+  it("| escape · newline → space · 빈 셀은 공백 1개", () => {
+    const out = stringifyMarkdownTable({
+      headers: ["a", "b"],
+      rows: [["with|pipe", ""], ["line\nbreak", "x"]],
+    })
+    expect(out).toContain("with\\|pipe")
+    expect(out).toContain("line break")
+    expect(out).toContain("|   |") // 빈 셀
+  })
+  it("MD round-trip — stringify → parse 헤더+rows 보존", () => {
+    const orig = { headers: ["id", "name"], rows: [["1", "Lee"], ["2", "Mira"]] }
+    const md = stringifyMarkdownTable(orig)
+    const parsed = parseMarkdownTable(md)
+    expect(parsed?.[0]).toEqual(orig.headers)
+    expect(parsed?.slice(1)).toEqual(orig.rows)
+  })
+})
+
+describe("boardToTable", () => {
+  it("Board → SerializableTable — status 키 raw 그대로 (한국어 유지)", () => {
+    const b: Board = {
+      id: "b1",
+      label: "Test",
+      columns: [
+        { name: "id", label: "ID", type: "text" },
+        { name: "title", label: "Title", type: "text" },
+        { name: "status", label: "Status", type: "status" },
+      ],
+      rows: [
+        { id: "INT-101", title: "A", status: "미처리" },
+        { id: "INT-102", title: "B", status: "완료" },
+      ],
+      aiHistory: [],
+      createdAt: "2026-01-01",
+      updatedAt: "2026-01-01",
+    }
+    const t = boardToTable(b)
+    expect(t.headers).toEqual(["ID", "Title", "Status"])
+    expect(t.rows[0]).toEqual(["INT-101", "A", "미처리"])
+    expect(t.rows[1]).toEqual(["INT-102", "B", "완료"])
+  })
+  it("null/undefined 셀은 빈 문자열, object는 JSON.stringify", () => {
+    const b: Board = {
+      id: "b2",
+      label: "T",
+      columns: [
+        { name: "id", label: "ID", type: "text" },
+        { name: "votes", label: "Votes", type: "reaction" },
+        { name: "note", label: "Note", type: "text" },
+      ],
+      rows: [
+        { id: "1", votes: { positive: 3, mixed: 0, negative: 1 }, note: undefined },
+      ],
+      aiHistory: [],
+      createdAt: "2026-01-01",
+      updatedAt: "2026-01-01",
+    }
+    const t = boardToTable(b)
+    expect(t.rows[0][0]).toBe("1")
+    expect(t.rows[0][1]).toBe('{"positive":3,"mixed":0,"negative":1}')
+    expect(t.rows[0][2]).toBe("")
   })
 })

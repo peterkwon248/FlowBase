@@ -3,12 +3,18 @@
 // 설계: docs/02-design/features/flowbase-v2-phase1.design.md §6
 // Phase 3(Import 모달)에서 사용. 의존성 없는 순수 함수 — 테스트 용이.
 
-import type { ColumnType } from "@/types/flowbase"
+import type { Board, ColumnType } from "@/types/flowbase"
 
 export type ImportFormat = "csv" | "tsv" | "md"
 
 export interface ParsedTable {
   format: ImportFormat | null
+  rows: string[][]
+}
+
+// stringifyDelimited/stringifyMarkdownTable의 입력. headers 별도라 import wizard도 재사용 가능.
+export interface SerializableTable {
+  headers: string[]
   rows: string[][]
 }
 
@@ -109,4 +115,76 @@ export function normalizeHeader(s: string, idx: number): string {
     .replace(/^_|_$/g, "")
     .slice(0, 40)
   return normalized || fallback
+}
+
+// ─── Serializers (export 반대 방향) ───
+// CSV/TSV: RFC 4180 호환 — delim/quote/newline 포함 셀은 따옴표로 감싸고 " → "" 이스케이프.
+// MD: pipe table — | escape · newline → space · 빈 셀은 공백 1개 (구문 보존).
+
+function escapeDelimitedCell(cell: string, delim: string): string {
+  if (
+    cell.includes(delim) ||
+    cell.includes('"') ||
+    cell.includes("\n") ||
+    cell.includes("\r")
+  ) {
+    return `"${cell.replace(/"/g, '""')}"`
+  }
+  return cell
+}
+
+export function stringifyDelimited(
+  table: SerializableTable,
+  delim: string,
+): string {
+  const lines: string[] = []
+  lines.push(table.headers.map((h) => escapeDelimitedCell(h, delim)).join(delim))
+  for (const row of table.rows) {
+    lines.push(row.map((c) => escapeDelimitedCell(c, delim)).join(delim))
+  }
+  return lines.join("\n")
+}
+
+function escapeMarkdownCell(cell: string): string {
+  // | escape · newline → space · 양끝 trim. 빈 문자열은 공백 1개로 (셀 표시 유지).
+  const safe = cell.replace(/\|/g, "\\|").replace(/\r?\n/g, " ").trim()
+  return safe || " "
+}
+
+export function stringifyMarkdownTable(table: SerializableTable): string {
+  const headers = table.headers.map(escapeMarkdownCell)
+  if (headers.length === 0) return ""
+  const lines: string[] = []
+  lines.push(`| ${headers.join(" | ")} |`)
+  lines.push(`| ${headers.map(() => "---").join(" | ")} |`)
+  for (const row of table.rows) {
+    // 헤더 수에 맞게 padding (짧으면 빈 셀 채움 / 길면 truncate 안 함 — round-trip 정확도 우선)
+    const padded = [...row]
+    while (padded.length < headers.length) padded.push("")
+    lines.push(`| ${padded.map(escapeMarkdownCell).join(" | ")} |`)
+  }
+  return lines.join("\n")
+}
+
+// Board → SerializableTable — Export 시 columns/rows를 2D string 그리드로.
+// status/select 값은 raw 그대로 (import 시 round-trip 정확도 우선).
+// 예: status="미처리" → 셀 "미처리" (영어 라벨 "Todo" 변환 ❌)
+//     reaction object → JSON.stringify (간단 fallback)
+export function boardToTable(board: Board): SerializableTable {
+  const headers = board.columns.map((c) => c.label || c.name)
+  const rows = board.rows.map((row) =>
+    board.columns.map((col) => {
+      const v = row[col.name]
+      if (v == null) return ""
+      if (typeof v === "object") {
+        try {
+          return JSON.stringify(v)
+        } catch {
+          return ""
+        }
+      }
+      return String(v)
+    }),
+  )
+  return { headers, rows }
 }

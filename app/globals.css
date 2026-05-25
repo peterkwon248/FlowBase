@@ -180,13 +180,18 @@
   --ring: oklch(0.66 0.18 155);
 }
 
+/* amber는 yellow-orange — light/dark 모두 bg가 밝아 흰 텍스트 대비 부족 (WCAG AA fail).
+   primary-foreground를 어두운 텍스트로 override (light 모드 0.13 / dark 모드 0.20).
+   다른 accent는 기본 primary-foreground (light: white / dark: near-black). */
 :root[data-theme-accent="amber"] {
-  --primary: oklch(0.58 0.18 75);
-  --ring: oklch(0.58 0.18 75);
+  --primary: oklch(0.62 0.18 75);
+  --primary-foreground: oklch(0.13 0.01 250);
+  --ring: oklch(0.62 0.18 75);
 }
 .dark[data-theme-accent="amber"] {
-  --primary: oklch(0.68 0.18 75);
-  --ring: oklch(0.68 0.18 75);
+  --primary: oklch(0.72 0.18 75);
+  --primary-foreground: oklch(0.13 0.01 250);
+  --ring: oklch(0.72 0.18 75);
 }
 
 @theme inline {

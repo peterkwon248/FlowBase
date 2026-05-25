@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { TYPE_ICON } from "@/components/sheet/header-cell"
 import { toast } from "sonner"
-import { selectActiveBoard, useFlowBase } from "@/lib/flowbase-store"
+import { selectActiveBoard, selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { STATUS_LABELS, type ColumnDef, type TableRow } from "@/types/flowbase"
 
 function isEditableViaBulk(col: ColumnDef): boolean {
@@ -43,6 +43,7 @@ export function BulkEditMenu() {
   const board = useFlowBase(selectActiveBoard)
   const selectedRowIds = useFlowBase((s) => s.selectedRowIds)
   const updateRow = useFlowBase((s) => s.updateRow)
+  const isViewer = useFlowBase(selectIsViewer)
 
   const editableCols = useMemo(() => {
     if (!board) return []
@@ -71,7 +72,9 @@ export function BulkEditMenu() {
         <button
           type="button"
           data-action="bulk-edit"
-          className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.05]"
+          disabled={isViewer}
+          title={isViewer ? "Viewers can't bulk-edit" : undefined}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.05] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Pencil className="size-3" strokeWidth={1.75} />
           Set…

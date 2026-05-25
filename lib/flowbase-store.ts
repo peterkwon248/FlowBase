@@ -27,6 +27,8 @@ import type {
   PageRevision,
   RecentFilterSnapshot,
   RecentSortSnapshot,
+  Snapshot,
+  SnapshotState,
   SortDir,
   TableRow,
   TicketStatus,
@@ -54,7 +56,7 @@ import {
 import { undoStack } from "@/lib/undo-stack"
 
 const STORE_KEY = "flowbase-state-v4"
-const STORE_VERSION = 15 // v15: events 추가 (EventStore 인프라 · Phase A · aiHistory 백필)
+const STORE_VERSION = 16 // v16: snapshots 추가 (GitHub 식 명시 save point · 사용자 클릭 → deep state copy)
 
 // 초기 시드 멤버 — 데모용 4명. 사용자는 Owner. lastSeenAt mock.
 function createSeedMembers(): WorkspaceMember[] {
@@ -261,6 +263,17 @@ export interface FlowBaseActions {
 
   // Ask AI 진입 — 헤더 버튼/⌘J 단축키 양쪽에서 호출. AI 패널 보장 + composer focus.
   requestAskAi: () => void
+
+  // Snapshots — GitHub 식 명시 save point (Key Design #18).
+  // saveSnapshot: 현재 워크스페이스 deep copy + snapshots 배열 맨 앞에 push. 반환 = 새 id (실패 시 "").
+  saveSnapshot: (label: string, description?: string) => string
+  // restoreSnapshot: 현재 상태를 자동 새 snapshot으로 save 후 target 시점으로 복원. 반환 = 성공 여부.
+  //   - events는 복원 ❌ (timeline append-only) — snapshot_restored 이벤트만 push.
+  //   - 활성 보드가 복원된 boards에 없으면 첫 보드로 fallback.
+  //   - ephemeral(selectedRowIds/focusedCell/columnFilters)는 reset, undo 스택 clear.
+  restoreSnapshot: (id: string) => boolean
+  deleteSnapshot: (id: string) => void
+  renameSnapshot: (id: string, label: string, description?: string) => void
 }
 
 export type FlowBaseStore = FlowBaseState & FlowBaseActions
@@ -290,6 +303,7 @@ function createInitialState(): FlowBaseState {
     viewSettings: {},
     workspaceMemory: { byScope: {}, recentFilters: [], recentSorts: [] },
     events: [],
+    snapshots: [],
     panels: { activityBar: true, sidebar: true, aiPanel: true, detailBar: false },
     viewByBoardId: { [interviews.id]: "sheet", [tasks.id]: "sheet" },
     activityMode: "tables",
@@ -350,6 +364,25 @@ function publishChange(
       next: event.next,
     }),
   })
+}
+
+// ─── Snapshots helper ───
+// 현재 store 상태에서 SnapshotState slice 추출. Save/Restore에서 deep copy 대상.
+// events/undo/ephemeral 슬라이스는 제외 (snapshot 의미 — 사용자 데이터만).
+function snapshotStateFromStore(s: FlowBaseState): SnapshotState {
+  return {
+    boards: s.boards,
+    library: s.library,
+    wikiPages: s.wikiPages,
+    automations: s.automations,
+    suggestedAutomations: s.suggestedAutomations,
+    trashedBoards: s.trashedBoards,
+    trashedRows: s.trashedRows,
+    trashedWikiPages: s.trashedWikiPages,
+    settings: s.settings,
+    schemaPositions: s.schemaPositions,
+    viewSettings: s.viewSettings,
+  }
 }
 
 // ─── Workspace Memory — 자동 학습 cache ───
@@ -1188,6 +1221,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
 
         renameBoard: (boardId, label) => {
+          if (!ensureCanEdit(get(), "Rename board")) return
           set((s) => {
             const b = s.boards[boardId]
             if (!b || !label.trim()) return s
@@ -1393,6 +1427,7 @@ export const useFlowBase = create<FlowBaseStore>()(
           const s = get()
           const b = s.boards[s.activeBoardId]
           if (!b) return
+          if (!ensureCanEdit(s, "Reset charts")) return
           set({
             boards: {
               ...s.boards,
@@ -2044,6 +2079,130 @@ export const useFlowBase = create<FlowBaseStore>()(
           }
           set({ askAiFocusToken: Date.now() })
         },
+
+        // ─── Snapshots — GitHub 식 명시 save point ───
+        // LOCK: deep copy(option A) · cap ❌ · Restore = 자동 새 snapshot 생성.
+        saveSnapshot: (label, description) => {
+          if (!ensureCanEdit(get(), "Save snapshot")) return ""
+          const s = get()
+          const ts = Date.now()
+          const id = `snap-${ts.toString(36)}-${Math.random().toString(36).slice(2, 7)}`
+          const trimmedLabel = label.trim() || "Untitled snapshot"
+          const trimmedDesc = description?.trim() || undefined
+          const snapshot: Snapshot = {
+            id,
+            ts,
+            label: trimmedLabel,
+            description: trimmedDesc,
+            by: s.settings.currentUserId ?? "unknown",
+            state: snapshotStateFromStore(s),
+          }
+          set({
+            snapshots: [snapshot, ...s.snapshots],
+            events: appendEvent(s.events, {
+              id: makeEventId(ts),
+              ts,
+              kind: "snapshot_saved",
+              title: trimmedLabel,
+              detail: trimmedDesc,
+            }),
+          })
+          return id
+        },
+
+        restoreSnapshot: (id) => {
+          if (!ensureCanEdit(get(), "Restore snapshot")) return false
+          const s = get()
+          const target = s.snapshots.find((sn) => sn.id === id)
+          if (!target) {
+            toast.error("Snapshot not found")
+            return false
+          }
+          // 1) 현재 상태를 자동 새 snapshot으로 보존 (사용자가 되돌릴 수 있게)
+          const autoTs = Date.now()
+          const autoId = `snap-${autoTs.toString(36)}-${Math.random().toString(36).slice(2, 7)}`
+          const autoSnapshot: Snapshot = {
+            id: autoId,
+            ts: autoTs,
+            label: `Auto-saved before restore: ${target.label}`,
+            by: s.settings.currentUserId ?? "unknown",
+            state: snapshotStateFromStore(s),
+          }
+          // 2) target 시점으로 복원. 활성 보드 미존재 → 첫 보드 fallback.
+          const restoredBoards = target.state.boards
+          const boardIds = Object.keys(restoredBoards)
+          const newActiveBoardId = boardIds.includes(s.activeBoardId)
+            ? s.activeBoardId
+            : (boardIds[0] ?? s.activeBoardId)
+          // viewByBoardId는 복원된 보드들에 한해 유지 (없는 보드는 sheet default).
+          const nextViewByBoardId: Record<string, ViewMode> = {}
+          for (const bid of boardIds) {
+            nextViewByBoardId[bid] = s.viewByBoardId[bid] ?? "sheet"
+          }
+          // 3) snapshot_restored 이벤트 + autoSnapshot save 이벤트 두 개 push.
+          const restoreTs = autoTs + 1
+          const eventsAfterAuto = appendEvent(s.events, {
+            id: makeEventId(autoTs),
+            ts: autoTs,
+            kind: "snapshot_saved",
+            title: autoSnapshot.label,
+            detail: "Auto-saved before restore",
+          })
+          const eventsAfterRestore = appendEvent(eventsAfterAuto, {
+            id: makeEventId(restoreTs),
+            ts: restoreTs,
+            kind: "snapshot_restored",
+            title: target.label,
+            detail: `Restored snapshot from ${new Date(target.ts).toLocaleString()}`,
+          })
+          set({
+            snapshots: [autoSnapshot, ...s.snapshots],
+            boards: restoredBoards,
+            activeBoardId: newActiveBoardId,
+            viewByBoardId: nextViewByBoardId,
+            library: target.state.library,
+            wikiPages: target.state.wikiPages,
+            automations: target.state.automations,
+            suggestedAutomations: target.state.suggestedAutomations,
+            trashedBoards: target.state.trashedBoards,
+            trashedRows: target.state.trashedRows,
+            trashedWikiPages: target.state.trashedWikiPages,
+            settings: target.state.settings,
+            schemaPositions: target.state.schemaPositions,
+            viewSettings: target.state.viewSettings,
+            // ephemeral reset
+            selectedRowIds: [],
+            focusedCell: null,
+            columnFilters: {},
+            filter: [],
+            search: "",
+            events: eventsAfterRestore,
+          })
+          undoStack.clear()
+          return true
+        },
+
+        deleteSnapshot: (id) => {
+          if (!ensureCanEdit(get(), "Delete snapshot")) return
+          set((s) => ({
+            snapshots: s.snapshots.filter((sn) => sn.id !== id),
+          }))
+        },
+
+        renameSnapshot: (id, label, description) => {
+          if (!ensureCanEdit(get(), "Rename snapshot")) return
+          set((s) => ({
+            snapshots: s.snapshots.map((sn) =>
+              sn.id === id
+                ? {
+                    ...sn,
+                    label: label.trim() || sn.label,
+                    description: description?.trim() || undefined,
+                  }
+                : sn,
+            ),
+          }))
+        },
       }
     },
     {
@@ -2062,6 +2221,7 @@ export const useFlowBase = create<FlowBaseStore>()(
       //   v12 → v13: settings.currentUserId (Members role enforcement 기준)
       //   v13 → v14: workspaceMemory (자동 학습 cache · Library와 분리)
       //   v14 → v15: events (EventStore 인프라 · 기존 aiHistory 백필)
+      //   v15 → v16: snapshots (GitHub 식 명시 save point · 기본 빈 배열)
       migrate: (persistedState, version) => {
         const s = (persistedState ?? {}) as Partial<FlowBaseState>
         if (version < 5) {
@@ -2161,6 +2321,9 @@ export const useFlowBase = create<FlowBaseStore>()(
           const filtered = events.filter((e) => e.ts > cutoff).slice(-1000)
           s.events = (s.events ?? []).concat(filtered)
         }
+        if (version < 16) {
+          s.snapshots = s.snapshots ?? []
+        }
         return s as FlowBaseState
       },
       partialize: (s) => ({
@@ -2179,6 +2342,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         viewSettings: s.viewSettings,
         workspaceMemory: s.workspaceMemory,
         events: s.events,
+        snapshots: s.snapshots,
         panels: s.panels,
         viewByBoardId: s.viewByBoardId,
         activityMode: s.activityMode,
@@ -2212,10 +2376,11 @@ export function selectActiveBoard(state: FlowBaseState): Board | undefined {
 
 // 현재 로그인 사용자가 viewer면 true — UI button/menu disable에 사용.
 // roleCanEdit(role): owner/admin/member ✅, viewer ❌. primitive boolean 반환이라 zustand 직접 구독 안전.
+// settings/members가 hydrate 전 또는 손상된 state면 false (안전한 default — 보드 보임).
 export function selectIsViewer(state: FlowBaseState): boolean {
-  const cur = state.settings.members.find(
-    (m) => m.id === state.settings.currentUserId,
-  )
+  const members = state.settings?.members
+  if (!members || !Array.isArray(members)) return false
+  const cur = members.find((m) => m.id === state.settings.currentUserId)
   return !!cur && !roleCanEdit(cur.role)
 }
 

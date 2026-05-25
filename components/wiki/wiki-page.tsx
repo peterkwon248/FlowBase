@@ -10,7 +10,7 @@ import { AlertTriangle, Check, Eye, History, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MarkdownBody } from "@/components/wiki/markdown-body"
 import { WikiHistoryDialog } from "@/components/wiki/wiki-history-dialog"
-import { useFlowBase } from "@/lib/flowbase-store"
+import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { WikiPage } from "@/types/flowbase"
 
@@ -31,6 +31,8 @@ function isoPlusDays(days: number): string {
 
 export function WikiPageView({ page }: { page: WikiPage }) {
   const updateWikiPage = useFlowBase((s) => s.updateWikiPage)
+  const isViewer = useFlowBase(selectIsViewer)
+  const viewerTitle = isViewer ? "Viewers can't edit" : undefined
 
   const today = todayIso()
   const isExpired = !!page.expiresAt && page.expiresAt < today
@@ -95,7 +97,9 @@ export function WikiPageView({ page }: { page: WikiPage }) {
             <button
               type="button"
               onClick={reVerify}
-              className="rounded-md bg-destructive px-2.5 py-1 text-[11.5px] font-semibold text-destructive-foreground transition-opacity hover:opacity-90"
+              disabled={isViewer}
+              title={viewerTitle}
+              className="rounded-md bg-destructive px-2.5 py-1 text-[11.5px] font-semibold text-destructive-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Re-verify
             </button>
@@ -129,6 +133,8 @@ export function WikiPageView({ page }: { page: WikiPage }) {
                 variant="ghost"
                 size="sm"
                 onClick={() => setEditMode(true)}
+                disabled={isViewer}
+                title={viewerTitle}
                 className="h-8 gap-1.5 px-2.5 text-[12px]"
                 data-wiki-edit-toggle={page.id}
               >

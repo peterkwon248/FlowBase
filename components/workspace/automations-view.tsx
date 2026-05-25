@@ -27,7 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useFlowBase } from "@/lib/flowbase-store"
+import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type {
   AutomationRule,
@@ -155,6 +155,8 @@ function RuleCard({ rule }: { rule: AutomationRule }) {
   )
   const testRunAutomation = useFlowBase((s) => s.testRunAutomation)
   const deleteAutomation = useFlowBase((s) => s.deleteAutomation)
+  const isViewer = useFlowBase(selectIsViewer)
+  const viewerTitle = isViewer ? "Viewers can't edit" : undefined
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   return (
@@ -177,13 +179,16 @@ function RuleCard({ rule }: { rule: AutomationRule }) {
           <button
             type="button"
             onClick={() => toggleAutomationStatus(rule.id)}
+            disabled={isViewer}
             title={
-              rule.status === "active"
-                ? "Pause this automation"
-                : "Activate this automation"
+              isViewer
+                ? viewerTitle
+                : rule.status === "active"
+                  ? "Pause this automation"
+                  : "Activate this automation"
             }
             className={cn(
-              "rounded px-1.5 py-0.5 text-[10.5px] font-semibold transition-opacity hover:opacity-80",
+              "rounded px-1.5 py-0.5 text-[10.5px] font-semibold transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50",
               style.bg,
               style.fg,
             )}
@@ -204,6 +209,7 @@ function RuleCard({ rule }: { rule: AutomationRule }) {
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem
                 onSelect={() => testRunAutomation(rule.id)}
+                disabled={isViewer}
                 className="gap-2"
               >
                 <PlayCircle className="size-3.5 text-muted-foreground" />
@@ -211,6 +217,7 @@ function RuleCard({ rule }: { rule: AutomationRule }) {
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => setConfirmDelete(true)}
+                disabled={isViewer}
                 className="gap-2 text-destructive focus:text-destructive"
               >
                 <Trash2 className="size-3.5" />
@@ -320,6 +327,8 @@ function SuggestionCard({ suggestion }: { suggestion: SuggestedAutomation }) {
   const confidencePct = Math.round(suggestion.confidence * 100)
   const acceptSuggestion = useFlowBase((s) => s.acceptSuggestion)
   const dismissSuggestion = useFlowBase((s) => s.dismissSuggestion)
+  const isViewer = useFlowBase(selectIsViewer)
+  const viewerTitle = isViewer ? "Viewers can't edit" : undefined
 
   return (
     <div
@@ -345,6 +354,8 @@ function SuggestionCard({ suggestion }: { suggestion: SuggestedAutomation }) {
         <Button
           size="sm"
           onClick={() => acceptSuggestion(suggestion.id)}
+          disabled={isViewer}
+          title={viewerTitle}
           className="h-7 px-2.5 text-[11.5px]"
         >
           Accept
@@ -353,6 +364,8 @@ function SuggestionCard({ suggestion }: { suggestion: SuggestedAutomation }) {
           variant="ghost"
           size="sm"
           onClick={() => dismissSuggestion(suggestion.id)}
+          disabled={isViewer}
+          title={viewerTitle}
           className="h-7 px-2.5 text-[11.5px] text-muted-foreground"
         >
           Dismiss

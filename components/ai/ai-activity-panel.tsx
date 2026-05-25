@@ -17,7 +17,7 @@ import {
   askAI,
   inferBatch,
 } from "@/lib/flowbase-ai"
-import { selectActiveBoard, useFlowBase } from "@/lib/flowbase-store"
+import { selectActiveBoard, selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { AIHistoryEntry } from "@/types/flowbase"
 import { AiComposer } from "./ai-composer"
@@ -42,6 +42,7 @@ export function AiActivityPanel() {
   const acceptAllAi = useFlowBase((s) => s.acceptAllAi)
   const dismissAllAi = useFlowBase((s) => s.dismissAllAi)
   const pushAi = useFlowBase((s) => s.pushAi)
+  const isViewer = useFlowBase(selectIsViewer)
 
   // 채팅 thread는 패널 로컬 state — persist ❌ (design D3)
   const [chat, setChat] = useState<ChatMessage[]>([])
@@ -88,7 +89,7 @@ export function AiActivityPanel() {
     if (pending.length === 0 || applying) return
 
     setApplying(column)
-    const toastId = toast.loading(`${pending.length}개 행 분류 중…`)
+    const toastId = toast.loading(`Classifying ${pending.length} rows…`)
     try {
       const inputRows: InferBatchRow[] = pending.map((r) => ({
         id: r.id,
@@ -99,10 +100,10 @@ export function AiActivityPanel() {
         inputRows,
         SOURCE_FIELD,
         (done, total) =>
-          toast.loading(`분류 중 ${done}/${total}…`, { id: toastId }),
+          toast.loading(`Classifying ${done}/${total}…`, { id: toastId }),
       )
       if (results.length === 0) {
-        toast.error("AI 응답에 결과가 없습니다 — 다시 시도하세요.", {
+        toast.error("No results from AI — try again.", {
           id: toastId,
         })
         return
@@ -110,12 +111,12 @@ export function AiActivityPanel() {
       acceptAllAi(column, results)
       pushAi({
         kind: "infer",
-        title: `${COLUMN_LABEL[column]} ${results.length}개 행 분류·적용`,
-        detail: "Claude가 분류 → 확정",
+        title: `Classified & applied ${results.length} rows of ${COLUMN_LABEL[column]}`,
+        detail: "Claude classified → confirmed",
         status: "applied",
         rowIds: results.map((r) => r.id),
       })
-      toast.success(`${results.length}개 행 적용 완료 · ⌘Z로 되돌리기`, {
+      toast.success(`Applied ${results.length} rows · ⌘Z to undo`, {
         id: toastId,
       })
     } catch (err) {
@@ -124,8 +125,8 @@ export function AiActivityPanel() {
           ? err.message
           : err instanceof Error
             ? err.message
-            : "다시 시도하세요"
-      toast.error(`AI 분류 실패 — ${msg}`, { id: toastId })
+            : "Try again"
+      toast.error(`AI classification failed — ${msg}`, { id: toastId })
     } finally {
       setApplying(null)
     }
@@ -138,11 +139,11 @@ export function AiActivityPanel() {
     dismissAllAi(column)
     pushAi({
       kind: "infer",
-      title: `${COLUMN_LABEL[column]} ${pending.length}개 보류 해제`,
+      title: `Dismissed ${pending.length} pending ${COLUMN_LABEL[column]} rows`,
       status: "dismissed",
       rowIds: pending.map((r) => r.id),
     })
-    toast.success("보류 해제됨 · ⌘Z로 되돌리기")
+    toast.success("Dismissed · ⌘Z to undo")
   }
 
   const handleAsk = async (text: string) => {
@@ -167,9 +168,9 @@ export function AiActivityPanel() {
           ? err.message
           : err instanceof Error
             ? err.message
-            : "실패"
-      setChat((c) => [...c, { role: "ai", content: `(오류) ${msg}` }])
-      toast.error(`AI 응답 실패 — ${msg}`)
+            : "Failed"
+      setChat((c) => [...c, { role: "ai", content: `(error) ${msg}` }])
+      toast.error(`AI request failed — ${msg}`)
     } finally {
       setComposerBusy(false)
     }
@@ -200,6 +201,7 @@ export function AiActivityPanel() {
                 column="theme"
                 count={pendingTheme.length}
                 busy={applying === "theme"}
+                disabled={isViewer}
                 onApply={() => handleApply("theme")}
                 onDismiss={() => handleDismiss("theme")}
               />
@@ -209,6 +211,7 @@ export function AiActivityPanel() {
                 column="sentiment"
                 count={pendingSentiment.length}
                 busy={applying === "sentiment"}
+                disabled={isViewer}
                 onApply={() => handleApply("sentiment")}
                 onDismiss={() => handleDismiss("sentiment")}
               />

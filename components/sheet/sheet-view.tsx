@@ -7,7 +7,8 @@
 
 "use client"
 
-import { Fragment, useMemo, useRef, useState } from "react"
+import { Fragment, useDeferredValue, useMemo, useRef, useState } from "react"
+import { useVirtualizer } from "@tanstack/react-virtual"
 import {
   selectActiveBoard,
   selectVisibleRows,
@@ -39,10 +40,19 @@ export function SheetView() {
   const sheetGroupBy = useFlowBase(
     (s) => s.viewSettings[s.activeBoardId]?.sheet?.groupBy,
   )
+
+  // Perf: useDeferredValue로 search/filter/sort 적용 — typing 즉시 응답 + 큰 board 재계산은 background.
+  // 1000+행 board에서 reconciliation freeze 완화. React가 우선순위 자동 분리.
+  // search input 자체는 store에 즉시 commit (board-header) → 이 컴포넌트만 deferred 렌더.
+  const deferredSearch = useDeferredValue(search)
+  const deferredColumnFilters = useDeferredValue(columnFilters)
+  const deferredSort = useDeferredValue(sort)
+  const deferredSheetSorts = useDeferredValue(sheetSorts)
+
   const rows = useMemo(
     () => selectVisibleRows(useFlowBase.getState()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [board, search, filter, sort, columnFilters, sheetSorts],
+    [board, deferredSearch, filter, deferredSort, deferredColumnFilters, deferredSheetSorts],
   )
 
   const selectedRowIds = useFlowBase((s) => s.selectedRowIds)
@@ -57,6 +67,12 @@ export function SheetView() {
 
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  // virtualizer는 ref가 null이면 measure 못 함 — useState로 trigger re-render after mount.
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null)
+  const setContainerRef = (el: HTMLDivElement | null) => {
+    containerRef.current = el
+    setScrollEl(el)
+  }
 
   // Display 옵션 — hiddenColumns 적용. id 컬럼은 항상 표시.
   // 셀렉터는 raw value 반환 (new array 매번 ❌). 컴포넌트에서 default 처리.
@@ -76,6 +92,19 @@ export function SheetView() {
 
   const widthOf = (c: ColumnDef) => columnWidths?.[c.name] ?? c.width ?? 140
   const tableRef = useRef<HTMLTableElement>(null)
+
+  // Virtual scrolling — 100행 이상 + groupBy 없을 때만 활성.
+  // groupBy 모드는 group header가 row 사이 끼어서 flat virtualization 어려움 → 기존 렌더 유지.
+  // h-12 = 48px (rowHeight). overscan 12 → 위아래 추가 12행 미리 렌더(부드러운 스크롤).
+  const ROW_HEIGHT_PX = 48
+  const VIRTUAL_THRESHOLD = 100
+  const useVirtual = !sheetGroupBy && rows.length >= VIRTUAL_THRESHOLD
+  const virtualizer = useVirtualizer({
+    count: useVirtual ? rows.length : 0,
+    getScrollElement: () => scrollEl,
+    estimateSize: () => ROW_HEIGHT_PX,
+    overscan: 12,
+  })
 
   const stopEdit = () => {
     setEditingCell(null)
@@ -109,7 +138,7 @@ export function SheetView() {
   if (!board) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-        활성 보드가 없습니다.
+        No active board.
       </div>
     )
   }
@@ -135,8 +164,11 @@ export function SheetView() {
 
   return (
     <div
-      ref={containerRef}
+      ref={setContainerRef}
       tabIndex={0}
+      data-sheet-virtual={String(useVirtual)}
+      data-sheet-rows={rows.length}
+      data-sheet-group={sheetGroupBy ?? ""}
       className="min-h-0 min-w-0 flex-1 overflow-auto bg-background outline-none"
     >
       <table
@@ -163,7 +195,7 @@ export function SheetView() {
                 onChange={(e) =>
                   setSelected(e.target.checked ? rows.map((r) => r.id) : [])
                 }
-                aria-label="전체 선택"
+                aria-label="Select all"
               />
             </th>
             <th className="sticky top-0 z-10 border-b border-border bg-surface px-2.5 py-2 text-right">
@@ -196,6 +228,7 @@ export function SheetView() {
         <tbody>
           {(() => {
             // groupBy 있을 때만 grouped render. row index는 전체에서 일관(1, 2, ...).
+            // virtual 활성 시 동일 renderRow를 virtualItems 인덱스로 호출.
             const renderRow = (row: TableRow, idx: number) => {
               const isSelected = selectedRowIds.includes(row.id)
               return (
@@ -215,7 +248,7 @@ export function SheetView() {
                               : [...selectedRowIds, row.id],
                           )
                         }
-                        aria-label={`${row.id} 선택`}
+                        aria-label={`Select ${row.id}`}
                       />
                     </td>
                     <td className="border-b border-border-subtle px-2.5 py-2 text-right font-mono text-[11px] text-muted-foreground">
@@ -273,6 +306,7 @@ export function SheetView() {
 
             if (sheetGroupBy) {
               // groupBy 적용 — rows 이미 sort된 상태 유지. 같은 값끼리 묶음.
+              // virtual 비활성 (group header가 row 사이 끼어서 flat virtualization 어려움).
               const groups = new Map<string, { rows: TableRow[]; start: number }>()
               rows.forEach((r, idx) => {
                 const raw = r[sheetGroupBy]
@@ -310,6 +344,34 @@ export function SheetView() {
               })
             }
 
+            // Virtual scrolling — 100+ 행에서만 활성. tbody 위/아래 spacer tr로 scroll position 유지.
+            if (useVirtual) {
+              const virtualItems = virtualizer.getVirtualItems()
+              const totalSize = virtualizer.getTotalSize()
+              const startPad = virtualItems[0]?.start ?? 0
+              const endPad =
+                totalSize -
+                (virtualItems[virtualItems.length - 1]?.end ?? 0)
+              const colSpan = columns.length + 3
+              return (
+                <Fragment>
+                  {startPad > 0 && (
+                    <tr aria-hidden style={{ height: `${startPad}px` }}>
+                      <td colSpan={colSpan} className="p-0" />
+                    </tr>
+                  )}
+                  {virtualItems.map((vRow) =>
+                    renderRow(rows[vRow.index], vRow.index),
+                  )}
+                  {endPad > 0 && (
+                    <tr aria-hidden style={{ height: `${endPad}px` }}>
+                      <td colSpan={colSpan} className="p-0" />
+                    </tr>
+                  )}
+                </Fragment>
+              )
+            }
+
             return rows.map((row, idx) => renderRow(row, idx))
           })()}
 
@@ -322,8 +384,8 @@ export function SheetView() {
                 className="px-4 py-10 text-center text-[12.5px] text-muted-foreground"
               >
                 {search || filter.length > 0
-                  ? "조건에 맞는 행이 없습니다."
-                  : "아직 행이 없습니다."}
+                  ? "No rows match the filter."
+                  : "No rows yet."}
               </td>
             </tr>
           )}

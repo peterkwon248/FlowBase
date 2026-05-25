@@ -41,7 +41,7 @@ export type AiColumn = "theme" | "sentiment"
 // throttle 위반 — 호출부가 toast로 안내
 export class ThrottleError extends Error {
   constructor() {
-    super("잠시 후 다시 시도하세요 (5초 제한).")
+    super("Try again in a moment (5s rate limit).")
     this.name = "ThrottleError"
   }
 }

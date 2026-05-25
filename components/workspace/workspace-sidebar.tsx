@@ -7,6 +7,7 @@
 "use client"
 
 import {
+  Camera,
   History as HistoryIcon,
   Layers,
   Network,
@@ -42,6 +43,12 @@ const ITEMS: Item[] = [
     label: "History",
     desc: "All activity · 90 days",
     Icon: HistoryIcon,
+  },
+  {
+    id: "snapshots",
+    label: "Snapshots",
+    desc: "Manual save points · restore anytime",
+    Icon: Camera,
   },
 ]
 

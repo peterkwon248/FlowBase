@@ -15,10 +15,12 @@ import { useMemo, useState } from "react"
 import {
   ArrowRight,
   Bot,
+  Camera,
   Filter as FilterIcon,
   History as HistoryIcon,
   MessageSquare,
   Plus,
+  RotateCcw,
   Sparkles,
   type LucideIcon,
 } from "lucide-react"
@@ -40,6 +42,8 @@ const KIND_LABELS: Record<EventKind, string> = {
   row_updated: "Row updated",
   ai_infer: "AI inference",
   ai_ask: "Asked AI",
+  snapshot_saved: "Snapshot saved",
+  snapshot_restored: "Snapshot restored",
 }
 
 const KIND_ICONS: Record<EventKind, LucideIcon> = {
@@ -47,6 +51,8 @@ const KIND_ICONS: Record<EventKind, LucideIcon> = {
   row_updated: ArrowRight,
   ai_infer: Sparkles,
   ai_ask: MessageSquare,
+  snapshot_saved: Camera,
+  snapshot_restored: RotateCcw,
 }
 
 const KIND_HUE: Record<EventKind, string> = {
@@ -54,6 +60,8 @@ const KIND_HUE: Record<EventKind, string> = {
   row_updated: "text-blue-600 dark:text-blue-400",
   ai_infer: "text-primary",
   ai_ask: "text-violet-600 dark:text-violet-400",
+  snapshot_saved: "text-chart-4",
+  snapshot_restored: "text-chart-4",
 }
 
 type KindFilter = EventKind | "all"

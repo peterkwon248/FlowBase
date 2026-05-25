@@ -7,7 +7,7 @@
 import { useMemo, useState } from "react"
 import { BookText, ChevronDown, FileText, Plus, Search, X } from "lucide-react"
 import { WikiPageContextMenu } from "@/components/wiki/wiki-page-context-menu"
-import { useFlowBase } from "@/lib/flowbase-store"
+import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { WikiPage } from "@/types/flowbase"
 
@@ -37,6 +37,7 @@ export function WikiSidebar() {
   const selectedId = useFlowBase((s) => s.wikiSelectedId)
   const setWikiPage = useFlowBase((s) => s.setWikiPage)
   const addWikiPage = useFlowBase((s) => s.addWikiPage)
+  const isViewer = useFlowBase(selectIsViewer)
 
   const [query, setQuery] = useState("")
   const filtered = useMemo(() => filterPages(pages, query), [pages, query])
@@ -58,10 +59,11 @@ export function WikiSidebar() {
         <span className="flex-1 text-[13px] font-semibold">Wiki</span>
         <button
           type="button"
-          title="New page"
+          title={isViewer ? "Viewers can't create pages" : "New page"}
           onClick={() => addWikiPage()}
+          disabled={isViewer}
           data-wiki-new-page
-          className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+          className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus className="size-3" strokeWidth={2} />
         </button>

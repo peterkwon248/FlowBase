@@ -11,7 +11,7 @@ import { useCallback, useMemo, useRef, useState } from "react"
 import { KeyRound, Minus, Plus, RotateCcw, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { TYPE_ICON } from "@/components/sheet/header-cell"
-import { useFlowBase } from "@/lib/flowbase-store"
+import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { Board } from "@/types/flowbase"
 import { NewTableModal } from "./schema-new-table-modal"
@@ -151,6 +151,8 @@ export function SchemaERDiagram() {
   const schemaPositions = useFlowBase((s) => s.schemaPositions)
   const setSchemaPosition = useFlowBase((s) => s.setSchemaPosition)
   const resetSchemaPositions = useFlowBase((s) => s.resetSchemaPositions)
+  const isViewer = useFlowBase(selectIsViewer)
+  const viewerTitle = isViewer ? "Viewers can't edit schema" : undefined
 
   const layout = useMemo(
     () => buildLayout(boardList, schemaPositions),
@@ -195,6 +197,8 @@ export function SchemaERDiagram() {
 
   const handleCardHeaderMouseDown = useCallback(
     (boardId: string, e: React.MouseEvent) => {
+      // viewer는 schema 카드 drag 불가 — silent skip (store guard도 있지만 UX로 미리 차단)
+      if (isViewer) return
       const cur = layout.find((r) => r.id === boardId)
       if (!cur) return
       dragRef.current = {
@@ -207,7 +211,7 @@ export function SchemaERDiagram() {
       e.preventDefault()
       e.stopPropagation()
     },
-    [layout],
+    [layout, isViewer],
   )
 
   const handleMouseMove = useCallback(
@@ -401,11 +405,16 @@ export function SchemaERDiagram() {
             </ZoomBtn>
             <span className="mx-1 h-4 w-px bg-border" />
             <ZoomBtn
-              title="Reset view + positions"
+              title={
+                isViewer
+                  ? "Viewers can reset zoom only (positions stay)"
+                  : "Reset view + positions"
+              }
               onClick={() => {
                 setZoom(1)
                 setPan({ x: 0, y: 0 })
-                resetSchemaPositions()
+                // viewer는 schema position 변경 ❌ — zoom/pan만 reset.
+                if (!isViewer) resetSchemaPositions()
               }}
             >
               <RotateCcw className="size-3" strokeWidth={2} />
@@ -414,6 +423,8 @@ export function SchemaERDiagram() {
           <Button
             size="sm"
             onClick={() => setNewTableOpen(true)}
+            disabled={isViewer}
+            title={viewerTitle}
             className="h-8 gap-1.5 px-2.5 text-[12px]"
             data-action="schema-new-table"
           >

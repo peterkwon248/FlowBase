@@ -42,7 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useFlowBase } from "@/lib/flowbase-store"
+import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import {
   MEMBER_ROLE_LABELS,
@@ -211,6 +211,9 @@ function MembersTab() {
   const removeMember = useFlowBase((s) => s.removeMember)
   const addMember = useFlowBase((s) => s.addMember)
   const updateSettings = useFlowBase((s) => s.updateSettings)
+  // viewer는 멤버 관리 불가. 단 "Switch to" (currentUserId 변경)는 데모 패턴이라 가드 우회.
+  const isViewer = useFlowBase(selectIsViewer)
+  const viewerTitle = isViewer ? "Viewers can't manage members" : undefined
 
   const [inviteOpen, setInviteOpen] = useState(false)
   const [draftName, setDraftName] = useState("")
@@ -241,6 +244,8 @@ function MembersTab() {
           size="sm"
           variant="ghost"
           onClick={() => setInviteOpen(true)}
+          disabled={isViewer}
+          title={viewerTitle}
           className="gap-1.5"
           data-invite-trigger
         >
@@ -255,6 +260,7 @@ function MembersTab() {
             key={m.id}
             member={m}
             isCurrent={m.id === currentUserId}
+            isViewer={isViewer}
             onRoleChange={(role) => updateMemberRole(m.id, role)}
             onRemove={() => removeMember(m.id)}
             onSwitchTo={() => {
@@ -337,18 +343,21 @@ function MembersTab() {
 function MemberRow({
   member,
   isCurrent,
+  isViewer,
   onRoleChange,
   onRemove,
   onSwitchTo,
 }: {
   member: WorkspaceMember
   isCurrent: boolean
+  isViewer?: boolean
   onRoleChange: (role: MemberRole) => void
   onRemove: () => void
   onSwitchTo: () => void
 }) {
   const isOwner = member.role === "owner"
   const lastSeen = relativeLastSeen(member.lastSeenAt)
+  const viewerTitle = isViewer ? "Viewers can't manage members" : undefined
 
   return (
     <div
@@ -397,8 +406,13 @@ function MemberRow({
           <Select
             value={member.role}
             onValueChange={(v) => onRoleChange(v as MemberRole)}
+            disabled={isViewer}
           >
-            <SelectTrigger className="h-7 w-[100px] text-[11.5px]" data-member-role>
+            <SelectTrigger
+              className="h-7 w-[100px] text-[11.5px] disabled:cursor-not-allowed disabled:opacity-50"
+              data-member-role
+              title={viewerTitle}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -409,10 +423,11 @@ function MemberRow({
           </Select>
           <button
             type="button"
-            title="Remove member"
+            title={viewerTitle ?? "Remove member"}
             onClick={onRemove}
+            disabled={isViewer}
             data-member-remove
-            className="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
+            className="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Trash2 className="size-3.5" strokeWidth={1.75} />
           </button>

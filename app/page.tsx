@@ -56,7 +56,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-background">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-background">
       <BoardHeader />
 
       {/* Activity bar | 모드 콘텐츠 */}

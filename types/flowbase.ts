@@ -240,7 +240,11 @@ export interface PageRevision {
 // ─── Workspace — Automations ───
 // 출처: design-ref/prototype/automations.jsx
 
-export type ActiveWorkspaceItem = "schema" | "automations" | "history"
+export type ActiveWorkspaceItem =
+  | "schema"
+  | "automations"
+  | "history"
+  | "snapshots"
 
 export interface AutomationTrigger {
   table?: string // "interviews", "tasks", "—" 등; "—"는 시간 기반
@@ -398,6 +402,39 @@ export interface ExportedSnapshot {
   automations?: AutomationRule[]
 }
 
+// ─── Snapshots — GitHub 식 명시 save point ───
+// 사용자가 "Save snapshot" 명시 클릭 시 워크스페이스 전체 상태 deep copy.
+// Restore = 현재 상태 자동 새 snapshot 저장 + 그 시점으로 복원 (되돌릴 수 있게).
+// LOCK (Key Design #18):
+//   - persist = deep state copy (option A). compression/replay는 후속.
+//   - Restore → 자동 새 snapshot 생성 (branch 단순화 — 진짜 격리 branch ❌)
+//   - cap ❌ (사용자 명시 save니까 자동 trim 안 함). quota 도달 시 사용자가 직접 정리.
+//   - events는 복원 ❌ — append-only timeline 유지. snapshot_restored 이벤트만 push.
+
+// Restore 대상 상태 — 사용자 데이터 전체. events/undo/ephemeral 제외.
+export interface SnapshotState {
+  boards: Record<string, Board>
+  library: Library
+  wikiPages: WikiPage[]
+  automations: AutomationRule[]
+  suggestedAutomations: SuggestedAutomation[]
+  trashedBoards: TrashedBoard[]
+  trashedRows: TrashedRow[]
+  trashedWikiPages: TrashedWikiPage[]
+  settings: WorkspaceSettings
+  schemaPositions: Record<string, { x: number; y: number }>
+  viewSettings: Record<string, ViewSettings>
+}
+
+export interface Snapshot {
+  id: string
+  ts: number             // saved timestamp (epoch ms)
+  label: string          // 사용자 정의 (필수, 빈 문자열 시 "Untitled snapshot")
+  description?: string
+  by: string             // memberId (settings.currentUserId 시점)
+  state: SnapshotState
+}
+
 // 자동화 런타임이 listen하는 데이터 변경 이벤트 (ephemeral, persist ❌).
 // addRow/updateRow/commitAiCell가 끝에 publish. lib/automation-runtime이
 // useEffect로 받아 active rule 매칭 후 발화.
@@ -423,6 +460,8 @@ export type EventKind =
   | "row_updated"
   | "ai_infer"  // pushAi(kind=infer) 흡수
   | "ai_ask"    // pushAi(kind=ask) 흡수
+  | "snapshot_saved"     // GitHub 식 명시 save point — Snapshot 모델
+  | "snapshot_restored"  // Restore 시 자동 새 snapshot도 saved로 push (이 이벤트는 사용자 액션만)
 // 향후: row_deleted · comment_added · mention · snooze · column_added · ...
 
 export interface TimestampedEvent {
@@ -543,6 +582,9 @@ export interface FlowBaseState {
   // EventStore (persist) — 통합 액션 timeline. Phase A 인프라.
   // 향후 Workspace > History · Detail Activity · AI Timeline 모두 이 source에서 derive.
   events: TimestampedEvent[]
+
+  // Snapshots (persist) — GitHub 식 명시 save point. 최신 우선 정렬(newest first).
+  snapshots: Snapshot[]
 
   // 전역 UI (persist)
   panels: PanelState

@@ -10,6 +10,7 @@ import { SchemaView } from "@/components/sections/schema-view"
 import { WorkspaceSidebar } from "@/components/workspace/workspace-sidebar"
 import { AutomationsView } from "@/components/workspace/automations-view"
 import { HistoryView } from "@/components/workspace/history-view"
+import { SnapshotsView } from "@/components/workspace/snapshots-view"
 import { useFlowBase } from "@/lib/flowbase-store"
 
 export function WorkspaceMode() {
@@ -24,6 +25,8 @@ export function WorkspaceMode() {
           <AutomationsView />
         ) : activeWorkspaceItem === "history" ? (
           <HistoryView />
+        ) : activeWorkspaceItem === "snapshots" ? (
+          <SnapshotsView />
         ) : (
           <SchemaView />
         )}
