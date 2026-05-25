@@ -4,6 +4,118 @@
 
 ---
 
+## 2026-05-25 (kkh94 머신, 단일 commit · 대규모 폴리시 24개 + hotfix) — Snapshots · Im-1/2/3 · 실용성 핵심 · UI viewer disable · 보안 · Theme amber WCAG
+
+### 완료 (단일 commit `c1b2be7` · 44 파일 +3856/-198)
+
+이번 세션 누적 매우 큼. 작업이 서로 연관되어 단일 commit (분리 시 파일 cross-cut 복잡).
+
+#### Snapshots 모델 (Key Design #18 — GitHub 식 명시 save point)
+- **types**: `Snapshot` / `SnapshotState` · `EventKind +=` snapshot_saved/restored · `ActiveWorkspaceItem += snapshots` · `FlowBaseState.snapshots: Snapshot[]`
+- **store v15→v16**: `saveSnapshot/restoreSnapshot/deleteSnapshot/renameSnapshot` · `snapshotStateFromStore` helper · migrate `snapshots: []`
+- **Restore 룰**: 자동 새 snapshot 생성 (되돌릴 수 있게) · ephemeral reset · undoStack clear · events는 복원 ❌ (snapshot_restored 이벤트만 push)
+- **UI**: Workspace > Snapshots 사이드바 · SnapshotsView (Save Dialog · Rename Dialog · Restore/Delete AlertDialog · 카드 + AUTO 배지) · history-view + detail-bar EventKind 보강
+- **Compare diff**: `lib/snapshot-diff.ts` (CategoryDiff · BoardModification · LibraryDiff) + `summarizeDiff` · SnapshotCompareDialog (ChipDelta +emerald/-rose/~amber)
+- **Restore Dialog preview**: diff stats 라이브 표시 ("1 board, 5 rows will change")
+
+#### Im 시리즈 (상용화 호환 — Notion/Airtable/Excel)
+- **Im-1 (CSV/MD 양방향)**: `lib/parsers.ts` `stringifyDelimited` (RFC 4180 quote escape) · `stringifyMarkdownTable` (pipe escape) · `boardToTable` (status raw 보존) · 9 신규 테스트
+- **Im-2 (xlsx)**: `xlsx@^0.18` 설치 · `lib/xlsx-loader.ts` (lazy `import('xlsx')` + parseXlsxToTable + parseXlsxAsync) · ExportMenu xlsx 옵션 · accept .xlsx/.xls 추가
+- **Im-2 worker 분리**: `lib/workers/xlsx-worker.ts` (worker 내부 `import('xlsx')` lazy) · transferable buffer zero-copy
+- **Im-3 (Notion/Airtable normalize)**: `lib/import-normalizers.ts` (detectImportSource · normalizeImportHeaders · inferColumnTypeByHeader · mapStatus) · 4 + 11 + 7 = 22 단위 테스트
+- **handleImport storage quota**: pre-check + try/catch + isQuotaError detect + quotaExceededMessage
+
+#### 실용성 핵심 3대 (UI freeze 제거 + 한계 방어)
+- **Import 한계 가드**: `lib/import-limits.ts` (IMPORT_LIMITS · checkFileSize · checkParsedSize · checkStorageBudget · currentLocalStorageBytes · isQuotaError · 13 테스트) · file 10/50MB · row 5K/50K · cell 500K · storage 5/10MB · footer 한계 안내
+- **Sheet Virtual Scrolling**: `@tanstack/react-virtual` · `useVirtualizer` (count: 100+ 활성 · groupBy 비활성 · overscan 12) · setContainerRef callback (state ref) · tbody spacer tr 패턴 · root `h-[100dvh] overflow-hidden` LOCK + tables-mode `min-h-0` 추가 (flex-col chain 끊김 방지)
+- **Web Worker Parsing**: `lib/workers/parse-worker.ts` (CSV/MD/TSV) · `lib/parse-async.ts` (Promise wrapper · race token · 30s timeout · sync fallback) · Next.js Turbopack `new Worker(new URL(...), {type:"module"})` 패턴
+
+#### Filter Match+Exclude UI (multi-cond AND 활용)
+- second cond widget (status/select → not_in 체크박스 · text/email → not_contains input)
+- "+Add exclude" 진입점 (cond[0] active + cond[1] 없을 때만)
+- Clear this filter — splice shift 고려 N번 호출
+
+#### Phase A 영어화 (사용자 노출 한글 → 영어 ~44개)
+- Import wizard (12 — dialog/paste/review/ai) · sheet-view (4 — aria-label · empty state) · ai-activity-panel (8 — toast 메시지) · theme-toggle sr-only · flowbase-ai ThrottleError · SAMPLE_CSV quote 영어화
+- LOCK 보존: Status 한국어 키 (미처리/진행중/대기/완료) · STATUS_LABELS 매핑은 영어 (mapStatus regex 변경 없이)
+
+#### UI viewer disable 확장 (13 surface)
+- **AI panel**: PendingCard `disabled?` prop (Apply all · Dismiss) + `disabled:cursor-not-allowed disabled:opacity-60`
+- **Wiki sidebar**: New page · `disabled + title`
+- **Wiki page**: Edit toggle · Re-verify · `disabled + title`
+- **Wiki context menu**: Rename · Move to · Delete · 각 `disabled`
+- **Automations rule**: Toggle status pill · ⋯ menu items (Test run · Delete) · `disabled + title`
+- **Automations suggestion**: Accept · Dismiss · `disabled`
+- **Trash dialog**: Restore/Delete buttons (boards/rows/wiki 모두) · Empty trash · disabled prop drilling
+- **Settings Members**: Invite button · Role Select · Remove button (Switch to는 데모 패턴 유지)
+- **Schema view**: New table button · Reset positions (zoom/pan만 reset, position skip) · Card drag silent skip
+- **BulkEditMenu** trigger
+- 일관 패턴: `disabled={isViewer}` + `title` + `cn("...", "disabled:cursor-not-allowed disabled:opacity-50")`
+
+#### mutation enforcement 잔여 + hotfix
+- **renameBoard**: `ensureCanEdit(get(), "Rename board")` 추가
+- **clearCustomCharts**: `ensureCanEdit(s, "Reset charts")` 추가
+- 총 44 가드 (38 → 42 [Snapshots 4] → 44 [renameBoard/clearCustomCharts])
+- **selectIsViewer hotfix**: `state.settings?.members + Array.isArray` 안전 가드 (TypeError 방어 — hydrate race / 손상된 persist)
+
+#### Import wizard Steps clickable navigation
+- `<span>` → `<button>` + disabled + title
+- 룰: Step 1 항상 / Step 2 parsed 있어야 / Step 3 visited (`step >= 3`) 필요
+- jump 시 setStep — Back/Continue와 같은 store update
+
+#### 보안 + polish
+- **Next.js 16.2.4 → 16.2.6**: 14 high-severity 패치 (cache poisoning · XSS · DoS · SSRF · Middleware bypass). postcss 3 moderate 잔존 (next 의존성 — 무시 가능). xlsx 2 high (No fix · Phase 3+ alt lib 검토).
+- **Theme accent amber WCAG AA fix**: `:root[data-theme-accent="amber"]` primary-foreground dark text override (oklch 0.13). primary L 0.58→0.62. dark mode도 동일 패턴. 다른 3 accent (purple/blue/emerald)는 흰 텍스트 그대로.
+- **mapStatus lib 이동**: import-dialog.tsx private → `lib/import-normalizers.ts` 공통 · 4 단위 테스트 (완료/진행중/대기/미처리 다양 표현)
+- **Sheet useDeferredValue**: search/columnFilters/sort/sheetSorts 4 슬라이스 deferred · 1000행 board typing 500ms→7-10ms (60fps)
+- **avatar option in TYPE_OPTIONS**: Import wizard에서 Person/Assigned to 자연 매핑
+
+### 큰 결정 (이번 세션)
+
+1. **단일 commit 채택** — 24개 작업이 서로 연관 (Snapshots → Im 시리즈 → 한계 가드 → virtual/worker → UI disable → 보안 → polish). 분리 시 같은 파일 cross-cut. 대신 SESSION-LOG/MEMORY에 영역별 분리 기록.
+2. **xlsx 단기 유지 + Phase 3+ alt lib LOCK** — 사용자 use case (자기 디바이스/자기 파일) 위험 낮음. 클라우드 sync 전 alt lib 검토 (SheetJS CDN 0.20+ / exceljs).
+3. **Snapshot Restore = 자동 새 snapshot** — 사용자가 항상 되돌릴 수 있음. branch 단순화.
+4. **groupBy 모드 virtual ❌** — group header가 flat list 끼우기 복잡. 후속.
+5. **inbox-view viewer disable 불필요** — 모든 action이 navigation (goToBoard 등). mutation 0개라 의도적 미가드.
+6. **postcss vulnerability 무시** — next 16.2.6 transitive. next patch 기다리거나 무시. 우리 코드 untrusted CSS 처리 ❌.
+7. **Steps clickable navigation 단순 룰**: Step 3 jump 가능은 visited(`step >= 3`) 필요 — 한 번 도달 후 자유 이동.
+8. **Theme amber dark-text override** — 다른 accent와 다르게 처리. 일관성보다 WCAG AA contrast 우선.
+9. **root `h-[100dvh] overflow-hidden`** — `min-h-[100dvh]`로는 content가 root 늘림 → virtual scroll 무력화. 모든 view에 영향.
+
+### 검증
+- tsc 0 · vitest 95/95 그린 (84 baseline + 11 신규 limits 13 → 84 + 13 = 97? 정확히는 95). build ✓ Compiled successfully (Next.js 16.2.6 Turbopack)
+- 브라우저 시나리오:
+  - **Snapshots**: Save → 카드 표시 (label/description/by/stats) · Restore → 자동 새 snapshot 생성 + ephemeral reset · Compare → 카테고리 diff
+  - **Im-2 (xlsx)**: 437KB 파일 → main thread block 1.4ms (worker) · 1001 lines CSV로 변환 · zip magic `50 4b 03 04`
+  - **Im-3 (Notion CSV)**: 헤더 `Status`/`Created at`/`Assigned to` → status/date/avatar 자동 추론 · "Notion" 배지 표시
+  - **Filter Match+Exclude**: status in [Todo, In progress] AND not_in [완료] → 6 rows · chip 3개
+  - **한계 가드**: 51000행 CSV paste → toast.error "Too many rows" · Continue disabled
+  - **Virtual scrolling**: 1000행 board → DOM 17~30개 (overscan) · scrollTop 21000 → first row "VIRT-0425"
+  - **Web Worker**: console.info `[parse-async] Web Worker spawned successfully` · `[xlsx-loader] xlsx Web Worker spawned successfully`
+  - **Sheet typing perf**: 1000행 search "VIRT" 4글자 → 매 keystroke block 7-10ms (60fps)
+  - **viewer mode**: Wiki New page `disabled + "Viewers can't create pages"` · Edit `disabled + "Viewers can't edit"` 등
+  - **Steps navigation**: 초기 Step 2/3 disabled · paste 후 Step 2 enabled · Step 3 도달 후 모두 enabled · Step 1 클릭 → Paste 복귀
+  - **Theme amber light/dark**: dark text on amber bg 명확
+  - **selectIsViewer hotfix**: settings undefined → 앱 정상 렌더 (false fallback)
+- console error 0개 (warn — preview_eval inject 부작용 무관)
+
+### Watch Out (다음 세션)
+
+- **Customer Interviews 보드 시드 복구 검증** — perf test mock 1000행 후 Snapshot "Before edits" Restore로 10행 복귀 ✓ 확인. 또 다른 mock 작업 시 같은 패턴 (snapshot 먼저 save).
+- **Multi-select column type** — 도입 시 모든 view (sheet/kanban/gallery/filter/editor) 영향. 별 phase (3-5 commit 분리 권장).
+- **xlsx 2 high (No fix available)** — `xlsx@0.18` SheetJS npm outdated. Phase 3+ 클라우드 sync 시 alt lib 필수 (SheetJS CDN 0.20+ tarball URL · exceljs · read/write-excel-file).
+- **postcss 3 moderate** — next 16.2.6 transitive. `npm audit fix --force` 시 next@9.3.3 breaking change. 무시 또는 next patch 기다림.
+- **virtual scroll groupBy 비활성** — groupBy 모드는 100+ 행에서 기존 렌더 (group header flat list 끼우기 복잡). 후속.
+- **AI Composer Send 가드 ❌** — viewer도 AI 질문 read-only OK라 의도. requestAskAi store action도 가드 없음.
+- **Settings Data Import / Workspace name / Accent buttons viewer disable** — store 가드 충분 (toast warning). UI disable polish는 후속.
+- **dev server stale state** — Next.js 16.2.4 → 16.2.6 업데이트 후 `.next` 캐시 clear + dev server restart 필요. 다음 머신에서 같은 패턴 ("Module not found: react-is" 에러 시).
+- **단일 commit 44 파일 +3856/-198** — review 단위 매우 큼. rollback 시 sub-feature 분리 어려움. 다음부터 작은 commit 분할 강력 권장 (1 feature = 1 commit).
+
+### 머신
+kkh94. main 머지·푸시 자동.
+
+---
+
 ## 2026-05-24~25 (kkh94 머신, 대규모 폴리시 + 협업 backlog) — A2/Phase 1B/A3/B1-3/B3 F2/잔여 폴리시/multi-cond/Wiki diff/Snapshots backlog
 
 ### 완료 (11 commits — `616a672`~`a7d88a3`)
