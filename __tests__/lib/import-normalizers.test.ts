@@ -158,4 +158,18 @@ describe("inferColumnTypeByHeader", () => {
     expect(inferColumnTypeByHeader("Quote")).toBe(null)
     expect(inferColumnTypeByHeader("")).toBe(null)
   })
+  it("multiSelect 헤더 — Tags/Categories/Labels/Multi-select", () => {
+    expect(inferColumnTypeByHeader("Tags")).toBe("multiSelect")
+    expect(inferColumnTypeByHeader("Categories")).toBe("multiSelect")
+    expect(inferColumnTypeByHeader("Labels")).toBe("multiSelect")
+    expect(inferColumnTypeByHeader("Multi-select")).toBe("multiSelect")
+    expect(inferColumnTypeByHeader("multiselect")).toBe("multiSelect")
+  })
+  it("Status 격리 LOCK — 'Status'는 다른 헤더와 충돌 ❌, multiSelect 추론 ❌", () => {
+    // 'Status' 자체는 status, 다른 매핑 흡수 ❌
+    expect(inferColumnTypeByHeader("Status")).toBe("status")
+    expect(inferColumnTypeByHeader("Workflow status")).toBe("status")
+    // status 키워드가 'tags' 등 multiSelect 헤더보다 우선 (HEADER_TYPE_EXACT 별)
+    expect(inferColumnTypeByHeader("Tag status")).toBe("status") // 키워드 "status" hit
+  })
 })

@@ -39,6 +39,7 @@ import {
   mapStatus,
   normalizeImportHeaders,
 } from "@/lib/import-normalizers"
+import { splitMultiValue } from "@/lib/multi-select"
 import { parseAnyAsync } from "@/lib/parse-async"
 import {
   type ParsedTable,
@@ -320,7 +321,14 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       }
       resolved.forEach((c, i) => {
         const v = cells[i] ?? ""
-        row[c.name] = c.type === "status" ? mapStatus(v) : v
+        if (c.type === "status") {
+          row[c.name] = mapStatus(v)
+        } else if (c.type === "multiSelect") {
+          // CSV cell "tag1, tag2" → ["tag1","tag2"]. 빈 값/공백은 제거 + 중복 제거.
+          row[c.name] = splitMultiValue(v)
+        } else {
+          row[c.name] = v
+        }
       })
       return row
     })

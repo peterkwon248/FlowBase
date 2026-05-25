@@ -168,7 +168,9 @@ export function stringifyMarkdownTable(table: SerializableTable): string {
 
 // Board → SerializableTable — Export 시 columns/rows를 2D string 그리드로.
 // status/select 값은 raw 그대로 (import 시 round-trip 정확도 우선).
+// multiSelect cell(string[])은 ", " join — splitMultiValue가 역방향 자동 split.
 // 예: status="미처리" → 셀 "미처리" (영어 라벨 "Todo" 변환 ❌)
+//     tags=["a","b"] → "a, b"
 //     reaction object → JSON.stringify (간단 fallback)
 export function boardToTable(board: Board): SerializableTable {
   const headers = board.columns.map((c) => c.label || c.name)
@@ -176,6 +178,12 @@ export function boardToTable(board: Board): SerializableTable {
     board.columns.map((col) => {
       const v = row[col.name]
       if (v == null) return ""
+      if (Array.isArray(v)) {
+        return v
+          .map((x) => (x == null ? "" : String(x).trim()))
+          .filter((s) => s.length > 0)
+          .join(", ")
+      }
       if (typeof v === "object") {
         try {
           return JSON.stringify(v)

@@ -15,15 +15,14 @@
 //   - Airtable `Created Time` → `Created at`
 //   - 매칭 ❌면 원본 유지
 //
-// Type 추론 (Im-3 후속):
+// Type 추론 (Im-3):
 //   - 헤더 패턴으로 column type 자동 (sample inferType의 보조).
 //   - "Created at"/"Due date"/날짜 헤더 → date
 //   - "Status"/"State"/"Stage" → status
 //   - "Person"/"Assigned to"/"Created by" → avatar
-//   - "Tags"/"Multi-select" → text (multi-select column type 없음 — 후속 phase)
+//   - "Tags"/"Categories"/"Multi-select" → multiSelect (cell split은 lib/multi-select.splitMultiValue)
 //
 // 후속 (이번 패스 미포함):
-//   - Multi-select column type 도입 ("tag1, tag2" → string[]) — 모든 view 영향
 //   - Attachment URL 필드 → 별 컬럼 타입
 
 import type { ColumnType, TicketStatus } from "@/types/flowbase"
@@ -127,6 +126,12 @@ const HEADER_TYPE_EXACT: Record<string, ColumnType> = {
   "state": "status",
   "stage": "status",
   "progress": "status",
+  // multiSelect (Notion/Airtable "Tags" 패턴) — status보다 후순위 매핑 (status 격리 LOCK 유지)
+  "tags": "multiSelect",
+  "categories": "multiSelect",
+  "labels": "multiSelect",
+  "multi-select": "multiSelect",
+  "multiselect": "multiSelect",
   // avatar (사람)
   "person": "avatar",
   "assignee": "avatar",

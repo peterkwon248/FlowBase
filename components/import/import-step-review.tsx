@@ -24,6 +24,7 @@ const TYPE_OPTIONS: ColumnType[] = [
   "date",
   "email",
   "select",
+  "multiSelect",
   "status",
   "avatar",
 ]

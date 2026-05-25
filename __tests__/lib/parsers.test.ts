@@ -204,4 +204,28 @@ describe("boardToTable", () => {
     expect(t.rows[0][1]).toBe('{"positive":3,"mixed":0,"negative":1}')
     expect(t.rows[0][2]).toBe("")
   })
+  it("multiSelect 배열은 ', ' join (round-trip 호환)", () => {
+    const b: Board = {
+      id: "b3",
+      label: "T",
+      columns: [
+        { name: "id", label: "ID", type: "text" },
+        { name: "tags", label: "Tags", type: "multiSelect", options: ["a", "b"] },
+      ],
+      rows: [
+        { id: "1", tags: ["a", "b"] },
+        { id: "2", tags: [] },
+        { id: "3", tags: ["urgent", "design", "backend"] },
+        { id: "4" }, // tags 키 없음 → 빈 문자열
+      ],
+      aiHistory: [],
+      createdAt: "2026-01-01",
+      updatedAt: "2026-01-01",
+    }
+    const t = boardToTable(b)
+    expect(t.rows[0][1]).toBe("a, b")
+    expect(t.rows[1][1]).toBe("")
+    expect(t.rows[2][1]).toBe("urgent, design, backend")
+    expect(t.rows[3][1]).toBe("")
+  })
 })
