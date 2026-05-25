@@ -81,6 +81,23 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 - [x] **Gallery cardFields reorder** (↑/↓ 버튼)
 - [x] **Timeline month scale** (COL_WIDTH_MONTH=8)
 
+## 2026-05-25 14 phase 통합 (multi-select 5 commits + 13 phase 1 commit `2c04c39`)
+
+- [x] **Multi-select column type** (C1-C5) — types/store/sheet/views/filter/import
+- [x] **Filter +Add condition UI** — 3+ cond array loop
+- [x] **D Dashboard 완성** — AggFn · Scatter · Histogram · TimeScale · Auto-recommend
+- [x] **F Dashboard 후속** — Multi-series line · Calendar bucket
+- [x] **A Phase A code-only domain fit** — domain-infer · value-format · insights · outliers
+- [x] **G1 Dashboard 강화** — Pivot · drill-down · Goal · Sheet outlier alert
+- [x] **G2 AI** — board label · summarize · column type · cleanup (사용자 명시 click LOCK)
+- [x] **G3 NEXT-ACTION 잔여** — Snapshots A vs B · multiTable → N보드 · sourceField 명시
+- [x] **G4 안정성** — Sheet outlier dot · auto-backup · BOM strip · firedKeys sync
+- [x] **G5 Chart polish** — Histogram/Line drill-down · CSV export
+- [x] **G6 AI 확장** — cell suggest · board template generator
+- [x] **P 소소 폴리시** — onboarding · ⌘/ 단축키 dialog · pill nowrap
+- [x] **G7-A Domain fit** — Bullet · Funnel · Conditional formatting
+- [x] **G7-B 결과 공유** — Chart PNG · @media print CSS
+
 ## Fix #1 (2026-05-24 — `a7e91c5`)
 
 - [x] **status pill 줄바꿈** (사용자 보고) — editable-cell/gallery-view/filter-chips 3 곳 whitespace-nowrap

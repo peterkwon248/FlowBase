@@ -6,7 +6,17 @@
 
 ## Current Features (Completed — 최근 우선)
 
-1. **fix(ui): status pill nowrap** (2026-05-24, `a7e91c5`, **main 머지 완료**) — 사용자 보고. "In progress" 2줄 wrap → editable-cell·gallery-view·filter-chips 3 곳에 whitespace-nowrap. LOCK 컨벤션 추가.
+1. **14 phase 통합** (2026-05-25, multi-select 5 commits `a4e36a5`~`b6e6e10` + 13 phase 단일 `2c04c39`, **main 머지 예정**) —
+   - **Multi-select column type** (C1-C5) — Notion 패턴 · in/not_in ANY-match · status 격리 LOCK
+   - **Filter +Add condition** — 3+ cond array loop
+   - **Dashboard 완성** (D1-5 + F1-2 + G1 + G5 + G7-A + G7-B) — 11 chart type · 6 AggFn · 5 TimeScale · Auto-recommend · Pivot · drill-down · Goal · Bullet · Funnel · Conditional · PNG/Print
+   - **Phase A code-only domain fit** (A1-5) — 7 도메인 추론 · KPI title 변형 · value format · insights · outliers
+   - **AI 확장** (B1-4 + G6-1-2) — 6 routes (suggest board label / summarize / column type / cleanup / cell value / generate template). 명시 click LOCK
+   - **G3 NEXT-ACTION 잔여** — Snapshots A vs B · multiTable N보드 · sourceField 명시
+   - **G4 안정성** — auto-backup 30분 · BOM strip · outlier dot
+   - **P 폴리시** — onboarding · ⌘/ 단축키 dialog · pill nowrap
+
+2. **fix(ui): status pill nowrap** (2026-05-24, `a7e91c5`, **main 머지 완료**) — 사용자 보고. "In progress" 2줄 wrap → editable-cell·gallery-view·filter-chips 3 곳에 whitespace-nowrap. LOCK 컨벤션 추가.
 
 1. **폴리시 #9 — Filter text contains · Gallery cardFields reorder · Timeline month scale** (2026-05-24, `1cb045e`, **main 머지 완료**)
 

@@ -4,6 +4,100 @@
 
 ---
 
+## 2026-05-25 (kkh94 머신, 14 phase 통합 — multi-select 5 + 13 phase 1 commit) — Multi-select · Filter +Add · Dashboard 완성 · Phase A 도메인 fit · AI 확장 · G3/G4/G5/G6/G7-A/G7-B/P
+
+### 완료 (multi-select 5 commits `a4e36a5`~`b6e6e10` + 13 phase 단일 commit `2c04c39` · 52 파일 +6308/-231)
+
+이번 세션 누적 매우 큼 (46 sub-task). 첫 multi-select는 phase별 5 commit 분리 시도. 이후 13 phase는 file cross-cut라 단일 commit 채택 (직전 `c1b2be7` 패턴 답습). **다음부터 phase별 commit 강력 권장.**
+
+#### Multi-select column type (C1-C5, 5 commits)
+- C1 types/store/multi-select utils · learnFromPatch 배열 unpack · selectVisibleRows ANY-match · updateColumn migration
+- C2 MultiSelectCell + MultiCellPopover · C3 views Notion 패턴 · C4 filter/bulk Add tag · C5 Im-3 split + tests
+- 결정 6 default 적용 (Kanban Notion · first-value sort · ANY-match · 자동 migration · 정확 header auto · status 격리 LOCK)
+
+#### Filter +Add condition UI
+- filter-menu ExtraCondBlock helper · conds.slice(1).map array loop
+- "+Add another condition" 일반 진입점 (직전 cond와 반대 kind 자동)
+
+#### D Dashboard 완성 (D1-D5)
+- D1 AggFn (count/sum/avg/min/max/median) · lib/chart-aggregate · KPI/Bar/Donut/Line aggFn 적용
+- D2 Scatter (numeric × numeric) · D3 Histogram (auto bin sqrt rule · max 20)
+- D4 Time scale (day/week/month/quarter/year) · D5 Auto-recommend (lib/dashboard-recommend · 10 rule)
+
+#### F Dashboard 후속 (F1-F2)
+- F1 Multi-series line + legend (groupByCol 색 분리 · Notion multi-row · top 8)
+- F2 정확 calendar boundary (month/quarter/year — Date.setMonth · day/week 등간격 ms)
+
+#### A Phase A code-only domain fit (A1-A5)
+- A1 lib/domain-infer · 7 도메인(cs/hr/marketing/sales/finance/stock/general) · 키워드 점수 · 최소 2 매치
+- A2 도메인별 priority + KPI title 변형 + priorityCol 키워드 순서 우선
+- A3 lib/value-format (currency/time/percent/number · word boundary + plural · 5 currency locale)
+- A4 lib/insights (period_change · top_categories · outliers · 최대 4 cap) + InsightCard
+- A5 lib/outlier (z-score 2σ · 최소 5 샘플 · stdDev=0 skip)
+
+#### G1 Dashboard 강화 (G1-1~G1-4)
+- G1-1 Pivot table (HTML table · sticky · cell intensity · TOTAL)
+- G1-2 Chart drill-down (Bar/Donut/Pivot → sheet filter + view 전환 + toast Clear)
+- G1-3 KPI Goal progress bar (emerald reached · amber under)
+- G1-4 Sheet outlier alert chip (Select outliers 진입점)
+
+#### G2 Phase B AI (B1-B4) — 사용자 명시 click LOCK
+- B1 suggest-board-label · B2 summarize-board · B3 suggest-column-type · B4 suggest-cleanup + CleanupDialog
+- 모두 graceful (ANTHROPIC_API_KEY 미설정 시 toast.error)
+
+#### G3 NEXT-ACTION 잔여 (G3-1~G3-3)
+- G3-1 Snapshots compare A vs B · G3-2 multiTable → N보드 · G3-3 MATCH_FROM_DROPDOWN sourceField 명시
+
+#### G4 데이터 안정성 (G4-1~G4-4)
+- G4-1 Sheet cell-level outlier dot
+- G4-2 lib/auto-backup (30분 interval · "Auto · " prefix · 5개 cap)
+- G4-3 parsers BOM strip · G4-4 firedKeys CustomEvent sync
+
+#### G5 Chart polish (G5-1~G5-3)
+- G5-1 Histogram bin click drill-down · G5-2 Line bucket click drill-down · G5-3 CSV chart data export
+
+#### G6 AI 확장 (G6-1~G6-2)
+- G6-1 row-context-menu "Suggest empty value" · G6-2 GenerateBoardDialog (prompt → columns + seed)
+
+#### P 소소 폴리시 (P1-P3)
+- P1 빈 보드 onboarding tips · P2 KeyboardShortcutsDialog (⌘/ · 16 단축키 · 4 그룹) · P3 Kanban priority nowrap
+
+#### G7-A Domain fit (G7-A1~G7-A3)
+- G7-A1 Bullet chart (value + goal + reference) · G7-A2 Funnel chart (stage drop-off · status LOCK 순서)
+- G7-A3 Conditional formatting (lib/conditional-format · 4 룰 · 4 tone · sheet td bg)
+
+#### G7-B 결과 공유 (G7-B1~G7-B2)
+- G7-B1 lib/chart-export (SVG → PNG · 의존성 0 · CustomChartCard entry)
+- G7-B2 @media print CSS + Dashboard "Print" 버튼
+
+### 큰 결정 (이번 세션)
+
+1. **multi-select 5 commits 분리** — 첫 phase 단위 commit 시도. cross-cut 큰 phase 묶음은 단일 commit 답습.
+2. **AI 도입은 명시 click LOCK** (메모리 룰 일관) — 자동 호출 ❌, 결과는 사용자 Apply 후만 store mutation.
+3. **Dashboard 11 chart type** — kpi/bar/donut/line/stacked-bar/heatmap/scatter/histogram/pivot/bullet/funnel.
+4. **Phase A code-only domain fit** — AI 없이 도메인 70-80% 커버. AI는 모호한 케이스만.
+5. **lib/auto-backup 30분 interval** — 사용자 명시 snapshot과 분리("Auto · " prefix · 5 cap).
+6. **G7-B PNG/Print 의존성 0** — SVG → canvas + window.print 활용. jsPDF/html2canvas 추가 ❌.
+
+### 검증
+- tsc 0 · vitest 203/203 (직전 121 → +82 신규 unit tests)
+- 브라우저: 모든 phase 시각 검증 (multi-select · Pivot · drill-down · goal · multi-series · Bullet · Funnel · domain badge · KPI format · period_change/top/outlier · AI graceful · 단축키 dialog · Print 버튼)
+- console error 0
+
+### Watch Out (다음 세션)
+
+- **단일 commit 52 파일 +6308/-231** — review 단위 매우 큼. 다음부터 phase별 단위 commit 강력 권장.
+- **ANTHROPIC_API_KEY 미설정** — G2 + G6 6 AI 진입점이 graceful disable.
+- **HTML chart (Pivot) PNG export ❌** — SVG 아님. CSV 대안 또는 html-to-canvas 의존성 (후속).
+- **CSS var inline화 일부 환경 색 깨질 수 있음** — chart-export getComputedStyle 의존.
+- **chart drill-down은 Bar/Donut/Pivot/Histogram/Line만** — Scatter/KPI는 후속.
+- **상용화 ~34%** — 데이터 보드 자체는 거의 완성. 백엔드/인증/협업/결제/마케팅/모바일 ❌ → M1~M7 9-14주 추정.
+
+### 머신
+kkh94. main 머지·푸시 자동.
+
+---
+
 ## 2026-05-25 (kkh94 머신, 단일 commit · 대규모 폴리시 24개 + hotfix) — Snapshots · Im-1/2/3 · 실용성 핵심 · UI viewer disable · 보안 · Theme amber WCAG
 
 ### 완료 (단일 commit `c1b2be7` · 44 파일 +3856/-198)
