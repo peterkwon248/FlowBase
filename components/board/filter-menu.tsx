@@ -48,6 +48,7 @@ function isFilterable(col: ColumnDef): boolean {
   return (
     col.type === "status" ||
     col.type === "select" ||
+    col.type === "multiSelect" ||
     col.type === "num" ||
     col.type === "date" ||
     col.type === "text" ||
@@ -75,14 +76,30 @@ function buildInValues(
   }
   const defined = col.options ?? []
   const set = new Set<string>(defined)
+  // multiSelect cell — 배열 unpack해서 각 값 추가. 그 외 string.
+  const isMulti = col.type === "multiSelect"
   for (const r of rows) {
     const v = r[col.name]
-    if (typeof v === "string" && v) set.add(v)
+    if (isMulti && Array.isArray(v)) {
+      for (const item of v) {
+        if (item == null) continue
+        const s = String(item).trim()
+        if (s) set.add(s)
+      }
+    } else if (typeof v === "string" && v) {
+      set.add(v)
+    }
   }
   return Array.from(set).map((v) => ({
     id: v,
     label: v,
-    count: rows.filter((r) => r[col.name] === v).length,
+    count: rows.filter((r) => {
+      const cell = r[col.name]
+      if (isMulti && Array.isArray(cell)) {
+        return cell.some((x) => String(x ?? "") === v)
+      }
+      return cell === v
+    }).length,
   }))
 }
 
@@ -137,7 +154,9 @@ export function FilterMenu() {
         .findIndex((c) => c.name === col.name)
       const hue = COLUMN_HUES[Math.max(0, idx) % COLUMN_HUES.length]
       const values =
-        col.type === "status" || col.type === "select"
+        col.type === "status" ||
+        col.type === "select" ||
+        col.type === "multiSelect"
           ? buildInValues(col, board.rows)
           : undefined
       return { col, hue, values }
@@ -269,7 +288,7 @@ export function FilterMenu() {
 function defaultSecondCondForType(
   colType: ColumnDef["type"],
 ): FilterCondition | null {
-  if (colType === "status" || colType === "select") {
+  if (colType === "status" || colType === "select" || colType === "multiSelect") {
     return { kind: "not_in", values: [] }
   }
   if (colType === "text" || colType === "email") {
@@ -417,7 +436,9 @@ function FilterColSub({
               data-add-exclude={option.col.name}
             >
               <Plus className="size-3.5" strokeWidth={2} />
-              {option.col.type === "status" || option.col.type === "select"
+              {option.col.type === "status" ||
+              option.col.type === "select" ||
+              option.col.type === "multiSelect"
                 ? "Add exclude values"
                 : "Add exclude text"}
             </DropdownMenuItem>

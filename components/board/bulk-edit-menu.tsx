@@ -19,11 +19,16 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { TYPE_ICON } from "@/components/sheet/header-cell"
 import { toast } from "sonner"
+import { coerceMultiValue } from "@/lib/multi-select"
 import { selectActiveBoard, selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { STATUS_LABELS, type ColumnDef, type TableRow } from "@/types/flowbase"
 
 function isEditableViaBulk(col: ColumnDef): boolean {
-  return col.type === "status" || col.type === "select"
+  return (
+    col.type === "status" ||
+    col.type === "select" ||
+    col.type === "multiSelect"
+  )
 }
 
 function valuesForCol(col: ColumnDef, rows: TableRow[]): string[] {
@@ -32,9 +37,18 @@ function valuesForCol(col: ColumnDef, rows: TableRow[]): string[] {
   }
   const defined = col.options ?? []
   const set = new Set<string>(defined)
+  const isMulti = col.type === "multiSelect"
   for (const r of rows) {
     const v = r[col.name]
-    if (typeof v === "string" && v) set.add(v)
+    if (isMulti && Array.isArray(v)) {
+      for (const x of v) {
+        if (x == null) continue
+        const s = String(x).trim()
+        if (s) set.add(s)
+      }
+    } else if (typeof v === "string" && v) {
+      set.add(v)
+    }
   }
   return Array.from(set)
 }
@@ -55,6 +69,22 @@ export function BulkEditMenu() {
   }
 
   const handleSet = (col: ColumnDef, value: string) => {
+    // multiSelect: 의미는 "Add tag" — 각 row의 array에 push (이미 있으면 skip).
+    // single (status/select): "Set" replace.
+    if (col.type === "multiSelect") {
+      let added = 0
+      for (const id of selectedRowIds) {
+        const row = board.rows.find((r) => r.id === id)
+        const arr = coerceMultiValue(row?.[col.name])
+        if (arr.includes(value)) continue
+        updateRow(id, { [col.name]: [...arr, value] })
+        added += 1
+      }
+      toast.success(
+        `Added "${value}" to ${col.label || col.name} on ${added}/${selectedRowIds.length} rows`,
+      )
+      return
+    }
     for (const id of selectedRowIds) {
       updateRow(id, { [col.name]: value })
     }
@@ -105,6 +135,8 @@ export function BulkEditMenu() {
                     col.type === "status"
                       ? (STATUS_LABELS[v as keyof typeof STATUS_LABELS] ?? v)
                       : v
+                  const displayLabel =
+                    col.type === "multiSelect" ? `+ ${label}` : label
                   return (
                     <DropdownMenuItem
                       key={v}
@@ -113,7 +145,7 @@ export function BulkEditMenu() {
                       data-bulk-edit-value={v}
                     >
                       <Check className="size-3 opacity-0" />
-                      <span className="flex-1">{label}</span>
+                      <span className="flex-1">{displayLabel}</span>
                     </DropdownMenuItem>
                   )
                 })}
