@@ -27,9 +27,11 @@ import type {
   PageRevision,
   RecentFilterSnapshot,
   RecentSortSnapshot,
+  SavedView,
   Snapshot,
   SnapshotState,
   SortDir,
+  SortState,
   TableRow,
   TicketStatus,
   MemberRole,
@@ -51,6 +53,8 @@ import {
   multiToSingle,
   singleToMulti,
 } from "@/lib/multi-select"
+import { parseFormula, extractDeps } from "@/lib/formula"
+import { wouldCreateCycle } from "@/lib/formula/cycles"
 import { createSeedLibrary } from "@/lib/flowbase-library-seed"
 import { createSeedBoard } from "@/lib/flowbase-seed"
 import { createSeedTasksBoard } from "@/lib/flowbase-tasks-seed"
@@ -62,7 +66,7 @@ import {
 import { undoStack } from "@/lib/undo-stack"
 
 const STORE_KEY = "flowbase-state-v4"
-const STORE_VERSION = 16 // v16: snapshots 추가 (GitHub 식 명시 save point · 사용자 클릭 → deep state copy)
+const STORE_VERSION = 17 // v17: savedViews + activeSavedViewId (Notion 식 named view · G7-C C-V1)
 
 // 초기 시드 멤버 — 데모용 4명. 사용자는 Owner. lastSeenAt mock.
 function createSeedMembers(): WorkspaceMember[] {
@@ -280,6 +284,18 @@ export interface FlowBaseActions {
   restoreSnapshot: (id: string) => boolean
   deleteSnapshot: (id: string) => void
   renameSnapshot: (id: string, label: string, description?: string) => void
+
+  // ─── Saved Views — Notion 식 named view (G7-C C-V1) ───
+  // saveCurrentAsView: 활성 보드의 현재 view/viewSettings/columnFilters/sort 스냅샷 후 push.
+  //   반환 = 새 id (실패 시 ""). 같은 보드의 같은 이름 ❌ 가드 (toast).
+  saveCurrentAsView: (name: string) => string
+  // applySavedView: view 찾아서 적용 (viewType setView + viewSettings/columnFilters/sort 동시 patch).
+  //   activeSavedViewId 갱신. 반환 = 성공 여부.
+  applySavedView: (viewId: string) => boolean
+  renameSavedView: (viewId: string, name: string) => void
+  deleteSavedView: (viewId: string) => void
+  // updateSavedViewFromCurrent: 활성 보드의 view를 현재 상태로 덮어쓰기.
+  updateSavedViewFromCurrent: (viewId: string) => void
 }
 
 export type FlowBaseStore = FlowBaseState & FlowBaseActions
@@ -307,6 +323,8 @@ function createInitialState(): FlowBaseState {
     },
     schemaPositions: {},
     viewSettings: {},
+    savedViews: {},
+    activeSavedViewId: {},
     workspaceMemory: { byScope: {}, recentFilters: [], recentSorts: [] },
     events: [],
     snapshots: [],
@@ -388,6 +406,8 @@ function snapshotStateFromStore(s: FlowBaseState): SnapshotState {
     settings: s.settings,
     schemaPositions: s.schemaPositions,
     viewSettings: s.viewSettings,
+    savedViews: s.savedViews,
+    activeSavedViewId: s.activeSavedViewId,
   }
 }
 
@@ -812,13 +832,17 @@ export const useFlowBase = create<FlowBaseStore>()(
         permanentDeleteBoard: (boardId) => {
           if (!ensureCanEdit(get(), "Permanently delete board")) return
           set((s) => {
-            // dangling viewSettings · schemaPositions · viewByBoardId cleanup
+            // dangling viewSettings · schemaPositions · viewByBoardId · savedViews · activeSavedViewId cleanup
             const nextViewSettings = { ...s.viewSettings }
             delete nextViewSettings[boardId]
             const nextSchemaPositions = { ...s.schemaPositions }
             delete nextSchemaPositions[boardId]
             const nextViewByBoardId = { ...s.viewByBoardId }
             delete nextViewByBoardId[boardId]
+            const nextSavedViews = { ...s.savedViews }
+            delete nextSavedViews[boardId]
+            const nextActiveSavedViewId = { ...s.activeSavedViewId }
+            delete nextActiveSavedViewId[boardId]
             return {
               trashedBoards: s.trashedBoards.filter(
                 (t) => t.board.id !== boardId,
@@ -826,6 +850,8 @@ export const useFlowBase = create<FlowBaseStore>()(
               viewSettings: nextViewSettings,
               schemaPositions: nextSchemaPositions,
               viewByBoardId: nextViewByBoardId,
+              savedViews: nextSavedViews,
+              activeSavedViewId: nextActiveSavedViewId,
             }
           })
           // 자동화 firedKeys 중 이 boardId 포함된 dueDate 키 cleanup
@@ -1272,7 +1298,31 @@ export const useFlowBase = create<FlowBaseStore>()(
             label = `${col.label || col.name} ${n}`
             n += 1
           }
-          const newCol: ColumnDef = { ...col, name, label }
+          let newCol: ColumnDef = { ...col, name, label }
+          // Formula type — formula 있으면 parse + deps 추출. 빈 formula는 허용 (사용자가 추후 입력).
+          if (newCol.type === "formula" && newCol.formula?.trim()) {
+            try {
+              const ast = parseFormula(newCol.formula)
+              newCol = {
+                ...newCol,
+                formulaDeps: extractDeps(ast),
+                formulaResultType: newCol.formulaResultType ?? "text",
+              }
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : String(err)
+              toast.error(`Formula error: ${msg}`)
+              return
+            }
+            // 순환 의존 가드
+            const cycle = wouldCreateCycle(b.columns, {
+              kind: "add",
+              col: newCol,
+            })
+            if (cycle) {
+              toast.error(`Circular formula dependency: ${cycle.cycle.join(" → ")}`)
+              return
+            }
+          }
           set({
             boards: {
               ...s.boards,
@@ -1361,6 +1411,47 @@ export const useFlowBase = create<FlowBaseStore>()(
           const b = s.boards[s.activeBoardId]
           if (!b) return
           if (!ensureCanEdit(s, "Change column")) return
+          // Formula patch — formula 변경 또는 type → "formula" 전환 시 parse + deps 자동 추출.
+          // parse 에러면 patch 거부 (invalid 상태로 저장 ❌).
+          let effectivePatch = patch
+          const prevCol_ = b.columns.find((c) => c.name === colName)
+          const nextType_ = patch.type ?? prevCol_?.type
+          if (nextType_ === "formula") {
+            const formulaSrc =
+              patch.formula !== undefined ? patch.formula : prevCol_?.formula
+            if (formulaSrc?.trim()) {
+              try {
+                const ast = parseFormula(formulaSrc)
+                effectivePatch = {
+                  ...patch,
+                  formulaDeps: extractDeps(ast),
+                  formulaResultType:
+                    patch.formulaResultType ??
+                    prevCol_?.formulaResultType ??
+                    "text",
+                }
+              } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err)
+                toast.error(`Formula error: ${msg}`)
+                return
+              }
+              // 순환 의존 가드 — patch 적용 시 cycle 발생하면 reject
+              const cycle = wouldCreateCycle(b.columns, {
+                kind: "update",
+                name: colName,
+                patch: effectivePatch,
+              })
+              if (cycle) {
+                toast.error(
+                  `Circular formula dependency: ${cycle.cycle.join(" → ")}`,
+                )
+                return
+              }
+            } else if (patch.formula !== undefined) {
+              // 빈 formula → deps 초기화 (column은 유지, 셀이 placeholder 표시).
+              effectivePatch = { ...patch, formulaDeps: [] }
+            }
+          }
           // select ⇄ multiSelect type 전환 시 cell value 자동 마이그레이션.
           //   select → multiSelect: 단일 string → [string]
           //   multiSelect → select: array → 첫 값만 (나머지 데이터 손실 → toast 안내)
@@ -1397,7 +1488,7 @@ export const useFlowBase = create<FlowBaseStore>()(
               [b.id]: {
                 ...b,
                 columns: b.columns.map((c) =>
-                  c.name === colName ? { ...c, ...patch } : c,
+                  c.name === colName ? { ...c, ...effectivePatch } : c,
                 ),
                 rows: nextRows,
                 updatedAt: nowIso(),
@@ -1897,6 +1988,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
 
         undo: () => {
+          if (!ensureCanEdit(get(), "Undo")) return
           const b = activeBoard()
           if (!b) return
           const restored = undoStack.undo({ boardId: b.id, rows: [...b.rows] })
@@ -1904,6 +1996,7 @@ export const useFlowBase = create<FlowBaseStore>()(
         },
 
         redo: () => {
+          if (!ensureCanEdit(get(), "Redo")) return
           const b = activeBoard()
           if (!b) return
           const restored = undoStack.redo({ boardId: b.id, rows: [...b.rows] })
@@ -2249,6 +2342,8 @@ export const useFlowBase = create<FlowBaseStore>()(
             settings: target.state.settings,
             schemaPositions: target.state.schemaPositions,
             viewSettings: target.state.viewSettings,
+            savedViews: target.state.savedViews ?? {},
+            activeSavedViewId: target.state.activeSavedViewId ?? {},
             // ephemeral reset
             selectedRowIds: [],
             focusedCell: null,
@@ -2282,6 +2377,190 @@ export const useFlowBase = create<FlowBaseStore>()(
             ),
           }))
         },
+
+        // ─── Saved Views — Notion 식 named view (G7-C C-V1) ───
+        // LOCK: filter+sort+viewSettings 풀세트. 보드별 격리. 같은 보드 같은 이름 ❌.
+        saveCurrentAsView: (name) => {
+          if (!ensureCanEdit(get(), "Save view")) return ""
+          const s = get()
+          const boardId = s.activeBoardId
+          const board = s.boards[boardId]
+          if (!board) {
+            toast.error("No active board")
+            return ""
+          }
+          const trimmed = name.trim() || "Untitled view"
+          const list = s.savedViews[boardId] ?? []
+          if (list.some((v) => v.name === trimmed)) {
+            toast.error(`A view named "${trimmed}" already exists`)
+            return ""
+          }
+          const ts = Date.now()
+          const id = `sv-${ts.toString(36)}-${Math.random().toString(36).slice(2, 7)}`
+          const isoNow = new Date(ts).toISOString()
+          const viewType: ViewMode = s.viewByBoardId[boardId] ?? "sheet"
+          const view: SavedView = {
+            id,
+            boardId,
+            name: trimmed,
+            viewType,
+            settings: s.viewSettings[boardId] ?? {},
+            columnFilters: { ...s.columnFilters },
+            sort: s.sort,
+            createdAt: isoNow,
+            updatedAt: isoNow,
+          }
+          set({
+            savedViews: { ...s.savedViews, [boardId]: [view, ...list] },
+            activeSavedViewId: { ...s.activeSavedViewId, [boardId]: id },
+          })
+          return id
+        },
+
+        applySavedView: (viewId) => {
+          // View 적용은 UI/view 상태 변경이라 viewer도 허용 (filter/sort/viewSettings는 view 선호).
+          const s = get()
+          // 모든 보드에서 검색 (UI는 활성 보드 view만 노출하지만 안전)
+          let foundView: SavedView | null = null
+          for (const list of Object.values(s.savedViews)) {
+            const v = list.find((x) => x.id === viewId)
+            if (v) {
+              foundView = v
+              break
+            }
+          }
+          if (!foundView) {
+            toast.error("View not found")
+            return false
+          }
+          const board = s.boards[foundView.boardId]
+          if (!board) {
+            toast.error("View's board no longer exists")
+            return false
+          }
+          // viewType 호환성 — Kanban needs status, Timeline needs date.
+          // 호환 안 되면 sheet fallback + toast warning (저장된 view 자체는 그대로 유지).
+          const hasStatus = board.columns.some((c) => c.type === "status")
+          const hasDate = board.columns.some((c) => c.type === "date")
+          let appliedViewType: ViewMode = foundView.viewType
+          if (foundView.viewType === "kanban" && !hasStatus) {
+            appliedViewType = "sheet"
+            toast.warning(
+              `"${foundView.name}" needs a status column for Kanban — showing as Sheet`,
+              { id: "sv-viewtype-fallback" },
+            )
+          } else if (foundView.viewType === "timeline" && !hasDate) {
+            appliedViewType = "sheet"
+            toast.warning(
+              `"${foundView.name}" needs a date column for Timeline — showing as Sheet`,
+              { id: "sv-viewtype-fallback" },
+            )
+          }
+          // 활성 보드와 다르면 switch (사용자 명시 진입점에서는 같지만 안전)
+          const patch: Partial<FlowBaseState> = {
+            activeBoardId: foundView.boardId,
+            viewSettings: {
+              ...s.viewSettings,
+              [foundView.boardId]: foundView.settings,
+            },
+            columnFilters: { ...foundView.columnFilters },
+            sort: foundView.sort,
+            viewByBoardId: {
+              ...s.viewByBoardId,
+              [foundView.boardId]: appliedViewType,
+            },
+            activeSavedViewId: {
+              ...s.activeSavedViewId,
+              [foundView.boardId]: foundView.id,
+            },
+            // ephemeral reset (다른 view 적용 시 stale selection 방지)
+            selectedRowIds: [],
+            focusedCell: null,
+          }
+          set(patch)
+          return true
+        },
+
+        renameSavedView: (viewId, name) => {
+          if (!ensureCanEdit(get(), "Rename view")) return
+          const trimmed = name.trim()
+          if (!trimmed) {
+            toast.error("View name cannot be empty")
+            return
+          }
+          set((s) => {
+            const nextSavedViews: Record<string, SavedView[]> = {}
+            let touched = false
+            for (const [bid, list] of Object.entries(s.savedViews)) {
+              const target = list.find((v) => v.id === viewId)
+              if (!target) {
+                nextSavedViews[bid] = list
+                continue
+              }
+              if (list.some((v) => v.id !== viewId && v.name === trimmed)) {
+                toast.error(`A view named "${trimmed}" already exists`)
+                nextSavedViews[bid] = list
+                continue
+              }
+              nextSavedViews[bid] = list.map((v) =>
+                v.id === viewId
+                  ? { ...v, name: trimmed, updatedAt: new Date().toISOString() }
+                  : v,
+              )
+              touched = true
+            }
+            return touched ? { savedViews: nextSavedViews } : s
+          })
+        },
+
+        deleteSavedView: (viewId) => {
+          if (!ensureCanEdit(get(), "Delete view")) return
+          set((s) => {
+            const nextSavedViews: Record<string, SavedView[]> = {}
+            const nextActiveSavedViewId = { ...s.activeSavedViewId }
+            for (const [bid, list] of Object.entries(s.savedViews)) {
+              nextSavedViews[bid] = list.filter((v) => v.id !== viewId)
+              if (nextActiveSavedViewId[bid] === viewId) {
+                nextActiveSavedViewId[bid] = null
+              }
+            }
+            return {
+              savedViews: nextSavedViews,
+              activeSavedViewId: nextActiveSavedViewId,
+            }
+          })
+        },
+
+        updateSavedViewFromCurrent: (viewId) => {
+          if (!ensureCanEdit(get(), "Update view")) return
+          const s = get()
+          // 활성 보드의 현재 상태로 덮어쓰기 (다른 보드 view는 의미 ❌)
+          const boardId = s.activeBoardId
+          const list = s.savedViews[boardId] ?? []
+          if (!list.some((v) => v.id === viewId)) {
+            toast.error("This view doesn't belong to the active board")
+            return
+          }
+          const isoNow = new Date().toISOString()
+          const viewType: ViewMode = s.viewByBoardId[boardId] ?? "sheet"
+          set({
+            savedViews: {
+              ...s.savedViews,
+              [boardId]: list.map((v) =>
+                v.id === viewId
+                  ? {
+                      ...v,
+                      viewType,
+                      settings: s.viewSettings[boardId] ?? {},
+                      columnFilters: { ...s.columnFilters },
+                      sort: s.sort,
+                      updatedAt: isoNow,
+                    }
+                  : v,
+              ),
+            },
+          })
+        },
       }
     },
     {
@@ -2301,6 +2580,7 @@ export const useFlowBase = create<FlowBaseStore>()(
       //   v13 → v14: workspaceMemory (자동 학습 cache · Library와 분리)
       //   v14 → v15: events (EventStore 인프라 · 기존 aiHistory 백필)
       //   v15 → v16: snapshots (GitHub 식 명시 save point · 기본 빈 배열)
+      //   v16 → v17: savedViews + activeSavedViewId (Notion 식 named view · 기본 빈 객체)
       migrate: (persistedState, version) => {
         const s = (persistedState ?? {}) as Partial<FlowBaseState>
         if (version < 5) {
@@ -2403,6 +2683,10 @@ export const useFlowBase = create<FlowBaseStore>()(
         if (version < 16) {
           s.snapshots = s.snapshots ?? []
         }
+        if (version < 17) {
+          s.savedViews = s.savedViews ?? {}
+          s.activeSavedViewId = s.activeSavedViewId ?? {}
+        }
         return s as FlowBaseState
       },
       partialize: (s) => ({
@@ -2419,6 +2703,8 @@ export const useFlowBase = create<FlowBaseStore>()(
         settings: s.settings,
         schemaPositions: s.schemaPositions,
         viewSettings: s.viewSettings,
+        savedViews: s.savedViews,
+        activeSavedViewId: s.activeSavedViewId,
         workspaceMemory: s.workspaceMemory,
         events: s.events,
         snapshots: s.snapshots,

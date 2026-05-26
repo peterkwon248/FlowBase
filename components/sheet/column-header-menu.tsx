@@ -6,8 +6,9 @@
 
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
+  Calculator,
   Check,
   Highlighter,
   Link2,
@@ -52,6 +53,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { FormulaEditorDialog } from "@/components/sheet/formula-editor-dialog"
 import { TYPE_ICON } from "@/components/sheet/header-cell"
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
@@ -141,7 +143,20 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
 
   const [renameOpen, setRenameOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [formulaOpen, setFormulaOpen] = useState(false)
   const [draftLabel, setDraftLabel] = useState(col.label || col.name)
+
+  // Formula 컬럼 추가 시 자동으로 editor 열기 (add-column-menu 후속).
+  useEffect(() => {
+    function handler(e: Event) {
+      const detail = (e as CustomEvent).detail as { colName?: string } | null
+      if (detail?.colName === col.name && col.type === "formula") {
+        setFormulaOpen(true)
+      }
+    }
+    window.addEventListener("flowbase-edit-formula", handler)
+    return () => window.removeEventListener("flowbase-edit-formula", handler)
+  }, [col.name, col.type])
 
   if (col.name === "id") return null
 
@@ -184,6 +199,19 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
             <Pencil className="size-3.5 text-muted-foreground" />
             Rename
           </DropdownMenuItem>
+          {col.type === "formula" && (
+            <DropdownMenuItem
+              onSelect={() => setFormulaOpen(true)}
+              className="gap-2"
+              data-action="edit-formula"
+            >
+              <Calculator
+                className="size-3.5 text-muted-foreground"
+                strokeWidth={1.75}
+              />
+              Edit formula
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             onSelect={() => handleSuggestType()}
             disabled={suggesting}
@@ -616,6 +644,14 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {col.type === "formula" && (
+        <FormulaEditorDialog
+          col={col}
+          open={formulaOpen}
+          onOpenChange={setFormulaOpen}
+        />
+      )}
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>

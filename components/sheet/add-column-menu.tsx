@@ -8,6 +8,7 @@
 
 import {
   AtSign,
+  Calculator,
   Calendar,
   CircleDot,
   Hash,
@@ -62,6 +63,13 @@ const BASIC_TYPES: {
     defaultLabel: "Status",
   },
   { type: "avatar", label: "Person", Icon: User, defaultLabel: "Person" },
+  {
+    type: "formula",
+    label: "Formula",
+    Icon: Calculator,
+    defaultLabel: "Formula",
+    defaults: { formula: "", formulaResultType: "text" },
+  },
 ]
 
 function slugify(name: string): string {
@@ -82,13 +90,34 @@ export function AddColumnMenu() {
     defaultLabel: string,
     extra?: Partial<ColumnDef>,
   ) => {
+    const baseName = slugify(defaultLabel)
     addColumn({
-      name: slugify(defaultLabel),
+      name: baseName,
       label: defaultLabel,
       type,
       width: 140,
       ...extra,
     })
+    // Formula 컬럼은 추가 후 즉시 editor 열기 (사용자가 expression 입력 필요).
+    if (type === "formula" && typeof window !== "undefined") {
+      // store가 이름 충돌 시 자동 증가 — 마지막 추가된 컬럼 찾아서 dispatch.
+      requestAnimationFrame(() => {
+        try {
+          const board =
+            useFlowBase.getState().boards[useFlowBase.getState().activeBoardId]
+          const last = board?.columns[board.columns.length - 1]
+          if (last && last.type === "formula") {
+            window.dispatchEvent(
+              new CustomEvent("flowbase-edit-formula", {
+                detail: { colName: last.name },
+              }),
+            )
+          }
+        } catch {
+          // silent
+        }
+      })
+    }
   }
 
   const handleLibField = (fieldId: string) => {

@@ -9,6 +9,7 @@ import {
   ArrowUp,
   ArrowUpDown,
   AtSign,
+  Calculator,
   Calendar,
   CircleDot,
   Hash,
@@ -38,6 +39,7 @@ export const TYPE_ICON: Record<ColumnType, typeof Type> = {
   reaction: SmilePlus,
   button: MousePointerClick,
   fk: Link2,
+  formula: Calculator,
 }
 
 interface HeaderCellProps {

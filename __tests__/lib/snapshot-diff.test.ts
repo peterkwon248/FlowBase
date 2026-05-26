@@ -27,6 +27,8 @@ function makeState(over: Partial<SnapshotState> = {}): SnapshotState {
     },
     schemaPositions: {},
     viewSettings: {},
+    savedViews: {},
+    activeSavedViewId: {},
   }
   return { ...base, ...over }
 }

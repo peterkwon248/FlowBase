@@ -20,6 +20,7 @@ export type Sentiment = "Positive" | "Mixed" | "Negative"
 
 // 셀 타입 — 프로토타입 cell-types.jsx + tables-data.jsx 기준 + multiSelect (Notion/Airtable 호환)
 // multiSelect: cell = string[] (여러 태그). select와 options 재사용. Status는 단일 select 격리 LOCK.
+// formula: 다른 컬럼 값에서 계산된 read-only 셀 (G7-C C-F3). ColumnDef.formula에 expression.
 export type ColumnType =
   | "text"
   | "num"
@@ -32,6 +33,10 @@ export type ColumnType =
   | "reaction"
   | "button"
   | "fk"
+  | "formula"
+
+// Formula 컬럼의 결과 타입. 셀 렌더가 이 값으로 포맷 분기.
+export type FormulaResultType = "text" | "number" | "date" | "boolean"
 
 export interface ColumnDef {
   name: string // row 필드 key
@@ -51,6 +56,14 @@ export interface ColumnDef {
   functionSourceField?: string
   // G7-A3: cell value 룰 기반 색 강조. sheet view에서 적용.
   formatRules?: FormatRule[]
+  // G7-C C-F3: formula 컬럼. expression + 자동 추출 deps + 결과 타입.
+  //   formula        — Notion 식 표현식 (e.g., `concat(prop("name"), " - ", prop("status"))`)
+  //   formulaDeps    — parser가 자동 추출한 의존 컬럼명 (prop("X") → X). useMemo 의존성에 사용.
+  //   formulaResultType — 셀 표시 포맷 (text/number/date/boolean).
+  // LOCK: editable ❌ · column-header-menu의 "Edit formula"로만 수정.
+  formula?: string
+  formulaDeps?: string[]
+  formulaResultType?: FormulaResultType
 }
 
 // G7-A3 Conditional formatting
@@ -367,6 +380,24 @@ export interface ViewSettings {
   dashboard?: DashboardViewSettings
 }
 
+// ─── Saved Views — Notion 식 named view (G7-C C-V1) ───
+// 사용자가 현재 view의 filter/sort/viewSettings 조합을 named view로 persist.
+// 보드별 N개 view (e.g., "My open tasks", "This quarter pipeline").
+// LOCK: filter+sort+viewSettings 풀세트 저장 (Notion 패턴). viewType은 저장 시점의 viewByBoardId.
+// 적용 시 viewType 호환 안 되면 toast warning + sheet fallback.
+
+export interface SavedView {
+  id: string
+  boardId: string                                 // 보드별 격리
+  name: string                                    // 사용자 정의 (빈 문자열 시 "Untitled view")
+  viewType: ViewMode                              // 저장 시점의 viewByBoardId
+  settings: ViewSettings                          // 저장 시점의 viewSettings[boardId] 전체 스냅샷
+  columnFilters: Record<string, FilterCondition[]> // 저장 시점의 columnFilters
+  sort: SortState                                 // 저장 시점의 state.sort
+  createdAt: string                               // ISO
+  updatedAt: string                               // ISO — Update from current 시 갱신
+}
+
 // 액티비티 바 모드 — 앱 최상위 내비게이션 (프로토타입 InteractiveActivityBar 6모드).
 export type ActivityMode =
   | "tables"
@@ -469,6 +500,9 @@ export interface SnapshotState {
   settings: WorkspaceSettings
   schemaPositions: Record<string, { x: number; y: number }>
   viewSettings: Record<string, ViewSettings>
+  // G7-C C-V1: Saved Views도 snapshot에 포함 (Restore round-trip).
+  savedViews: Record<string, SavedView[]>
+  activeSavedViewId: Record<string, string | null>
 }
 
 export interface Snapshot {
@@ -620,6 +654,12 @@ export interface FlowBaseState {
 
   // View Display 옵션 (persist) — 보드별 + view별. Display 버튼에서 편집.
   viewSettings: Record<string, ViewSettings>
+
+  // Saved Views (persist) — 보드별 Notion 식 named view 카탈로그. G7-C C-V1.
+  // viewSettings는 "active" 슬롯, savedViews는 "저장된 카탈로그" — 별개 슬라이스.
+  savedViews: Record<string, SavedView[]>
+  // 보드별 현재 활성 view id (apply 후 헤더 칩 표시용). null = 활성 view 없음 (manual 편집 모드).
+  activeSavedViewId: Record<string, string | null>
 
   // Workspace Memory (persist) — 자동 학습 cache. Library와 분리.
   workspaceMemory: WorkspaceMemory

@@ -18,6 +18,7 @@ import { DisplayMenu } from "@/components/board/display-menu"
 import { ExportMenu } from "@/components/board/export-menu"
 import { ActiveFilterChips, FilterMenu } from "@/components/board/filter-menu"
 import { FilterChips } from "@/components/board/filter-chips"
+import { SavedViewsMenu } from "@/components/board/saved-views-menu"
 import { ViewSwitcher } from "@/components/board/view-switcher"
 import { ImportDialog } from "@/components/import/import-dialog"
 import { DashboardView } from "@/components/sections/dashboard-view"
@@ -94,6 +95,7 @@ export function TablesMode() {
             </span>
             <FilterMenu />
             <DisplayMenu />
+            <SavedViewsMenu />
             <div className="flex-1" />
             {selectedCount > 0 && (
               <>
@@ -130,7 +132,12 @@ export function TablesMode() {
             <button
               type="button"
               onClick={() => undo()}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.05]"
+              disabled={isViewer}
+              title={isViewer ? "Viewers can't undo" : undefined}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.05]",
+                viewerCls,
+              )}
             >
               <Undo2 className="size-3" />
               Undo

@@ -139,6 +139,8 @@ export function SnapshotsView() {
   const trashedBoardsState = useFlowBase((s) => s.trashedBoards)
   const trashedRowsState = useFlowBase((s) => s.trashedRows)
   const trashedWikiPagesState = useFlowBase((s) => s.trashedWikiPages)
+  const savedViewsState = useFlowBase((s) => s.savedViews)
+  const activeSavedViewIdState = useFlowBase((s) => s.activeSavedViewId)
 
   // Restore 확인 다이얼로그용 diff summary (target 있을 때만 계산)
   const restorePreviewSummary = useMemo(() => {
@@ -155,6 +157,8 @@ export function SnapshotsView() {
       settings: settingsState,
       schemaPositions: schemaPositionsState,
       viewSettings: viewSettingsState,
+      savedViews: savedViewsState,
+      activeSavedViewId: activeSavedViewIdState,
     }
     return summarizeDiff(diffSnapshotStates(restoreTarget.state, currentState))
   }, [
@@ -170,6 +174,8 @@ export function SnapshotsView() {
     settingsState,
     schemaPositionsState,
     viewSettingsState,
+    savedViewsState,
+    activeSavedViewIdState,
   ])
 
   // memberId → name 매핑 — 없는 멤버는 id 그대로 표시.

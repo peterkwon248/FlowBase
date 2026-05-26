@@ -63,6 +63,8 @@ function currentSnapshotState(): SnapshotState {
     settings: s.settings,
     schemaPositions: s.schemaPositions,
     viewSettings: s.viewSettings,
+    savedViews: s.savedViews,
+    activeSavedViewId: s.activeSavedViewId,
   }
 }
 

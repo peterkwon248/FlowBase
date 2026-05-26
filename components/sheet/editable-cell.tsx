@@ -14,10 +14,12 @@ import {
   CircleHalf,
   CircleNotch,
 } from "@phosphor-icons/react"
-import { Clock } from "lucide-react"
+import { Calculator, Clock } from "lucide-react"
 import { STATUS_LABELS, type ColumnDef, type TableRow, type TicketStatus } from "@/types/flowbase"
 import { toast } from "sonner"
 import { MEMORY_MIN_COUNT, useFlowBase } from "@/lib/flowbase-store"
+import { evaluate, FormulaError, parseFormula } from "@/lib/formula"
+import type { Expr } from "@/lib/formula"
 import { coerceMultiValue } from "@/lib/multi-select"
 import { statusBgClass, statusColorClass } from "@/lib/tokens"
 import { cn } from "@/lib/utils"
@@ -70,9 +72,116 @@ export function EditableCell(props: EditableCellProps) {
       return <SelectCell {...props} />
     case "multiSelect":
       return <MultiSelectCell {...props} />
+    case "formula":
+      return <FormulaCell {...props} />
     default:
       return <TextCell {...props} />
   }
+}
+
+// ── formula ──────────────────────────────────────────────────────
+// read-only cell — col.formula 평가 결과 표시. 편집 ❌ (column-header-menu의 "Edit formula" 사용).
+// AST cache: formula string → Expr | error. 같은 컬럼의 다른 행이 재파싱 안 함.
+const FORMULA_AST_CACHE = new Map<string, Expr | { __error: string }>()
+const FORMULA_CACHE_CAP = 200
+
+function getFormulaAst(src: string): Expr | { __error: string } {
+  const cached = FORMULA_AST_CACHE.get(src)
+  if (cached) return cached
+  let entry: Expr | { __error: string }
+  try {
+    entry = parseFormula(src)
+  } catch (err) {
+    entry = { __error: err instanceof Error ? err.message : String(err) }
+  }
+  if (FORMULA_AST_CACHE.size > FORMULA_CACHE_CAP) FORMULA_AST_CACHE.clear()
+  FORMULA_AST_CACHE.set(src, entry)
+  return entry
+}
+
+function FormulaCell({ col, row }: EditableCellProps) {
+  // useMemo deps: formula src + formulaDeps + 각 dep의 row 값. row 전체 ref는 deps에 안 씀.
+  const depKey = useMemo(() => {
+    return (col.formulaDeps ?? [])
+      .map((d) => {
+        const v = row[d]
+        if (Array.isArray(v)) return v.join("")
+        return v == null ? "" : String(v)
+      })
+      .join("")
+  }, [col.formulaDeps, row])
+
+  const result = useMemo<
+    | { kind: "empty" }
+    | { kind: "error"; msg: string }
+    | { kind: "value"; value: unknown }
+  >(() => {
+    const src = col.formula
+    if (!src?.trim()) return { kind: "empty" }
+    const ast = getFormulaAst(src)
+    if ("__error" in ast) return { kind: "error", msg: ast.__error }
+    try {
+      const today = new Date().toISOString().slice(0, 10)
+      const value = evaluate(ast, { row, today })
+      return { kind: "value", value }
+    } catch (err) {
+      const msg =
+        err instanceof FormulaError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : String(err)
+      return { kind: "error", msg }
+    }
+    // depKey 변할 때만 재평가 — row의 다른 컬럼 변화는 deps 외라 무시.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [col.formula, depKey])
+
+  if (result.kind === "empty") {
+    return (
+      <span
+        className="inline-flex items-center gap-1 text-xs italic text-muted-foreground"
+        title="No formula — click the column header menu to edit"
+      >
+        <Calculator className="size-3" strokeWidth={1.75} />
+        empty
+      </span>
+    )
+  }
+  if (result.kind === "error") {
+    return (
+      <span
+        className="font-mono text-xs text-rose-500"
+        title={result.msg}
+      >
+        ⚠ ERR
+      </span>
+    )
+  }
+  // value 렌더 — resultType에 따라 포맷
+  return (
+    <span className="text-sm" data-formula-result>
+      {formatFormulaValue(result.value, col.formulaResultType)}
+    </span>
+  )
+}
+
+function formatFormulaValue(
+  v: unknown,
+  resultType: ColumnDef["formulaResultType"],
+): string {
+  if (v === null || v === undefined) return "—"
+  if (resultType === "boolean") {
+    return v === true || v === "true" ? "✓ Yes" : "— No"
+  }
+  if (resultType === "number" && typeof v === "number") {
+    return Number.isInteger(v) ? String(v) : String(v)
+  }
+  if (resultType === "date" && typeof v === "string") return v
+  if (typeof v === "string") return v
+  if (typeof v === "number") return String(v)
+  if (typeof v === "boolean") return v ? "true" : "false"
+  return String(v)
 }
 
 // ── text ──────────────────────────────────────────────────────────
