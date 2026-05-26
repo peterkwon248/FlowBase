@@ -4,6 +4,103 @@
 
 ---
 
+## 2026-05-26 (kkh94 머신, 17 phase / 2 commit) — ESLint 풀스택 + G7-C 후속 폴리시 + Library rename
+
+### 완료 (2 commits — `cb5e19d` + `26ddcdb` · 27 파일 변경 · +6883/-620)
+
+직전 세션 잔여(G7-C 폴리시 일부) + 이번 세션 신규(ESLint 인프라 + 더 많은 폴리시).
+file overlap(types/store) 큼 — infra/code 2 commit 분할.
+
+#### ESLint 9 + CI + pre-commit 인프라 (`cb5e19d`)
+- Q2 flat config 도입 — `eslint.config.mjs` Next plugin 직접 import (FlatCompat
+  circular JSON 회피). minimal: ts-recommended + react-hooks + next core-web-vitals.
+- Q2-fu2 CI workflow `.github/workflows/ci.yml` — Node 20 · lint (--max-warnings
+  50) · tsc · vitest. PR + main push 트리거.
+- Q2-fu2 husky pre-commit + lint-staged — `npx lint-staged` *.{ts,tsx,js,jsx,mjs}
+  → `eslint --max-warnings 50`. errors 0 강제. **자동 검증 성공**(이번 두 commit
+  모두 husky lint-staged 통과).
+- Q13-D3 추가 룰 — prefer-const · no-console (allow warn/error/info) · eqeqeq
+  smart. react-hooks/rules-of-hooks: error.
+- 신규 deps: eslint@^9 · @next/eslint-plugin-next · eslint-config-next@^16 ·
+  @typescript-eslint/{parser,eslint-plugin} · globals · @eslint/eslintrc ·
+  html2canvas · husky · lint-staged.
+
+#### 17 phase 코드 변경 (`26ddcdb`)
+- Q1-A6 Theme accent — settings-dialog AccentSection relative + active bg
+- Q1-B5 `lib/deep-equal.ts` 신규 — JSON.stringify 의존 제거. saved-views-menu
+  modified detection 적용
+- Q1-B6 applySavedView viewType fallback 명시 + toast description 안내
+- Q2-fu1 errors 8개 fix — sheet-view useMemo 위로 · dashboard-view 컴포넌트
+  분리(outer/Inner). early return + hooks 충돌 해결
+- Q3 Formula sort/filter by formula — selectVisibleRows에 evaluator 통합 +
+  getDerivedValue + AST cache · compareRows getValueFn hook · filter-menu
+  resultType별 widget 분기 + BooleanFilterWidget 신규
+- Q4 ESLint warnings 16개 정리 — unused imports 제거 · charts dims module
+  scope + eslint-disable · ai-activity-panel/dashboard-view rows/customCharts
+  useMemo wrap · use-toast actionTypes 의도 disable
+- Q5-B2 `joinProp(col, sep)` 함수 — multiSelect 명시 separator (+6 tests)
+- Q5-B7 importWorkspace formula 컬럼 재검증 + dependsOn 재계산
+- Q6-B3 formula autocomplete — column chip 클릭 → `prop("name")` 삽입
+- Q7-B4 추가 함수 11개 — contains · replace · startsWith · endsWith · trim ·
+  abs · mod · floor · ceil · dateAdd · weekOfYear (+11 tests)
+- Q8-A7 Pivot HTML PNG — chart-export.ts htmlToPng (html2canvas dynamic import)
+- Q9-A11 Empty state 잔여 — search-mode + inbox-view에 EmptyState 적용
+- Q10-B9 Saved Views UI — 4+ views 시 search filter + recent/alpha sort toggle
+- Q14-C2 Library rename — 5 store actions(updateLibraryX) + asset-detail Shell
+  인라인 rename UI (h1 click→Input · Enter/blur/Escape · viewer disable)
+
+### 큰 결정 (이번 세션)
+
+1. **2 commit 분할** — infra (deps + config 새 파일) vs code (모든 phase).
+   file overlap이 1+phase에 걸쳐 분리 어려워 통합. 직전 세션 패턴 답습 + 인프라
+   분리.
+2. **Q1-A1·A2·A4·A5 이미 완료 확인** — 직전 세션 #19/G3 시리즈에서 적용됨.
+   skip + 다음 phase로 진행.
+3. **Q1-B6 fallback은 viewSettings 보존** — kanban viewSettings 비우면 데이터
+   손실. 현 동작 의도 (사용자 status 추가하면 자연 복구). 주석 명시.
+4. **Q3 selectVisibleRows formula evaluator integration** — per-call AST
+   cache + getDerivedValue. 1000행 성능 측정은 후속.
+5. **Q4 react-hooks/exhaustive-deps stable ref** — chart dims를 module scope
+   const + eslint-disable. useMemo deps에 dims.* 모두 넣는 것보다 깔끔.
+6. **Q2-fu1 dashboard-view 컴포넌트 분리** — early return + hooks 충돌의
+   standard solution. 가장 깨끗. board guard outer + 모든 hooks inner.
+7. **Q5-B7 formula 재검증은 부드러운 fallback** — parse 실패면 컬럼 그대로
+   (셀 ⚠ ERR + 사용자 수정). round-trip 보장 우선.
+8. **Q6-B3 column chip 삽입** — full autocomplete(dropdown) 대신 chip 클릭.
+   더 simple + visible.
+9. **Q8-A7 html2canvas dynamic import** — bundle 영향 최소화. xlsx-loader
+   패턴 답습.
+10. **Q14-C2 MVP scope** — 5 카테고리 rename만. 옵션 추가/색상 picker · field
+    config 깊은 편집은 후속.
+11. **Q13-D3 추가 룰 최소 강화** — strict 룰(no-floating-promises 등) 추가
+    typed-linting 필요해 skip. minimum: prefer-const · no-console · eqeqeq.
+
+### 검증
+- tsc 0 errors
+- ESLint **0 errors / 0 warnings** (Q2 + Q4 + Q13-D3 풀 정리)
+- vitest **307/307** (직전 290 + Q5-B2 6 + Q7-B4 11 = +17)
+- pre-commit hook 자동 작동 (두 commit 모두 husky lint-staged 통과)
+
+### Watch Out (다음 세션)
+
+- **Q11-D1 CI workflow 실 검증** — push 후 GitHub Actions 통과 확인 필요. README
+  badge 추가는 후속.
+- **Library 깊은 편집 후속** — 옵션 추가/제거 · 색상 picker · field config
+  편집은 별 task로 남김. 현 rename만.
+- **Formula sort/filter 성능 측정** — 1000행에서 evaluator 호출 비용 측정 후
+  필요 시 result memoize.
+- **dashboard-view 분리 후속 사이드 이펙트** — DashboardViewInner의 board 변경
+  시 모든 useMemo 재실행. 큰 dataset에서 성능 영향 측정 후속.
+- **html2canvas는 ~30KB lazy chunk** — Pivot PNG export 첫 호출 시 다운로드.
+  network 느린 환경에서 1-2s 지연. 미리 prefetch는 후속.
+- **prepare script husky 자동 install** — npm install 시 husky init. 다른
+  머신에서 hooks 정상 동작 확인 필요.
+
+### 머신
+kkh94. main 머지·푸시 자동 (after-work 단계 8).
+
+---
+
 ## 2026-05-26 (kkh94 머신, 13 phase / 2 commit) — G7-C Saved Views + Formula 컬럼 + UI polish + viewer enforcement
 
 ### 완료 (2 commits — `fac61fe` + `9f351c0` · 27 파일 변경 · +2791/-44)

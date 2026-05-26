@@ -81,6 +81,26 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 - [x] **Gallery cardFields reorder** (↑/↓ 버튼)
 - [x] **Timeline month scale** (COL_WIDTH_MONTH=8)
 
+## 2026-05-26 후속 17 phase (2 commit · `cb5e19d` ESLint 인프라 + `26ddcdb` 17 phase)
+
+- [x] **ESLint 9 flat config + CI + pre-commit** (Q2 풀스택) — eslint.config.mjs · ci.yml · husky · lint-staged · 신규 deps
+- [x] **Q13-D3 추가 lint 룰** — prefer-const · no-console · eqeqeq smart
+- [x] **Q1-A6 Theme accent 미세 조정** — AccentSection relative + active bg
+- [x] **Q1-B5 deep equal helper** — lib/deep-equal.ts (JSON.stringify 의존 제거)
+- [x] **Q1-B6 saved view kanban fallback 명시** — viewSettings 보존 + toast description
+- [x] **Q2-fu1 ESLint errors 8개 fix** — sheet-view + dashboard-view 컴포넌트 분리
+- [x] **Q3 Formula sort/filter by formula** — selectVisibleRows evaluator + AST cache + filter widget 분기
+- [x] **Q4 ESLint warnings 16개 → 0/0**
+- [x] **Q5-B2 Formula joinProp(col, sep)** — multiSelect 명시 separator (+6 tests)
+- [x] **Q5-B7 importWorkspace formula 재검증**
+- [x] **Q6-B3 Formula column autocomplete** — chip 삽입
+- [x] **Q7-B4 Formula 추가 함수 11개** — contains/replace/startsWith/endsWith/trim/abs/mod/floor/ceil/dateAdd/weekOfYear (+11 tests)
+- [x] **Q8-A7 Pivot HTML PNG export** — html2canvas dynamic import
+- [x] **Q9-A11 Empty state 잔여** — search-mode + inbox-view EmptyState 적용
+- [x] **Q10-B9 Saved Views UI 폴리시** — search filter + recent/alpha sort toggle
+- [x] **Q12-D2 pre-commit hook 실 동작 확인** — husky lint-staged 자동 작동
+- [x] **Q14-C2 Library rename MVP** — 5 update actions + Shell 인라인 rename
+
 ## 2026-05-26 G7-C + 폴리시 13 phase (2 commit · `fac61fe` + `9f351c0`)
 
 - [x] **G7-C Saved Views** (C-V1·V2·V3) — SavedView types + 5 actions + v17 migrate · SnapshotState 포함 · SavedViewsMenu · viewType 호환 가드 · modified detection
@@ -117,29 +137,38 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 - [x] ~~**다른 pill 일괄 점검**~~ — 이미 18 파일 whitespace-nowrap 적용됨
 - [x] ~~**남은 mutation enforcement**~~ — undo/redo 가드 완료 (P-5). 의도 제외 LOCK 명시
 - [x] ~~**UI 단 viewer disable**~~ — Settings General/Accent/Import + tables Undo 완료 (P-5)
-- [ ] **Theme accent oklch 시각 튜닝** — light/dark 4 accent 브라우저 검증 후
+- [x] ~~**Theme accent oklch 시각 튜닝**~~ — AccentSection relative + bg 적용 (Q1-A6)
 - [x] ~~**Data Import skip summary**~~ — 분기 추가 완료 (P-3)
-- [ ] **Filter And/Or UI 본격** — "+Add condition" 진입점(인프라는 다중 cond array 있음, UI minimum)
-- [ ] **Schema pinch-zoom 트랙패드** + 멀티 테이블 → N개 보드
-- [ ] **MATCH_FROM_DROPDOWN sourceField 명시 선택**
-- [ ] **Chart toolbar 터치 UX** — group-hover 한계
-- [ ] **Wiki body diff/version history 정교화** — naive line diff → LCS
-- [ ] **firedKeys runtime ref sync** — permanentDeleteBoard 후 즉시
-- [ ] **Timeline real month aggregation** — month scale은 colWidth만, 실 month group은 후속
-- [ ] **Gallery dnd reorder** (현재 ↑↓ 버튼만)
-- [ ] **HTML chart (Pivot) PNG export** — html-to-canvas 의존성
-- [ ] **ESLint flat config 복구** — `npm run lint` 작동 + CI + pre-commit hook
+- [x] ~~**Filter And/Or UI 본격**~~ — 직전 세션 #19에서 ExtraCondBlock + "Add condition" 완료 (Q1-A1)
+- [x] ~~**Schema pinch-zoom 트랙패드 + 멀티 테이블**~~ — `41cd262` + G3-2에서 완료 (Q1-A2)
+- [x] ~~**MATCH_FROM_DROPDOWN sourceField 명시**~~ — G3-3 완료 (Q1-A4)
+- [ ] **Chart toolbar 터치 UX** — group-hover 한계 추가 보완
+- [ ] **A3 Wiki body diff 정교화** — naive line diff → LCS 알고리즘
+- [x] ~~**firedKeys runtime ref sync**~~ — `39a9c4e` CustomEvent listener 완료 (Q1-A5)
+- [ ] **A9 Timeline real month aggregation** — month scale은 colWidth만
+- [ ] **A10 Gallery dnd reorder** — 현재 ↑↓ 버튼만
+- [x] ~~**HTML chart (Pivot) PNG export**~~ — html2canvas dynamic import 완료 (Q8-A7)
+- [x] ~~**ESLint flat config 복구**~~ — Q2 풀스택 완료 (config + CI + pre-commit)
 
-## G7-C 후속 (Formula · Saved Views 폴리시)
+## G7-C 후속 (Formula · Saved Views 폴리시 — 모두 완료)
 
-- [ ] **Formula sort/filter by formula 컬럼** — selectVisibleRows evaluator 호출 필요
-- [ ] **Formula `join(arr, sep)` 함수 추가** — multiSelect 더 정교한 처리
-- [ ] **Formula 컬럼명 autocomplete** — `prop("` 까지 입력 시 컬럼명 dropdown
-- [ ] **Formula 추가 함수** — mean · max · min over array · contains · replace · dateAdd · weekOfYear
-- [ ] **Saved view deep equal helper** — modified detection JSON.stringify 의존 제거
-- [ ] **Saved view kanban 호환 완전 fallback** — 현재 sheet fallback + warning, 진짜 카드 표시 검토
-- [ ] **Formula Import 시 매핑** — import-normalizers는 현재 formula 컬럼 무시
-- [ ] **Empty state 잔여** — Search 모드 empty · Wiki 검색 empty · Inbox 빈 상태
+- [x] ~~**Formula sort/filter by formula**~~ Q3 완료
+- [x] ~~**Formula joinProp(col, sep)**~~ Q5-B2 완료
+- [x] ~~**Formula 컬럼명 autocomplete**~~ Q6-B3 완료 (chip 삽입 방식)
+- [x] ~~**Formula 추가 함수**~~ Q7-B4 완료 (11개: contains/replace/startsWith/endsWith/trim/abs/mod/floor/ceil/dateAdd/weekOfYear)
+- [x] ~~**Saved view deep equal helper**~~ Q1-B5 완료
+- [x] ~~**Saved view kanban fallback 명시**~~ Q1-B6 완료 (viewSettings 보존 의도 + toast description)
+- [x] ~~**Formula Import 시 매핑**~~ Q5-B7 완료 (재검증 + dependsOn 재계산)
+- [x] ~~**Empty state 잔여**~~ Q9-A11 완료 (Search + Inbox, Wiki sidebar는 inline 유지)
+- [x] ~~**Saved Views UI 폴리시**~~ Q10-B9 완료 (search filter + sort toggle)
+
+## ESLint/CI 후속 (이번 세션 신규 task)
+
+- [ ] **Q11-D1 CI workflow 실 검증** — GitHub PR/push에서 Actions 통과 확인 + README badge 추가
+- [ ] **Formula sort/filter 1000행 성능 측정** — useMemo evaluation 비용 측정
+- [ ] **Library 깊은 편집 (C2 후속)** — 옵션 추가/제거 · 색상 picker · field config 편집
+- [ ] **Formula propArr(col) 함수** — raw array 반환 (FormulaValue 타입 확장 필요)
+- [ ] **Saved Views 폴더 그룹화** — B9 후속
 
 ---
 

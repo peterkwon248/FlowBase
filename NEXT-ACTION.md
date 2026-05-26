@@ -1,20 +1,20 @@
 # NEXT-ACTION
 
 > 다음 세션 시작 시 이 파일부터 읽으세요.
-> 마지막 갱신: 2026-05-26 (kkh94 머신, 13 phase 2 commit — `fac61fe` G7-C + `9f351c0` UI polish)
+> 마지막 갱신: 2026-05-26 후속 (kkh94 머신, 17 phase 2 commit — `cb5e19d` ESLint 인프라 + `26ddcdb` 17 phase 폴리시)
 
 ---
 
 ## 한 줄 요약
 
-**G7-C Power user(Saved Views 3 + Formula 5) + 중간 폴리시(P-1~P-4) + viewer enforcement polish(P-5) 모두 완료. Formula = parser/evaluator/cycle detection · 16 함수 · 자동 editor + dependsOn 추출 + 순환 가드. Saved Views = filter+sort+viewSettings 풀세트. 다음: 상용화 마일스톤(M1 BaaS·M2 인증·M4 모바일) 또는 G7 후속 폴리시(Filter And/Or · Schema pinch-zoom · Wiki diff 등).**
+**ESLint 9 + GitHub Actions CI + husky pre-commit 인프라 완성(0/0 클린) · G7-C 후속 폴리시(Formula sort/filter + autocomplete + 11 추가 함수 + Import 재검증) · UI 폴리시(Pivot PNG + Empty state + Saved Views UI) · Library rename MVP. vitest 307. 다음: 상용화 마일스톤(M1 BaaS·M2 인증·M4 모바일) 또는 후속 폴리시(Library 깊은 편집 · CI badge · Formula 1000행 성능).**
 
 ---
 
 ## ✅ 머지 완료
 
-- `origin/main = 9f351c0` 예정 (이번 세션 push 후 머지 — `fac61fe` G7-C + `9f351c0` UI polish).
-- 다른 머신: `git fetch && git checkout main && git pull && npm install`.
+- `origin/main = 26ddcdb` 예정 (이번 세션 push 후 머지 — `cb5e19d` ESLint 인프라 + `26ddcdb` 17 phase 폴리시).
+- 다른 머신: `git fetch && git checkout main && git pull && npm install` (husky가 자동 install).
 
 ---
 
@@ -204,7 +204,31 @@ kkh94 (`C:\Users\kkh94\OneDrive\Desktop\FlowBase`). 다음 머신: `git fetch &&
 **dev cache 주의**: Next.js 업데이트 후 `.next` 삭제 + dev server 재시작 필요 (stale chunk 방지).
 **워크트리 주의**: 워크트리는 main과 별도 node_modules 필요. `npm install` 워크트리 디렉토리에서 실행.
 
-## 이번 세션 (2026-05-26) 완료 13 phase
+## 이번 세션 후속 (2026-05-26 추가) 완료 17 phase
+
+### ESLint + CI 인프라 (`cb5e19d`)
+- Q2 ESLint 9 flat config (Next plugin 직접 import · FlatCompat 회피)
+- Q2-fu2 GitHub Actions CI (`.github/workflows/ci.yml`) — lint/tsc/vitest
+- Q2-fu2 husky pre-commit (lint-staged · errors 0 강제) **자동 작동 확인**
+- Q13-D3 추가 룰 — prefer-const · no-console (allow warn/error/info) · eqeqeq smart
+
+### G7-C 후속 폴리시 (`26ddcdb`)
+- Q1-A6 Theme accent AccentSection relative + active bg 미세 조정
+- Q1-B5 `lib/deep-equal.ts` — JSON.stringify 의존 제거
+- Q1-B6 applySavedView viewType fallback 명시 + toast description 안내
+- Q2-fu1 ESLint errors 8개 fix — sheet-view + dashboard-view 컴포넌트 분리
+- Q3 Formula sort/filter by formula 컬럼 — selectVisibleRows evaluator 통합 + AST cache
+- Q4 ESLint warnings 16개 정리 → **0/0 클린**
+- Q5-B2 Formula `joinProp(col, sep)` 함수 (+6 tests)
+- Q5-B7 importWorkspace formula 컬럼 재검증 + dependsOn 재계산
+- Q6-B3 Formula column autocomplete — chip 클릭 prop("name") 삽입
+- Q7-B4 Formula 추가 함수 11개 — contains/replace/startsWith/endsWith/trim/abs/mod/floor/ceil/dateAdd/weekOfYear (+11 tests)
+- Q8-A7 Pivot HTML PNG — html2canvas dynamic import
+- Q9-A11 Empty state 잔여 — search-mode + inbox-view 적용
+- Q10-B9 Saved Views UI — search filter + recent/alpha sort toggle (4+ views)
+- Q14-C2 Library rename MVP — 5 store actions + asset-detail Shell 인라인 rename
+
+## 이전 세션 (2026-05-26 첫 묶음) 완료 13 phase
 
 ### G7-C Saved Views (`fac61fe`)
 - C-V1 SavedView types + 5 store actions + v17 migrate · SnapshotState 포함

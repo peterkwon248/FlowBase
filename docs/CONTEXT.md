@@ -6,7 +6,16 @@
 
 ## Current Features (Completed — 최근 우선)
 
-1. **G7-C Saved Views + Formula 컬럼 + UI polish** (2026-05-26, 2 commit `fac61fe` G7-C + `9f351c0` polish, **main 머지 예정**) —
+1. **ESLint 풀스택 + G7-C 후속 폴리시 (17 phase)** (2026-05-26 후속, 2 commit `cb5e19d` 인프라 + `26ddcdb` 17 phase, **main 머지 예정**) —
+   - **ESLint 9 flat config** + GitHub Actions CI + husky pre-commit (자동 작동) · ESLint **0/0 클린**
+   - **Q13-D3 추가 룰** — prefer-const · no-console (allow warn/error/info) · eqeqeq smart
+   - **G7-C 후속**: Q1-A6 Theme accent 미세 조정 · Q1-B5 lib/deep-equal.ts · Q1-B6 saved view fallback 명시
+   - **Formula 후속**: Q3 sort/filter by formula 컬럼 · Q5-B2 joinProp · Q5-B7 Import 재검증 · Q6-B3 column chip autocomplete · Q7-B4 추가 함수 11개
+   - **UI 폴리시**: Q8-A7 Pivot PNG (html2canvas) · Q9-A11 search/inbox EmptyState · Q10-B9 Saved Views search + sort toggle
+   - **Library**: Q14-C2 5 카테고리 rename MVP (asset-detail Shell 인라인 input)
+   - **ESLint cleanup**: Q4 warnings 16→0 · Q2-fu1 errors 8 fix (dashboard-view 컴포넌트 분리)
+
+2. **G7-C Saved Views + Formula 컬럼 + UI polish** (2026-05-26, 2 commit `fac61fe` G7-C + `9f351c0` polish, **main 머지 완료**) —
    - **Saved Views** (C-V1·V2·V3) — Notion 식 named view · SavedView types + 5 store actions + v17 migrate · SavedViewsMenu(BookmarkCheck trigger · Save/Apply/Rename inline/Delete) · viewType 호환 가드 + modified detection(amber dot · Update from current). Scope LOCK: filter+sort+viewSettings 풀세트
    - **Formula 컬럼** (C-F1~F5) — `ColumnType += "formula"` · `lib/formula/` (tokens·parser·evaluator·functions·cycles·index) · 16 함수(concat/lower/upper/length · add/sub/mul/div/round · if · today/format · prop + 비교/논리) · dependsOn 자동 추출 · 자동 editor 오픈(CustomEvent) · FormulaCell + AST cache + ⚠ ERR · FormulaEditorDialog + 라이브 validation · 순환 detection(DFS 3색) · patch 거부 가드. LOCK: prop("X") 명시만 · 결과 타입 4종(status pill 흉내 ❌) · sort/filter 1차 미지원. 87 신규 tests
    - **UI polish P-1~P-4** — Toast position="bottom-right" + richColors + closeButton + duration LOCK · EmptyState 공통 컴포넌트(Gallery/Timeline) · Import skip summary 분기(Nothing new · Snapshot empty · Imported X) · Bullet "as KPI" preset(KPI↔Bullet Convert + goal Dialog)
