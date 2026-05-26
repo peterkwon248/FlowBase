@@ -7,7 +7,8 @@
 "use client"
 
 import { useMemo } from "react"
-import { Calendar, User } from "lucide-react"
+import { Calendar, LayoutGrid, User } from "lucide-react"
+import { EmptyState } from "@/components/board/empty-state"
 import { TYPE_ICON } from "@/components/sheet/header-cell"
 import { RowContextMenu } from "@/components/sheet/row-context-menu"
 import {
@@ -83,12 +84,20 @@ export function GalleryView() {
     if (!panels.detailBar) togglePanel("detailBar")
   }
 
+  const hasAnyRow = (board?.rows.length ?? 0) > 0
+
   return (
     <div className="min-w-0 flex-1 overflow-auto bg-background p-4">
       {rows.length === 0 ? (
-        <div className="mx-auto mt-16 max-w-md rounded-lg border border-dashed border-border bg-card px-6 py-10 text-center text-[12.5px] text-muted-foreground">
-          No items match the current filters.
-        </div>
+        <EmptyState
+          Icon={LayoutGrid}
+          title={hasAnyRow ? "No items match" : "No items yet"}
+          description={
+            hasAnyRow
+              ? "Adjust filters or clear them to see all rows."
+              : "Add a row in the Sheet view to see it as a card here."
+          }
+        />
       ) : (
         <div
           className="grid gap-3"

@@ -9,6 +9,7 @@
 
 import { useMemo } from "react"
 import { CalendarRange } from "lucide-react"
+import { EmptyState } from "@/components/board/empty-state"
 import { RowContextMenu } from "@/components/sheet/row-context-menu"
 import {
   selectActiveBoard,
@@ -177,34 +178,21 @@ export function TimelineView() {
 
   if (!dateCol) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-background">
-        <div className="max-w-sm px-8 text-center">
-          <CalendarRange
-            className="mx-auto mb-3 size-7 text-muted-foreground/40"
-            strokeWidth={1.5}
-          />
-          <h3 className="text-[13.5px] font-semibold">
-            Timeline needs a date column
-          </h3>
-          <p className="mt-1.5 text-[12px] text-muted-foreground">
-            Add a date-type column to render the Gantt timeline.
-          </p>
-        </div>
-      </div>
+      <EmptyState
+        Icon={CalendarRange}
+        title="Timeline needs a date column"
+        description="Add a date-type column to render the Gantt timeline."
+      />
     )
   }
 
   if (datedRows.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-background">
-        <div className="max-w-sm px-8 text-center text-[12.5px] text-muted-foreground">
-          No rows with{" "}
-          <code className="mx-1 rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
-            {dateCol.name}
-          </code>{" "}
-          dates. Add a date to a row to see it on the timeline.
-        </div>
-      </div>
+      <EmptyState
+        Icon={CalendarRange}
+        title={`No rows with ${dateCol.label || dateCol.name}`}
+        description={`Add a value to the "${dateCol.label || dateCol.name}" column on at least one row to see it on the timeline.`}
+      />
     )
   }
 

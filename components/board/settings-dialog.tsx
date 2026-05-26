@@ -106,6 +106,7 @@ export function SettingsDialog({
 function GeneralTab({ onClose }: { onClose: () => void }) {
   const settings = useFlowBase((s) => s.settings)
   const updateSettings = useFlowBase((s) => s.updateSettings)
+  const isViewer = useFlowBase(selectIsViewer)
 
   const [draftLabel, setDraftLabel] = useState(settings.workspaceLabel)
   const [draftInitial, setDraftInitial] = useState(settings.workspaceInitial)
@@ -141,6 +142,8 @@ function GeneralTab({ onClose }: { onClose: () => void }) {
           onChange={(e) => setDraftLabel(e.target.value)}
           maxLength={60}
           placeholder="peter's workspace"
+          disabled={isViewer}
+          title={isViewer ? "Viewers can't edit workspace settings" : undefined}
         />
       </div>
 
@@ -155,6 +158,8 @@ function GeneralTab({ onClose }: { onClose: () => void }) {
           maxLength={1}
           className="w-16 text-center font-semibold uppercase"
           placeholder="P"
+          disabled={isViewer}
+          title={isViewer ? "Viewers can't edit workspace settings" : undefined}
         />
         <p className="text-[10.5px] text-muted-foreground">
           The single letter shown on the sidebar workspace badge.
@@ -181,7 +186,11 @@ function GeneralTab({ onClose }: { onClose: () => void }) {
         <Button variant="ghost" onClick={onClose}>
           Cancel
         </Button>
-        <Button onClick={save} disabled={!dirty}>
+        <Button
+          onClick={save}
+          disabled={!dirty || isViewer}
+          title={isViewer ? "Viewers can't edit workspace settings" : undefined}
+        >
           Save
         </Button>
       </DialogFooter>
@@ -491,6 +500,7 @@ const ACCENT_PRESETS: { id: ThemeAccent; label: string; light: string; dark: str
 function AccentSection() {
   const accent = useFlowBase((s) => s.settings.themeAccent ?? "purple")
   const updateSettings = useFlowBase((s) => s.updateSettings)
+  const isViewer = useFlowBase(selectIsViewer)
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === "dark"
 
@@ -508,12 +518,15 @@ function AccentSection() {
               key={p.id}
               type="button"
               onClick={() => updateSettings({ themeAccent: p.id })}
+              disabled={isViewer}
+              title={isViewer ? "Viewers can't change accent color" : undefined}
               data-accent-preset={p.id}
               className={cn(
                 "flex flex-col items-center gap-1.5 rounded-md border bg-card px-2 py-2 transition-colors",
                 active
                   ? "border-primary"
                   : "border-border-subtle hover:border-border",
+                isViewer && "cursor-not-allowed opacity-50",
               )}
             >
               <span
@@ -636,6 +649,7 @@ function DataTab() {
 
 function ImportSection() {
   const importWorkspace = useFlowBase((s) => s.importWorkspace)
+  const isViewer = useFlowBase(selectIsViewer)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -682,13 +696,15 @@ function ImportSection() {
           return
         }
         const summary = importWorkspace(parsed)
-        const addedBits =
-          `${summary.boards} board${summary.boards === 1 ? "" : "s"}` +
-          (summary.library > 0 ? `, ${summary.library} library` : "") +
-          (summary.wiki > 0 ? `, ${summary.wiki} wiki` : "") +
-          (summary.automations > 0
-            ? `, ${summary.automations} automation${summary.automations === 1 ? "" : "s"}`
-            : "")
+        const totalAdded =
+          summary.boards +
+          summary.library +
+          summary.wiki +
+          summary.automations
+        const totalSkipped =
+          summary.skipped.library +
+          summary.skipped.wiki +
+          summary.skipped.automations
         const skipBits: string[] = []
         if (summary.skipped.library > 0)
           skipBits.push(`${summary.skipped.library} library`)
@@ -699,7 +715,22 @@ function ImportSection() {
           skipBits.length > 0
             ? `Skipped (already exist by ID): ${skipBits.join(", ")}`
             : undefined
-        toast.success(`Imported ${addedBits}`, { description: skipDesc })
+        if (totalAdded === 0 && totalSkipped > 0) {
+          toast.info("Nothing new to import", {
+            description: `All items already exist by ID: ${skipBits.join(", ")}.`,
+          })
+        } else if (totalAdded === 0) {
+          toast.info("Snapshot was empty — nothing to import")
+        } else {
+          const addedBits =
+            `${summary.boards} board${summary.boards === 1 ? "" : "s"}` +
+            (summary.library > 0 ? `, ${summary.library} library` : "") +
+            (summary.wiki > 0 ? `, ${summary.wiki} wiki` : "") +
+            (summary.automations > 0
+              ? `, ${summary.automations} automation${summary.automations === 1 ? "" : "s"}`
+              : "")
+          toast.success(`Imported ${addedBits}`, { description: skipDesc })
+        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Unknown error"
         toast.error(`Import failed — ${msg}`)
@@ -730,6 +761,8 @@ function ImportSection() {
         size="sm"
         variant="outline"
         onClick={() => fileInputRef.current?.click()}
+        disabled={isViewer}
+        title={isViewer ? "Viewers can't import data" : undefined}
         className="gap-1.5"
         data-import-trigger
       >

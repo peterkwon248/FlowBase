@@ -16,6 +16,7 @@ import {
   Plus,
   Printer,
   Sparkles,
+  Target,
   X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -850,16 +851,63 @@ function CustomChartCard({
 
   const [renameOpen, setRenameOpen] = useState(false)
   const [draftTitle, setDraftTitle] = useState(chart.title)
+  // P-4: Bullet "as KPI" preset — goal 설정 Dialog (KPI → Bullet 변환 또는 Bullet goal 편집).
+  const [goalOpen, setGoalOpen] = useState(false)
+  const [draftGoal, setDraftGoal] = useState(
+    chart.goal !== undefined ? String(chart.goal) : "",
+  )
+  const [draftGoalLabel, setDraftGoalLabel] = useState(chart.goalLabel ?? "")
 
   // 외부 변경 (다른 머신 sync) 시 draft 동기화
   useEffect(() => {
     setDraftTitle(chart.title)
   }, [chart.title])
 
+  // goal Dialog 열릴 때 fresh value로 init
+  useEffect(() => {
+    if (goalOpen) {
+      setDraftGoal(chart.goal !== undefined ? String(chart.goal) : "")
+      setDraftGoalLabel(chart.goalLabel ?? "")
+    }
+  }, [goalOpen, chart.goal, chart.goalLabel])
+
   const saveRename = () => {
     const t = draftTitle.trim()
     if (t && t !== chart.title) onUpdate({ title: t })
     setRenameOpen(false)
+  }
+
+  const saveGoal = (convertTo?: "bullet") => {
+    const trimmed = draftGoal.trim()
+    const n = trimmed ? Number(trimmed) : NaN
+    const validGoal = Number.isFinite(n)
+    const patch: Partial<ChartConfig> = {
+      goal: validGoal ? n : undefined,
+      goalLabel: draftGoalLabel.trim() || undefined,
+    }
+    if (convertTo === "bullet" && chart.type !== "bullet") {
+      patch.type = "bullet"
+    }
+    onUpdate(patch)
+    setGoalOpen(false)
+    if (convertTo === "bullet") {
+      toast.success(
+        validGoal
+          ? `Converted to Bullet — goal ${n}`
+          : "Converted to Bullet (no goal set)",
+      )
+    }
+  }
+
+  const convertBulletToKpi = () => {
+    onUpdate({
+      type: "kpi",
+      goal: undefined,
+      goalLabel: undefined,
+      referenceValue: undefined,
+      referenceLabel: undefined,
+    })
+    toast.success("Converted to KPI")
   }
 
   // G1-2: drill-down — chart cell click 시 sourceCol에 filter + sheet 전환.
@@ -982,6 +1030,32 @@ function CustomChartCard({
               >
                 Rename…
               </DropdownMenuItem>
+              {chart.type === "kpi" && (
+                <DropdownMenuItem
+                  onSelect={() => setGoalOpen(true)}
+                  data-chart-convert-bullet={chart.id}
+                >
+                  <Target className="size-3.5 text-muted-foreground" strokeWidth={1.75} />
+                  Convert to Bullet…
+                </DropdownMenuItem>
+              )}
+              {chart.type === "bullet" && (
+                <>
+                  <DropdownMenuItem
+                    onSelect={() => setGoalOpen(true)}
+                    data-chart-set-goal={chart.id}
+                  >
+                    <Target className="size-3.5 text-muted-foreground" strokeWidth={1.75} />
+                    Set goal…
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => convertBulletToKpi()}
+                    data-chart-convert-kpi={chart.id}
+                  >
+                    Convert to KPI
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuItem
                 onSelect={() => {
                   const csv = chartToCsv(chart, rows, board.columns)
@@ -1084,6 +1158,63 @@ function CustomChartCard({
               Cancel
             </Button>
             <Button onClick={saveRename}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* P-4: Bullet goal Dialog — KPI→Bullet 변환 또는 Bullet goal 편집 */}
+      <Dialog open={goalOpen} onOpenChange={setGoalOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target className="size-4 text-muted-foreground" strokeWidth={1.75} />
+              {chart.type === "kpi"
+                ? "Convert to Bullet chart"
+                : "Set Bullet goal"}
+            </DialogTitle>
+            <DialogDescription className="text-[12px]">
+              {chart.type === "kpi"
+                ? "Bullet shows the current value as a progress bar toward a goal. Leave goal blank to convert without a target (you can add one later)."
+                : "Bullet shows progress toward this goal. Leave blank to remove the goal."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2.5">
+            <div className="space-y-1.5">
+              <Label htmlFor="chart-goal-value" className="text-[12px]">
+                Goal value (number)
+              </Label>
+              <Input
+                id="chart-goal-value"
+                type="number"
+                autoFocus
+                value={draftGoal}
+                onChange={(e) => setDraftGoal(e.target.value)}
+                placeholder="e.g. 100"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="chart-goal-label" className="text-[12px]">
+                Goal label (optional)
+              </Label>
+              <Input
+                id="chart-goal-label"
+                value={draftGoalLabel}
+                onChange={(e) => setDraftGoalLabel(e.target.value)}
+                placeholder="e.g. Q1 quota"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setGoalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                saveGoal(chart.type === "kpi" ? "bullet" : undefined)
+              }
+            >
+              {chart.type === "kpi" ? "Convert" : "Save"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
