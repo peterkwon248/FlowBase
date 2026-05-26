@@ -6,7 +6,13 @@
 
 ## Current Features (Completed — 최근 우선)
 
-1. **14 phase 통합** (2026-05-25, multi-select 5 commits `a4e36a5`~`b6e6e10` + 13 phase 단일 `2c04c39`, **main 머지 예정**) —
+1. **G7-C Saved Views + Formula 컬럼 + UI polish** (2026-05-26, 2 commit `fac61fe` G7-C + `9f351c0` polish, **main 머지 예정**) —
+   - **Saved Views** (C-V1·V2·V3) — Notion 식 named view · SavedView types + 5 store actions + v17 migrate · SavedViewsMenu(BookmarkCheck trigger · Save/Apply/Rename inline/Delete) · viewType 호환 가드 + modified detection(amber dot · Update from current). Scope LOCK: filter+sort+viewSettings 풀세트
+   - **Formula 컬럼** (C-F1~F5) — `ColumnType += "formula"` · `lib/formula/` (tokens·parser·evaluator·functions·cycles·index) · 16 함수(concat/lower/upper/length · add/sub/mul/div/round · if · today/format · prop + 비교/논리) · dependsOn 자동 추출 · 자동 editor 오픈(CustomEvent) · FormulaCell + AST cache + ⚠ ERR · FormulaEditorDialog + 라이브 validation · 순환 detection(DFS 3색) · patch 거부 가드. LOCK: prop("X") 명시만 · 결과 타입 4종(status pill 흉내 ❌) · sort/filter 1차 미지원. 87 신규 tests
+   - **UI polish P-1~P-4** — Toast position="bottom-right" + richColors + closeButton + duration LOCK · EmptyState 공통 컴포넌트(Gallery/Timeline) · Import skip summary 분기(Nothing new · Snapshot empty · Imported X) · Bullet "as KPI" preset(KPI↔Bullet Convert + goal Dialog)
+   - **viewer enforcement P-5** — store undo/redo 가드(총 가드 ~56개) · tables-mode Undo button · Settings General(workspace name/initial/Save) + Accent(4 preset) + Import(Choose JSON) viewer disable
+
+2. **14 phase 통합** (2026-05-25, multi-select 5 commits `a4e36a5`~`b6e6e10` + 13 phase 단일 `2c04c39`, **main 머지 완료**) —
    - **Multi-select column type** (C1-C5) — Notion 패턴 · in/not_in ANY-match · status 격리 LOCK
    - **Filter +Add condition** — 3+ cond array loop
    - **Dashboard 완성** (D1-5 + F1-2 + G1 + G5 + G7-A + G7-B) — 11 chart type · 6 AggFn · 5 TimeScale · Auto-recommend · Pivot · drill-down · Goal · Bullet · Funnel · Conditional · PNG/Print

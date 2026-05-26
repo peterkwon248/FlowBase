@@ -1,19 +1,19 @@
 # NEXT-ACTION
 
 > 다음 세션 시작 시 이 파일부터 읽으세요.
-> 마지막 갱신: 2026-05-25 (kkh94 머신, 14 phase 통합 — multi-select 5 commits + 13 phase 단일 commit `2c04c39`)
+> 마지막 갱신: 2026-05-26 (kkh94 머신, 13 phase 2 commit — `fac61fe` G7-C + `9f351c0` UI polish)
 
 ---
 
 ## 한 줄 요약
 
-**Multi-select column type · Filter +Add condition · Dashboard 완성 (D1-5/F1-2/G1/G5/G7-A/G7-B) · Phase A code-only domain fit (A1-5) · AI 확장 (B1-4/G6-1-2) · G3 NEXT-ACTION 잔여 · G4 안정성 · P 폴리시 모두 완료. 다음: 상용화 마일스톤(M1 BaaS·M2 인증·M4 반응형) 또는 G7-C(Formula/Saved views) · G7-D(모바일).**
+**G7-C Power user(Saved Views 3 + Formula 5) + 중간 폴리시(P-1~P-4) + viewer enforcement polish(P-5) 모두 완료. Formula = parser/evaluator/cycle detection · 16 함수 · 자동 editor + dependsOn 추출 + 순환 가드. Saved Views = filter+sort+viewSettings 풀세트. 다음: 상용화 마일스톤(M1 BaaS·M2 인증·M4 모바일) 또는 G7 후속 폴리시(Filter And/Or · Schema pinch-zoom · Wiki diff 등).**
 
 ---
 
 ## ✅ 머지 완료
 
-- `origin/main = 2c04c39` 예정 (이번 세션 push 후 머지 — multi-select 5 commits + 통합 13 phase 1 commit).
+- `origin/main = 9f351c0` 예정 (이번 세션 push 후 머지 — `fac61fe` G7-C + `9f351c0` UI polish).
 - 다른 머신: `git fetch && git checkout main && git pull && npm install`.
 
 ---
@@ -33,8 +33,9 @@
 - **M7 협업** (comment·mention·snooze, Phase 2 W11 후) — 2-3주
 
 ### G7 추가 polish (선택, 도메인 fit 후속)
-- **G7-C Power user** — Formula 컬럼 · Saved views · Sankey chart
+- ~~**G7-C Power user** — Formula 컬럼 · Saved views~~ ✅ 완료 (Sankey chart는 묶음에서 제외)
 - **G7-D 모바일** — 반응형 fix (M4 마일스톤 통합 가능)
+- **G7-C 후속**: Formula sort/filter by formula 컬럼 · Formula multiSelect `join(arr, sep)` 함수 · Saved view deep equal helper(JSON.stringify 의존 제거)
 
 ### 우선순위 중간 (소소)
 - 알림 시스템 강화 (toast position 통일)
@@ -201,3 +202,29 @@
 kkh94 (`C:\Users\kkh94\OneDrive\Desktop\FlowBase`). 다음 머신: `git fetch && git checkout main && git pull && npm install`.
 
 **dev cache 주의**: Next.js 업데이트 후 `.next` 삭제 + dev server 재시작 필요 (stale chunk 방지).
+**워크트리 주의**: 워크트리는 main과 별도 node_modules 필요. `npm install` 워크트리 디렉토리에서 실행.
+
+## 이번 세션 (2026-05-26) 완료 13 phase
+
+### G7-C Saved Views (`fac61fe`)
+- C-V1 SavedView types + 5 store actions + v17 migrate · SnapshotState 포함
+- C-V2 SavedViewsMenu 신규 · Save/Apply/Rename inline/Delete · BookmarkCheck trigger
+- C-V3 viewType 호환 가드 + modified detection (amber dot · Update from current)
+
+### G7-C Formula 컬럼 (`fac61fe`)
+- C-F1 tokenizer + recursive descent parser + extractDeps (28 tests)
+- C-F2 evaluator + 16 함수 (concat/lower/upper/length/add/sub/mul/div/round/if/today/format/prop + 비교/논리) + FormulaError (46 tests)
+- C-F3 ColumnType += "formula" + dependsOn 자동 추출 + add-column-menu Calculator + 자동 editor 오픈
+- C-F4 FormulaCell + AST cache + FormulaEditorDialog (라이브 validation · examples · result type)
+- C-F5 detectCycle (DFS 3색) + wouldCreateCycle + patch 거부 가드 (13 tests)
+
+### UI Polish (`9f351c0`)
+- P-1 Toast position="bottom-right" + richColors + closeButton + duration LOCK
+- P-2 EmptyState 공통 컴포넌트 + Gallery/Timeline 적용 (Kanban 의도 skip)
+- P-3 Import skip summary 분기 (Nothing new · Snapshot empty · Imported X)
+- P-4 Bullet "as KPI" preset — KPI ↔ Bullet 변환 + goal Dialog
+
+### viewer enforcement (`9f351c0`)
+- store undo/redo 가드 (총 가드 ~56개)
+- tables-mode Undo button disabled
+- settings General (workspace name/initial/Save) + Accent (4 preset) + Import (Choose JSON) 모두 viewer disable

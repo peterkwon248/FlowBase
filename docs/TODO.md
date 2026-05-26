@@ -81,6 +81,16 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 - [x] **Gallery cardFields reorder** (↑/↓ 버튼)
 - [x] **Timeline month scale** (COL_WIDTH_MONTH=8)
 
+## 2026-05-26 G7-C + 폴리시 13 phase (2 commit · `fac61fe` + `9f351c0`)
+
+- [x] **G7-C Saved Views** (C-V1·V2·V3) — SavedView types + 5 actions + v17 migrate · SnapshotState 포함 · SavedViewsMenu · viewType 호환 가드 · modified detection
+- [x] **G7-C Formula 컬럼** (C-F1~F5) — tokenizer/parser + extractDeps · evaluator + 16 함수 · ColumnType += "formula" · dependsOn 자동 추출 · FormulaCell + AST cache · FormulaEditorDialog · 순환 detection
+- [x] **P-1 Toast position 통일** — Toaster props 명시 (bottom-right + richColors + closeButton + duration) + LOCK
+- [x] **P-2 Empty state 일관성** — EmptyState 공통 컴포넌트 + Gallery/Timeline 적용 (Kanban 의도 skip)
+- [x] **P-3 Data Import skip summary UI** — totalAdded/totalSkipped 분기 (Nothing new · Snapshot empty · Imported X)
+- [x] **P-4 Bullet "as KPI" preset** — KPI↔Bullet Convert 메뉴 + goal Dialog
+- [x] **P-5 viewer enforcement polish** — store undo/redo 가드 + tables-mode Undo + Settings General/Accent/Import disable
+
 ## 2026-05-25 14 phase 통합 (multi-select 5 commits + 13 phase 1 commit `2c04c39`)
 
 - [x] **Multi-select column type** (C1-C5) — types/store/sheet/views/filter/import
@@ -104,19 +114,32 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ## P2 — 남은 폴리시
 
-- [ ] **다른 pill 일괄 점검** — priority/library category 등 wrap 가능성 nowrap.
-- [ ] **남은 mutation enforcement** — commitAi/promote/attach/automation/settings/등 30+ 추가.
-- [ ] **UI 단 viewer disable** — button disabled / readonly 표시.
-- [ ] **Theme accent oklch 시각 튜닝** — light/dark 4 accent 브라우저 검증 후.
-- [ ] **Data Import skip summary** — id 충돌 skip 카운트 표시.
-- [ ] **Filter And/Or 본격** — multi-condition per column 또는 cross-column. operator 확장(=/≠/regex 등).
-- [ ] **Schema pinch-zoom 트랙패드** + 멀티 테이블 → N개 보드.
-- [ ] **MATCH_FROM_DROPDOWN sourceField 명시 선택**.
-- [ ] **Chart toolbar 터치 UX** — group-hover 한계.
-- [ ] **Wiki body diff/version history**.
-- [ ] **firedKeys runtime ref sync** — permanentDeleteBoard 후 즉시.
-- [ ] **Timeline real month aggregation** — month scale은 colWidth만, 실 month group은 후속.
-- [ ] **Gallery dnd reorder** (현재 ↑↓ 버튼만).
+- [x] ~~**다른 pill 일괄 점검**~~ — 이미 18 파일 whitespace-nowrap 적용됨
+- [x] ~~**남은 mutation enforcement**~~ — undo/redo 가드 완료 (P-5). 의도 제외 LOCK 명시
+- [x] ~~**UI 단 viewer disable**~~ — Settings General/Accent/Import + tables Undo 완료 (P-5)
+- [ ] **Theme accent oklch 시각 튜닝** — light/dark 4 accent 브라우저 검증 후
+- [x] ~~**Data Import skip summary**~~ — 분기 추가 완료 (P-3)
+- [ ] **Filter And/Or UI 본격** — "+Add condition" 진입점(인프라는 다중 cond array 있음, UI minimum)
+- [ ] **Schema pinch-zoom 트랙패드** + 멀티 테이블 → N개 보드
+- [ ] **MATCH_FROM_DROPDOWN sourceField 명시 선택**
+- [ ] **Chart toolbar 터치 UX** — group-hover 한계
+- [ ] **Wiki body diff/version history 정교화** — naive line diff → LCS
+- [ ] **firedKeys runtime ref sync** — permanentDeleteBoard 후 즉시
+- [ ] **Timeline real month aggregation** — month scale은 colWidth만, 실 month group은 후속
+- [ ] **Gallery dnd reorder** (현재 ↑↓ 버튼만)
+- [ ] **HTML chart (Pivot) PNG export** — html-to-canvas 의존성
+- [ ] **ESLint flat config 복구** — `npm run lint` 작동 + CI + pre-commit hook
+
+## G7-C 후속 (Formula · Saved Views 폴리시)
+
+- [ ] **Formula sort/filter by formula 컬럼** — selectVisibleRows evaluator 호출 필요
+- [ ] **Formula `join(arr, sep)` 함수 추가** — multiSelect 더 정교한 처리
+- [ ] **Formula 컬럼명 autocomplete** — `prop("` 까지 입력 시 컬럼명 dropdown
+- [ ] **Formula 추가 함수** — mean · max · min over array · contains · replace · dateAdd · weekOfYear
+- [ ] **Saved view deep equal helper** — modified detection JSON.stringify 의존 제거
+- [ ] **Saved view kanban 호환 완전 fallback** — 현재 sheet fallback + warning, 진짜 카드 표시 검토
+- [ ] **Formula Import 시 매핑** — import-normalizers는 현재 formula 컬럼 무시
+- [ ] **Empty state 잔여** — Search 모드 empty · Wiki 검색 empty · Inbox 빈 상태
 
 ---
 

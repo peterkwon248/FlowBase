@@ -4,6 +4,118 @@
 
 ---
 
+## 2026-05-26 (kkh94 머신, 13 phase / 2 commit) — G7-C Saved Views + Formula 컬럼 + UI polish + viewer enforcement
+
+### 완료 (2 commits — `fac61fe` + `9f351c0` · 27 파일 변경 · +2791/-44)
+
+이번 세션 누적 큼. file overlap(types/store)이 G7-C 8 phase에 걸쳐 분리 어려워
+2 commit 분할: G7-C 통합 + 폴리시 통합.
+
+#### G7-C Saved Views (C-V1·V2·V3) — `fac61fe`
+- C-V1 SavedView interface + 5 store actions(save/apply/rename/delete/update) +
+  v16→v17 migrate · SnapshotState에 savedViews/activeSavedViewId 포함 · 모든
+  액션 ensureCanEdit 가드.
+- C-V2 SavedViewsMenu 신규 — Popover · BookmarkCheck trigger · Save current
+  inline input · 저장된 views 리스트(Apply+kebab Rename inline/Update/Delete).
+  Scope LOCK: filter+sort+viewSettings 풀세트 (Notion 패턴).
+- C-V3 applySavedView viewType 호환 가드 (Kanban→status 없음 시 sheet
+  fallback + toast warning) · modified detection (활성 view와 현재 state
+  JSON.stringify 비교 → trigger amber dot + popover "Update from current" 빠른
+  액션).
+
+#### G7-C Formula 컬럼 (C-F1~F5) — `fac61fe`
+- C-F1 lib/formula/tokens.ts · parser.ts (recursive descent · AST: Literal/
+  Identifier/UnaryOp/BinOp/Call) · extractDeps AST walker. 의존성 0.
+  __tests__/lib/formula-parser.test.ts (28 tests).
+- C-F2 lib/formula/{evaluator,functions,index}.ts. 16 함수: concat/lower/upper/
+  length · add/sub/mul/div/round · if · today/format · prop + 비교/논리/단항.
+  FormulaError · #DIV/0 · strict equality · short-circuit. multiSelect array →
+  ", " join. __tests__/lib/formula-eval.test.ts (46 tests).
+- C-F3 ColumnType += "formula" · ColumnDef.formula/formulaDeps/
+  formulaResultType. addColumn/updateColumn parse validation + extractDeps 자동
+  채움 + parse 에러 시 patch 거부. add-column-menu Calculator 항목 + 자동
+  editor 오픈(CustomEvent). TYPE_ICON += formula.
+- C-F4 FormulaCell — AST cache(cap 200) · useMemo with formulaDeps · ⚠ ERR
+  빨간 표시. FormulaEditorDialog 신규 — textarea + 라이브 validation +
+  dependsOn 미리보기 + result type + examples. column-header-menu "Edit
+  formula" 항목 + CustomEvent listener. read-only 셀.
+- C-F5 lib/formula/cycles.ts detectCycle(DFS 3색) + wouldCreateCycle. addColumn
+  /updateColumn 호출 → 순환 시 patch 거부 + toast.
+  __tests__/lib/formula-cycles.test.ts (13 tests).
+
+#### UI polish P-1~P-4 — `9f351c0`
+- P-1 Toaster props 명시 — position="bottom-right" + richColors + closeButton +
+  duration=4000 + LOCK 주석. 개별 toast position override ❌ 강제.
+- P-2 components/board/empty-state.tsx 신규 (Icon+title+description+children).
+  Gallery (rows.length===0 · LayoutGrid · no rows vs filter empty 분기),
+  Timeline (no dateCol, no datedRows — CalendarRange) 적용. Kanban 의도 skip.
+- P-3 settings ImportSection — totalAdded===0 && totalSkipped>0 → "Nothing new"
+  분기. totalAdded===0 → "Snapshot was empty".
+- P-4 dashboard CustomChartCard: KPI → "Convert to Bullet…" + goal Dialog.
+  Bullet → "Set goal…" + "Convert to KPI".
+
+#### P-5 viewer enforcement polish — `9f351c0`
+- store undo/redo 가드 ensureCanEdit (총 가드 ~56개).
+- tables-mode Undo button disabled={isViewer}.
+- settings-dialog GeneralTab (workspaceLabel/initial/Save), AccentSection
+  (4 preset buttons), ImportSection (Choose JSON button) viewer disable.
+- Export는 read-only이라 viewer OK 의도. AI Composer Send도 OK.
+
+### 큰 결정 (이번 세션)
+
+1. **2 commit 분할 채택** — types/store가 G7-C 전체에 걸쳐 변경되어 phase별
+   분할 불가. G7-C 통합 + 폴리시 통합으로. 직전 14 phase 1 commit보다 개선.
+2. **Saved view scope = filter + sort + viewSettings 풀세트** (Q1) — Notion
+   패턴 답습. viewSettings only는 부족.
+3. **Formula 참조 = `prop("colName")` 명시만** (Q9) — bare identifier(`Status`)
+   는 unknown identifier 에러. parser 단순화 + 모호성 회피.
+4. **Formula compute = read-on-render + AST cache + useMemo deps** (Q12) —
+   write 캐시 ❌. 1000행 미만에선 가벼움.
+5. **Formula 결과 타입 = text/number/date/boolean 4종** — status pill 흉내 ❌
+   (LOCK 보존).
+6. **Formula sort/filter by formula = 1차 미지원** (Q14) — selectVisibleRows에
+   evaluator 호출 ❌. 후속.
+7. **Formula 추가 column UX = 자동 editor 오픈** (Q11) — CustomEvent dispatch
+   패턴.
+8. **순환 detection patch 거부** (Q10) — invalid formula 컬럼 저장 ❌. 사용자
+   명시 수정 강제.
+9. **Toast position = bottom-right** + richColors + closeButton LOCK — 개별
+   호출 override ❌.
+10. **EmptyState 공통 컴포넌트 도입** — Kanban per-column 다른 scale이라 의도
+    skip. Sheet onboarding tips는 기존 유지.
+11. **Bullet "as KPI" preset = 메뉴 변환 + goal Dialog** — 별도 chart type
+    추가 ❌, 기존 bullet 활용. Convert 양방향 (KPI↔Bullet).
+12. **viewer enforcement Export 제외** — Export는 read-only operation이라
+    viewer가 자기 데이터 export OK.
+
+### 검증
+- tsc 0 errors
+- vitest 290/290 (203 baseline + 28 parser + 46 eval + 13 cycles = +87)
+- 브라우저: Saved Views save/apply/active 표시 + Formula 컬럼 추가→자동 editor
+  →parse validation→deps 추출→10 cells 평가 + bottom-right toast + viewer
+  General tab disabled 모두 OK · console errors 0
+
+### Watch Out (다음 세션)
+
+- **G7-C [Q14] Formula sort/filter 후속** — 사용자가 formula 컬럼으로 정렬/
+  필터 시도 시 동작 ❌. UI 안내 또는 후속 구현 필요.
+- **Saved view modified detection JSON.stringify 의존** — 키 순서 영향 받을
+  수 있음. polish 후속 (deep equal helper).
+- **Formula AST cache cap 200** — 활발 사용 시 도달 가능. 사용 패턴 보고 조정.
+- **Formula 결과 → group by/sort key** — viewSettings.sheet.sorts에 formula
+  컬럼명 허용 ❌ (계산값 정렬은 evaluator 필요).
+- **Formula multiSelect array** — ", " join만. join(arr, sep) 함수 후속 검토.
+- **2 commit 분할 27 파일 +2791/-44** — review 단위 큼. file overlap 풀린
+  뒤에는 phase별 분할 가능 — 다음부터 진짜 시도.
+- **MEMBER demo "Switch to" 패턴** — viewer enforcement 검증 위해 store
+  localStorage 직접 조작. settings.currentUserId 단독 변경은 가드 우회 (의도
+  — 데모 패턴).
+
+### 머신
+kkh94. main 머지·푸시 자동 (after-work 단계 8).
+
+---
+
 ## 2026-05-25 (kkh94 머신, 14 phase 통합 — multi-select 5 + 13 phase 1 commit) — Multi-select · Filter +Add · Dashboard 완성 · Phase A 도메인 fit · AI 확장 · G3/G4/G5/G6/G7-A/G7-B/P
 
 ### 완료 (multi-select 5 commits `a4e36a5`~`b6e6e10` + 13 phase 단일 commit `2c04c39` · 52 파일 +6308/-231)
