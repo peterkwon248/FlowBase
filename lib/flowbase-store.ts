@@ -22,8 +22,13 @@ import type {
   FilterCondition,
   FlowBaseState,
   LibraryCategoryId,
+  LibraryDashboard,
+  LibraryField,
+  LibraryFunction,
+  LibraryTemplate,
   MemoryEntry,
   NavEntry,
+  OptionList,
   PageRevision,
   RecentFilterSnapshot,
   RecentSortSnapshot,
@@ -31,13 +36,10 @@ import type {
   Snapshot,
   SnapshotState,
   SortDir,
-  SortState,
   TableRow,
   TicketStatus,
   MemberRole,
-  TrashedBoard,
   TrashedRow,
-  TrashedWikiPage,
   ViewMode,
   ViewSettings,
   TimestampedEvent,
@@ -53,7 +55,8 @@ import {
   multiToSingle,
   singleToMulti,
 } from "@/lib/multi-select"
-import { parseFormula, extractDeps } from "@/lib/formula"
+import { parseFormula, extractDeps, evaluate as evaluateFormula } from "@/lib/formula"
+import type { Expr } from "@/lib/formula"
 import { wouldCreateCycle } from "@/lib/formula/cycles"
 import { createSeedLibrary } from "@/lib/flowbase-library-seed"
 import { createSeedBoard } from "@/lib/flowbase-seed"
@@ -214,6 +217,14 @@ export interface FlowBaseActions {
   // F2: Library Field에 옵션 추가. config.optionListId 있으면 OptionList sync, 없으면 인라인.
   // 호출 시 명시 ✅ (자동 promote ❌, LOCK). cell editor "+"/promote toast가 사용.
   addOptionToLibraryField: (fieldId: string, value: string) => boolean
+
+  // Q14-C2: Library 자산 인라인 편집 — 각 카테고리별 update action.
+  // rename · description · options 편집 등. ensureCanEdit 가드.
+  updateLibraryOptionList: (id: string, patch: Partial<OptionList>) => void
+  updateLibraryField: (id: string, patch: Partial<LibraryField>) => void
+  updateLibraryTemplate: (id: string, patch: Partial<LibraryTemplate>) => void
+  updateLibraryFunction: (id: string, patch: Partial<LibraryFunction>) => void
+  updateLibraryDashboard: (id: string, patch: Partial<LibraryDashboard>) => void
 
   // Rows — active board 대상. 변경 전 undo 스냅샷 push.
   addRow: (row?: Partial<TableRow>) => string
@@ -1048,6 +1059,9 @@ export const useFlowBase = create<FlowBaseStore>()(
           }
 
           // 1) Boards — id 충돌 시 새 id, 항상 추가 (skip ❌)
+          // Q5-B7: formula 컬럼 재검증 — 텍스트는 그대로 보존, dependsOn 재계산
+          //   (export 당시 dependsOn이 stale이거나 다른 머신에서 만들어진 경우 대비).
+          //   parse 실패 시 컬럼 그대로 (셀이 ⚠ ERR 표시, 사용자가 Edit formula로 수정).
           const nextBoards = { ...s.boards }
           const nextViewByBoardId = { ...s.viewByBoardId }
           for (const [importedId, board] of Object.entries(
@@ -1057,7 +1071,26 @@ export const useFlowBase = create<FlowBaseStore>()(
             if (nextBoards[id]) {
               id = `${importedId}-imported-${Date.now().toString(36).slice(-4)}-${summary.boards}`
             }
-            nextBoards[id] = { ...board, id, updatedAt: nowIso() }
+            const reparsedColumns = (board.columns ?? []).map((c) => {
+              if (c.type !== "formula" || !c.formula?.trim()) return c
+              try {
+                const ast = parseFormula(c.formula)
+                return {
+                  ...c,
+                  formulaDeps: extractDeps(ast),
+                  formulaResultType: c.formulaResultType ?? "text",
+                }
+              } catch {
+                // invalid formula는 그대로 둠 — 셀이 ⚠ ERR 표시. 사용자가 Edit formula로 수정.
+                return c
+              }
+            })
+            nextBoards[id] = {
+              ...board,
+              id,
+              columns: reparsedColumns,
+              updatedAt: nowIso(),
+            }
             nextViewByBoardId[id] = nextViewByBoardId[id] ?? "sheet"
             summary.boards += 1
           }
@@ -1708,6 +1741,70 @@ export const useFlowBase = create<FlowBaseStore>()(
             },
           })
           return true
+        },
+
+        // ─── Q14-C2: Library 자산 인라인 편집 ───
+        // 5 카테고리별 patch update. ensureCanEdit 가드.
+        // patch.id 변경 ❌ (referential integrity 보존).
+        updateLibraryOptionList: (id, patch) => {
+          const s = get()
+          if (!ensureCanEdit(s, "Edit option list")) return
+          set({
+            library: {
+              ...s.library,
+              optionLists: s.library.optionLists.map((l) =>
+                l.id === id ? { ...l, ...patch, id: l.id } : l,
+              ),
+            },
+          })
+        },
+        updateLibraryField: (id, patch) => {
+          const s = get()
+          if (!ensureCanEdit(s, "Edit field")) return
+          set({
+            library: {
+              ...s.library,
+              fields: s.library.fields.map((f) =>
+                f.id === id ? { ...f, ...patch, id: f.id } : f,
+              ),
+            },
+          })
+        },
+        updateLibraryTemplate: (id, patch) => {
+          const s = get()
+          if (!ensureCanEdit(s, "Edit template")) return
+          set({
+            library: {
+              ...s.library,
+              templates: s.library.templates.map((t) =>
+                t.id === id ? { ...t, ...patch, id: t.id } : t,
+              ),
+            },
+          })
+        },
+        updateLibraryFunction: (id, patch) => {
+          const s = get()
+          if (!ensureCanEdit(s, "Edit function")) return
+          set({
+            library: {
+              ...s.library,
+              functions: s.library.functions.map((f) =>
+                f.id === id ? { ...f, ...patch, id: f.id } : f,
+              ),
+            },
+          })
+        },
+        updateLibraryDashboard: (id, patch) => {
+          const s = get()
+          if (!ensureCanEdit(s, "Edit dashboard")) return
+          set({
+            library: {
+              ...s.library,
+              dashboards: s.library.dashboards.map((d) =>
+                d.id === id ? { ...d, ...patch, id: d.id } : d,
+              ),
+            },
+          })
         },
 
         addRow: (row) => {
@@ -2439,7 +2536,10 @@ export const useFlowBase = create<FlowBaseStore>()(
             return false
           }
           // viewType 호환성 — Kanban needs status, Timeline needs date.
-          // 호환 안 되면 sheet fallback + toast warning (저장된 view 자체는 그대로 유지).
+          // 호환 안 되면 sheet fallback + toast warning. **저장된 view 자체는 그대로 유지** —
+          // viewByBoardId만 sheet로 patch, viewSettings.kanban/timeline은 보존.
+          // 의도: 사용자가 status/date 컬럼 추가 후 다시 같은 view 적용하면 자연 복구.
+          // (Q1-B6 검토 결과: 현재 동작이 의도 — viewSettings 비우면 데이터 손실.)
           const hasStatus = board.columns.some((c) => c.type === "status")
           const hasDate = board.columns.some((c) => c.type === "date")
           let appliedViewType: ViewMode = foundView.viewType
@@ -2447,13 +2547,21 @@ export const useFlowBase = create<FlowBaseStore>()(
             appliedViewType = "sheet"
             toast.warning(
               `"${foundView.name}" needs a status column for Kanban — showing as Sheet`,
-              { id: "sv-viewtype-fallback" },
+              {
+                id: "sv-viewtype-fallback",
+                description:
+                  "Add a status column to this board to restore the Kanban layout.",
+              },
             )
           } else if (foundView.viewType === "timeline" && !hasDate) {
             appliedViewType = "sheet"
             toast.warning(
               `"${foundView.name}" needs a date column for Timeline — showing as Sheet`,
-              { id: "sv-viewtype-fallback" },
+              {
+                id: "sv-viewtype-fallback",
+                description:
+                  "Add a date column to this board to restore the Timeline layout.",
+              },
             )
           }
           // 활성 보드와 다르면 switch (사용자 명시 진입점에서는 같지만 안전)
@@ -2798,9 +2906,16 @@ export function selectMemoryForColumn(
 
 // status/priority는 의미 순서로, 그 외는 값 비교로 정렬.
 // multiSelect는 first-value 정렬 (빈 배열은 마지막 — 빈 문자열은 ASCII 정렬 자연 마지막 가까움).
-function compareRows(a: TableRow, b: TableRow, key: string, dir: SortDir): number {
-  let av: unknown = a[key]
-  let bv: unknown = b[key]
+// getValueFn: formula 컬럼 등 derived value를 가져오기 위한 hook (Q3). 없으면 row[key] 직접.
+function compareRows(
+  a: TableRow,
+  b: TableRow,
+  key: string,
+  dir: SortDir,
+  getValueFn?: (row: TableRow, key: string) => unknown,
+): number {
+  let av: unknown = getValueFn ? getValueFn(a, key) : a[key]
+  let bv: unknown = getValueFn ? getValueFn(b, key) : b[key]
   if (key === "status") {
     av = STATUS_RANK[String(av)] ?? 99
     bv = STATUS_RANK[String(bv)] ?? 99
@@ -2834,6 +2949,37 @@ export function selectVisibleRows(state: FlowBaseState): TableRow[] {
   if (!board) return []
   let rows = board.rows
 
+  // Q3: Formula 컬럼 sort/filter 지원 — derived value 계산.
+  // per-call AST cache (같은 컬럼의 formula는 1000행에 재사용).
+  const formulaColMap = new Map<string, { col: ColumnDef }>()
+  for (const c of board.columns) {
+    if (c.type === "formula" && c.formula?.trim()) {
+      formulaColMap.set(c.name, { col: c })
+    }
+  }
+  const astCache = new Map<string, Expr | { __error: string }>()
+  const today = new Date().toISOString().slice(0, 10)
+  function getDerivedValue(row: TableRow, key: string): unknown {
+    const entry = formulaColMap.get(key)
+    if (!entry) return row[key]
+    const src = entry.col.formula!
+    let ast = astCache.get(src)
+    if (!ast) {
+      try {
+        ast = parseFormula(src)
+      } catch (e) {
+        ast = { __error: e instanceof Error ? e.message : String(e) }
+      }
+      astCache.set(src, ast)
+    }
+    if ("__error" in ast) return null
+    try {
+      return evaluateFormula(ast, { row, today })
+    } catch {
+      return null
+    }
+  }
+
   // Legacy status chips
   if (state.filter.length > 0) {
     const allowed = new Set<string>(state.filter)
@@ -2841,6 +2987,7 @@ export function selectVisibleRows(state: FlowBaseState): TableRow[] {
   }
 
   // 다중 필드 필터 (columnFilters — 컬럼당 multi-condition AND, FilterCondition union)
+  // Formula 컬럼도 지원: getDerivedValue로 derived value 가져와 비교.
   for (const [col, conds] of Object.entries(state.columnFilters)) {
     if (!conds || conds.length === 0) continue
     for (const cond of conds) {
@@ -2850,16 +2997,15 @@ export function selectVisibleRows(state: FlowBaseState): TableRow[] {
         // multiSelect: ANY-match (cell의 배열 원소 중 하나라도 allowed에 있으면 통과).
         // 그 외: 단일 값 == allowed.
         rows = rows.filter((r) => {
-          const v = r[col]
+          const v = getDerivedValue(r, col)
           if (Array.isArray(v)) return v.some((x) => allowed.has(String(x ?? "")))
           return allowed.has(String(v ?? ""))
         })
       } else if (cond.kind === "not_in") {
         if (cond.values.length === 0) continue
         const excluded = new Set(cond.values)
-        // multiSelect: NONE-match (cell의 배열 원소 중 하나라도 excluded면 차단).
         rows = rows.filter((r) => {
-          const v = r[col]
+          const v = getDerivedValue(r, col)
           if (Array.isArray(v)) return !v.some((x) => excluded.has(String(x ?? "")))
           return !excluded.has(String(v ?? ""))
         })
@@ -2867,7 +3013,7 @@ export function selectVisibleRows(state: FlowBaseState): TableRow[] {
         const { min, max } = cond
         if (min === undefined && max === undefined) continue
         rows = rows.filter((r) => {
-          const n = Number(r[col])
+          const n = Number(getDerivedValue(r, col))
           if (!Number.isFinite(n)) return false
           if (min !== undefined && n < min) return false
           if (max !== undefined && n > max) return false
@@ -2877,7 +3023,7 @@ export function selectVisibleRows(state: FlowBaseState): TableRow[] {
         const { from, to } = cond
         if (!from && !to) continue
         rows = rows.filter((r) => {
-          const v = String(r[col] ?? "")
+          const v = String(getDerivedValue(r, col) ?? "")
           if (!v) return false
           if (from && v < from) return false
           if (to && v > to) return false
@@ -2887,14 +3033,14 @@ export function selectVisibleRows(state: FlowBaseState): TableRow[] {
         const q = cond.text.trim().toLowerCase()
         if (!q) continue
         rows = rows.filter((r) => {
-          const v = r[col]
+          const v = getDerivedValue(r, col)
           return typeof v === "string" && v.toLowerCase().includes(q)
         })
       } else if (cond.kind === "not_contains") {
         const q = cond.text.trim().toLowerCase()
         if (!q) continue
         rows = rows.filter((r) => {
-          const v = r[col]
+          const v = getDerivedValue(r, col)
           return !(typeof v === "string" && v.toLowerCase().includes(q))
         })
       }
@@ -2921,14 +3067,16 @@ export function selectVisibleRows(state: FlowBaseState): TableRow[] {
   if (sheetSorts && sheetSorts.length > 0) {
     rows = [...rows].sort((a, b) => {
       for (const s of sheetSorts) {
-        const c = compareRows(a, b, s.key, s.dir)
+        const c = compareRows(a, b, s.key, s.dir, getDerivedValue)
         if (c !== 0) return c
       }
       return 0
     })
   } else if (state.sort) {
     const { key, dir } = state.sort
-    rows = [...rows].sort((a, b) => compareRows(a, b, key, dir))
+    rows = [...rows].sort((a, b) =>
+      compareRows(a, b, key, dir, getDerivedValue),
+    )
   }
 
   return rows

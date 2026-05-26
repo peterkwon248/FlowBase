@@ -54,7 +54,7 @@ export function NavCluster() {
             </div>
             {[...navStack]
               .slice(0, 20)
-              .map((entry, displayIdx, arr) => {
+              .map((entry, displayIdx) => {
                 const realIdx = navStack.length - 1 - displayIdx
                 const active = realIdx === navIndex
                 return (

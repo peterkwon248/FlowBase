@@ -69,6 +69,7 @@ import {
 } from "@/lib/flowbase-store"
 import type {
   AggFn,
+  Board,
   ChartConfig,
   ChartWidth,
   ColumnDef,
@@ -385,8 +386,15 @@ const WIDTH_CLASS: Record<ChartWidth, string> = {
   full: "md:col-span-12",
 }
 
+// Outer — board guard만. Inner가 모든 hook 보유 (rules-of-hooks 준수).
+// 패턴: early return 후 hook 호출 ❌ — board 있을 때만 Inner 렌더.
 export function DashboardView() {
   const board = useFlowBase(selectActiveBoard)
+  if (!board) return null
+  return <DashboardViewInner board={board} />
+}
+
+function DashboardViewInner({ board }: { board: Board }) {
   // selectVisibleRows는 새 배열을 반환 → 직접 구독 ❌. 의존 슬라이스 구독 후 useMemo.
   const search = useFlowBase((s) => s.search)
   const filter = useFlowBase((s) => s.filter)
@@ -396,6 +404,7 @@ export function DashboardView() {
   const moveChart = useFlowBase((s) => s.moveChart)
   const updateChart = useFlowBase((s) => s.updateChart)
   const clearCustomCharts = useFlowBase((s) => s.clearCustomCharts)
+  const addChart = useFlowBase((s) => s.addChart)
   const rows = useMemo(
     () => selectVisibleRows(useFlowBase.getState()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -407,11 +416,9 @@ export function DashboardView() {
   const [aiSummary, setAiSummary] = useState<string | null>(null)
   const [summarizing, setSummarizing] = useState(false)
 
-  if (!board) return null
-
-  const customCharts = board.charts ?? []
+  // customCharts logical expression은 매 렌더 새 array (board.charts ?? []) → useMemo 안정.
+  const customCharts = useMemo(() => board.charts ?? [], [board.charts])
   const hasCustomCharts = customCharts.length > 0
-  const addChart = useFlowBase((s) => s.addChart)
 
   // A1: 도메인 추론 (header 표시 + recommend priority).
   const domain = useMemo(

@@ -175,4 +175,119 @@ export const FN_TABLE: Record<string, FunctionDef> = {
       return coerceRowValue(raw)
     },
   },
+
+  // Q5-B2: multiSelect 명시적 separator join. prop은 ", " 고정이라 다른 sep 원할 때.
+  //   joinProp("tags", " · ") → "alpha · beta · gamma"
+  //   joinProp("tags", " ")    → "alpha beta gamma"
+  // multiSelect 외 컬럼은 toString 반환 (prop과 동일).
+  joinProp: {
+    arity: { min: 2, max: 2 },
+    fn: (args, ctx) => {
+      const name = coerceToString(args[0]!)
+      const sep = coerceToString(args[1]!)
+      const raw = ctx.row[name]
+      if (Array.isArray(raw)) {
+        return raw
+          .filter((x) => x != null && String(x).trim() !== "")
+          .map((x) => String(x))
+          .join(sep)
+      }
+      if (raw == null) return ""
+      return String(raw)
+    },
+  },
+
+  // Q7-B4: 추가 함수들 — 일반 데이터 처리.
+  // 문자열 polish
+  contains: {
+    arity: { min: 2, max: 2 },
+    fn: (args) => {
+      const haystack = coerceToString(args[0]!)
+      const needle = coerceToString(args[1]!)
+      return haystack.includes(needle)
+    },
+  },
+  replace: {
+    arity: { min: 3, max: 3 },
+    fn: (args) => {
+      const str = coerceToString(args[0]!)
+      const find = coerceToString(args[1]!)
+      const repl = coerceToString(args[2]!)
+      // replaceAll로 모든 occurrence 치환
+      return find === "" ? str : str.split(find).join(repl)
+    },
+  },
+  startsWith: {
+    arity: { min: 2, max: 2 },
+    fn: (args) =>
+      coerceToString(args[0]!).startsWith(coerceToString(args[1]!)),
+  },
+  endsWith: {
+    arity: { min: 2, max: 2 },
+    fn: (args) =>
+      coerceToString(args[0]!).endsWith(coerceToString(args[1]!)),
+  },
+  trim: {
+    arity: { min: 1, max: 1 },
+    fn: (args) => coerceToString(args[0]!).trim(),
+  },
+
+  // 산술 polish
+  abs: {
+    arity: { min: 1, max: 1 },
+    fn: (args) => Math.abs(coerceToNumber(args[0]!, "abs")),
+  },
+  mod: {
+    arity: { min: 2, max: 2 },
+    fn: (args) => {
+      const denom = coerceToNumber(args[1]!, "mod")
+      if (denom === 0) throw new FormulaError("#MOD/0")
+      return coerceToNumber(args[0]!, "mod") % denom
+    },
+  },
+  floor: {
+    arity: { min: 1, max: 1 },
+    fn: (args) => Math.floor(coerceToNumber(args[0]!, "floor")),
+  },
+  ceil: {
+    arity: { min: 1, max: 1 },
+    fn: (args) => Math.ceil(coerceToNumber(args[0]!, "ceil")),
+  },
+
+  // 날짜 polish
+  // dateAdd("2026-05-26", 7) → "2026-06-02"
+  dateAdd: {
+    arity: { min: 2, max: 2 },
+    fn: (args) => {
+      const dateStr = coerceToString(args[0]!)
+      const days = coerceToNumber(args[1]!, "dateAdd")
+      const d = new Date(dateStr + "T00:00:00Z")
+      if (!Number.isFinite(d.getTime())) {
+        throw new FormulaError(`dateAdd: invalid date "${dateStr}"`)
+      }
+      d.setUTCDate(d.getUTCDate() + Math.trunc(days))
+      return d.toISOString().slice(0, 10)
+    },
+  },
+  // weekOfYear("2026-05-26") → 22 (ISO 8601 week number)
+  weekOfYear: {
+    arity: { min: 1, max: 1 },
+    fn: (args) => {
+      const dateStr = coerceToString(args[0]!)
+      const d = new Date(dateStr + "T00:00:00Z")
+      if (!Number.isFinite(d.getTime())) {
+        throw new FormulaError(`weekOfYear: invalid date "${dateStr}"`)
+      }
+      // ISO 8601 week number
+      const target = new Date(d.valueOf())
+      const dayNr = (d.getUTCDay() + 6) % 7
+      target.setUTCDate(target.getUTCDate() - dayNr + 3)
+      const firstThursday = target.valueOf()
+      target.setUTCMonth(0, 1)
+      if (target.getUTCDay() !== 4) {
+        target.setUTCMonth(0, 1 + ((4 - target.getUTCDay() + 7) % 7))
+      }
+      return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000)
+    },
+  },
 }

@@ -522,9 +522,9 @@ function AccentSection() {
               title={isViewer ? "Viewers can't change accent color" : undefined}
               data-accent-preset={p.id}
               className={cn(
-                "flex flex-col items-center gap-1.5 rounded-md border bg-card px-2 py-2 transition-colors",
+                "relative flex flex-col items-center gap-1.5 rounded-md border bg-card px-2 py-2 transition-colors",
                 active
-                  ? "border-primary"
+                  ? "border-primary bg-foreground/[0.03]"
                   : "border-border-subtle hover:border-border",
                 isViewer && "cursor-not-allowed opacity-50",
               )}

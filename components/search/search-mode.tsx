@@ -8,6 +8,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Search as SearchIcon, X } from "lucide-react"
+import { EmptyState } from "@/components/board/empty-state"
 import {
   HighlightMatch,
   KindBadge,
@@ -131,17 +132,18 @@ export function SearchMode() {
       {/* Results — flat list (no grouping in page mode) */}
       <div className="flex-1 overflow-y-auto px-7 pb-12 pt-4">
         {results.length === 0 ? (
-          <div className="mt-16 text-center text-[13px] text-muted-foreground">
-            <SearchIcon
-              className="mx-auto mb-3 size-7 opacity-50"
-              strokeWidth={1.5}
-            />
-            <div>
-              {query
-                ? `No results for "${query}"`
-                : "Start typing to search across tables, rows, Library, and Wiki."}
-            </div>
-          </div>
+          <EmptyState
+            Icon={SearchIcon}
+            title={
+              query ? `No results for "${query}"` : "Search the workspace"
+            }
+            description={
+              query
+                ? "Try a different query, or pick a different category above."
+                : "Start typing to search across tables, rows, Library, and Wiki."
+            }
+            className="mt-12"
+          />
         ) : (
           <ul className="max-w-[820px] space-y-0.5">
             {results.map((item) => (

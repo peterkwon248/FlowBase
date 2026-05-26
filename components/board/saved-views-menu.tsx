@@ -9,6 +9,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
+  ArrowDownAZ,
+  ArrowDownWideNarrow,
   Bookmark,
   BookmarkCheck,
   Check,
@@ -20,6 +22,7 @@ import {
   Pencil,
   Plus,
   RefreshCw,
+  Search,
   SquareKanban,
   Table2,
   Trash2,
@@ -44,6 +47,7 @@ import {
   selectIsViewer,
   useFlowBase,
 } from "@/lib/flowbase-store"
+import { deepEqual } from "@/lib/deep-equal"
 import { cn } from "@/lib/utils"
 import type { SavedView, ViewMode, ViewSettings } from "@/types/flowbase"
 
@@ -88,6 +92,9 @@ export function SavedViewsMenu() {
   const [createName, setCreateName] = useState("")
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState("")
+  // Q10-B9: search filter + 정렬 옵션
+  const [query, setQuery] = useState("")
+  const [sortMode, setSortMode] = useState<"recent" | "alpha">("recent")
   const createInputRef = useRef<HTMLInputElement>(null)
   const editInputRef = useRef<HTMLInputElement>(null)
 
@@ -106,29 +113,36 @@ export function SavedViewsMenu() {
       setCreateName("")
       setEditingId(null)
       setEditingName("")
+      setQuery("")
     }
   }, [open])
+
+  // Q10-B9: filtered + sorted views (search + sort 옵션)
+  const filteredViews = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    let list = savedViewsForBoard
+    if (q) {
+      list = list.filter((v) => v.name.toLowerCase().includes(q))
+    }
+    if (sortMode === "alpha") {
+      list = [...list].sort((a, b) => a.name.localeCompare(b.name))
+    }
+    // recent는 store 순서 그대로 (newest first — saveCurrentAsView가 unshift)
+    return list
+  }, [savedViewsForBoard, query, sortMode])
 
   const activeView = activeViewId
     ? savedViewsForBoard.find((v) => v.id === activeViewId)
     : null
 
-  // Modified detection — 활성 view와 현재 상태 비교. JSON.stringify는 키 순서 영향
-  // 받지만 store가 매번 같은 spread 순서로 patch하므로 안정적. polish는 후속.
+  // Modified detection — 활성 view와 현재 상태 비교. deep equal (키 순서 무관).
+  // Q1-B5: JSON.stringify 의존 제거 (브라우저별 키 ordering 영향 회피).
   const isModified = useMemo(() => {
     if (!activeView) return false
     if (activeView.viewType !== currentViewType) return true
-    if (
-      JSON.stringify(activeView.settings) !== JSON.stringify(currentSettings)
-    )
-      return true
-    if (
-      JSON.stringify(activeView.columnFilters) !==
-      JSON.stringify(currentColumnFilters)
-    )
-      return true
-    if (JSON.stringify(activeView.sort) !== JSON.stringify(currentSort))
-      return true
+    if (!deepEqual(activeView.settings, currentSettings)) return true
+    if (!deepEqual(activeView.columnFilters, currentColumnFilters)) return true
+    if (!deepEqual(activeView.sort, currentSort)) return true
     return false
   }, [
     activeView,
@@ -269,6 +283,42 @@ export function SavedViewsMenu() {
             </div>
           )}
 
+          {/* Q10-B9: search + sort toggle — 4+ views일 때만 노출 (overhead 회피). */}
+          {savedViewsForBoard.length >= 4 && !creating && (
+            <div className="mx-2 mb-1 flex items-center gap-1">
+              <div className="relative flex-1">
+                <Search
+                  className="pointer-events-none absolute left-1.5 top-1/2 size-3 -translate-y-1/2 text-muted-foreground"
+                  strokeWidth={1.75}
+                />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Filter views…"
+                  className="h-7 pl-6 text-[11.5px]"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setSortMode((m) => (m === "recent" ? "alpha" : "recent"))
+                }
+                className="inline-flex h-7 shrink-0 items-center justify-center rounded-md border border-border-subtle px-1.5 text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground"
+                title={
+                  sortMode === "recent"
+                    ? "Sort by name (A→Z)"
+                    : "Sort by recent"
+                }
+              >
+                {sortMode === "alpha" ? (
+                  <ArrowDownAZ className="size-3.5" strokeWidth={1.75} />
+                ) : (
+                  <ArrowDownWideNarrow className="size-3.5" strokeWidth={1.75} />
+                )}
+              </button>
+            </div>
+          )}
+
           {activeView && isModified && !isViewer && !creating && (
             <div className="mx-2 mb-1 rounded-md border border-amber-500/40 bg-amber-500/[0.06] px-2.5 py-1.5 text-[11.5px]">
               <div className="flex items-center justify-between gap-2">
@@ -288,9 +338,15 @@ export function SavedViewsMenu() {
             </div>
           )}
 
-          {savedViewsForBoard.length > 0 && (
+          {savedViewsForBoard.length > 0 && filteredViews.length === 0 && (
+            <div className="px-3 py-2 text-center text-[11.5px] text-muted-foreground">
+              No views matching "{query}"
+            </div>
+          )}
+
+          {filteredViews.length > 0 && (
             <ul className="max-h-72 overflow-auto px-1 pb-1">
-              {savedViewsForBoard.map((v) => {
+              {filteredViews.map((v) => {
                 const Icon = VIEW_ICON[v.viewType] ?? Table2
                 const active = v.id === activeViewId
                 const editing = v.id === editingId

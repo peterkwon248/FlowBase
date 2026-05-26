@@ -7,7 +7,7 @@
 import { parseAny, type ParsedTable } from "@/lib/parsers"
 
 let _worker: Worker | null = null
-let _pendingResolvers: Map<
+const _pendingResolvers: Map<
   string,
   { resolve: (v: ParsedTable) => void; reject: (e: Error) => void }
 > = new Map()

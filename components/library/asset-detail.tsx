@@ -4,7 +4,7 @@
 
 "use client"
 
-import type { ReactNode } from "react"
+import { type ReactNode, useEffect, useRef, useState } from "react"
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -13,12 +13,14 @@ import {
   Link as LinkIcon,
   List,
   type LucideIcon,
+  Pencil,
   Sigma,
   Type,
 } from "lucide-react"
 import { toast } from "sonner"
+import { Input } from "@/components/ui/input"
 import { LIBRARY_CATEGORIES } from "@/lib/flowbase-library-seed"
-import { useFlowBase } from "@/lib/flowbase-store"
+import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type {
   Library,
@@ -117,7 +119,7 @@ function Shell({
   asset,
   children,
 }: {
-  asset: { name: string; desc?: string; usedIn: string[] }
+  asset: { id: string; name: string; desc?: string; usedIn: string[] }
   children: ReactNode
 }) {
   const libCategory = useFlowBase((s) => s.libCategory)
@@ -127,7 +129,41 @@ function Shell({
   const setActivityMode = useFlowBase((s) => s.setActivityMode)
   const setFocused = useFlowBase((s) => s.setFocused)
   const setSelected = useFlowBase((s) => s.setSelected)
+  const isViewer = useFlowBase(selectIsViewer)
+  // Q14-C2: 카테고리별 update action — 인라인 rename에 사용.
+  const updateLibraryOptionList = useFlowBase((s) => s.updateLibraryOptionList)
+  const updateLibraryField = useFlowBase((s) => s.updateLibraryField)
+  const updateLibraryTemplate = useFlowBase((s) => s.updateLibraryTemplate)
+  const updateLibraryFunction = useFlowBase((s) => s.updateLibraryFunction)
+  const updateLibraryDashboard = useFlowBase((s) => s.updateLibraryDashboard)
   const meta = LIBRARY_CATEGORIES.find((c) => c.id === libCategory)
+
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(asset.name)
+  const inputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    setDraft(asset.name)
+  }, [asset.name])
+  useEffect(() => {
+    if (editing) inputRef.current?.focus()
+  }, [editing])
+
+  const commitRename = () => {
+    const next = draft.trim()
+    setEditing(false)
+    if (!next || next === asset.name) {
+      setDraft(asset.name)
+      return
+    }
+    const id = asset.id
+    if (libCategory === "optionLists") updateLibraryOptionList(id, { name: next })
+    else if (libCategory === "fields") updateLibraryField(id, { name: next })
+    else if (libCategory === "templates") updateLibraryTemplate(id, { name: next })
+    else if (libCategory === "functions") updateLibraryFunction(id, { name: next })
+    else if (libCategory === "dashboards") updateLibraryDashboard(id, { name: next })
+    toast.success("Renamed")
+  }
+
   if (!meta) return null
 
   // usedIn 문자열을 분해 → 매칭되는 board/column 찾아 점프.
@@ -202,9 +238,50 @@ function Shell({
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h1 className="text-[20px] font-bold tracking-[-0.02em]">
-                {asset.name}
-              </h1>
+              {editing ? (
+                <Input
+                  ref={inputRef}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      commitRename()
+                    }
+                    if (e.key === "Escape") {
+                      setDraft(asset.name)
+                      setEditing(false)
+                    }
+                  }}
+                  className="h-9 max-w-md text-[20px] font-bold tracking-[-0.02em]"
+                  data-library-rename-input
+                />
+              ) : (
+                <h1
+                  className={cn(
+                    "group flex items-center gap-1 text-[20px] font-bold tracking-[-0.02em]",
+                    !isViewer && "cursor-text",
+                  )}
+                  onClick={() => {
+                    if (!isViewer) setEditing(true)
+                  }}
+                  title={
+                    isViewer
+                      ? "Viewers can't rename"
+                      : "Click to rename"
+                  }
+                  data-library-asset-name
+                >
+                  {asset.name}
+                  {!isViewer && (
+                    <Pencil
+                      className="size-3 shrink-0 text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100"
+                      strokeWidth={1.75}
+                    />
+                  )}
+                </h1>
+              )}
               <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
                 {singular}
               </span>

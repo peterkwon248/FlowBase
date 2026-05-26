@@ -11,8 +11,6 @@ import {
 } from "@/lib/import-limits"
 
 function mkFile(bytes: number): File {
-  // Blob with size, name + lastModified — File 호환
-  const blob = new Blob([new Uint8Array(0)], { type: "text/csv" })
   // size 직접 set 어려움 — File 생성 시 ArrayBuffer 크기로
   const buf = new Uint8Array(bytes)
   return new File([buf], "test.csv", { type: "text/csv" })

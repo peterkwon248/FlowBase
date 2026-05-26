@@ -13,6 +13,9 @@ export interface ScatterPoint {
   label?: string // tooltip 용 (현 phase는 미사용)
 }
 
+// 차트 dims — module scope (매 렌더 새 객체 ❌ → useMemo deps 안정)
+const SCATTER_DIMS = { w: 320, h: 200, padL: 28, padR: 8, padT: 8, padB: 22 }
+
 export function ScatterChart({
   data,
   xLabel,
@@ -24,7 +27,7 @@ export function ScatterChart({
   yLabel?: string
   className?: string
 }) {
-  const dims = { w: 320, h: 200, padL: 28, padR: 8, padT: 8, padB: 22 }
+  const dims = SCATTER_DIMS
   const { points, xMin, xMax, yMin, yMax } = useMemo(() => {
     if (data.length === 0) {
       return { points: [], xMin: 0, xMax: 1, yMin: 0, yMax: 1 }
@@ -52,6 +55,8 @@ export function ScatterChart({
       py: dims.padT + innerH - ((d.y - yMin) / (yMax - yMin)) * innerH,
     }))
     return { points, xMin, xMax, yMin, yMax }
+    // dims는 module scope const (안정 ref) — deps에서 안전하게 제외
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
 
   if (data.length === 0) {

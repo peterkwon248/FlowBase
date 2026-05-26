@@ -134,6 +134,69 @@ describe("evaluator — prop (row 참조)", () => {
     expect(evalSrc('prop("active")', { active: true })).toBe(true))
 })
 
+describe("evaluator — Q7-B4 추가 함수들", () => {
+  it("contains", () => {
+    expect(evalSrc('contains("hello world", "world")')).toBe(true)
+    expect(evalSrc('contains("hello", "xyz")')).toBe(false)
+  })
+  it("replace — 모든 occurrence", () =>
+    expect(evalSrc('replace("aaa-bbb-aaa", "aaa", "X")')).toBe("X-bbb-X"))
+  it("startsWith/endsWith", () => {
+    expect(evalSrc('startsWith("FlowBase", "Flow")')).toBe(true)
+    expect(evalSrc('endsWith("FlowBase", "Base")')).toBe(true)
+  })
+  it("trim", () =>
+    expect(evalSrc('trim("  hi  ")')).toBe("hi"))
+  it("abs", () => {
+    expect(evalSrc("abs(-7)")).toBe(7)
+    expect(evalSrc("abs(3.5)")).toBe(3.5)
+  })
+  it("mod", () => {
+    expect(evalSrc("mod(10, 3)")).toBe(1)
+    expect(() => evalSrc("mod(5, 0)")).toThrow(FormulaError)
+  })
+  it("floor/ceil", () => {
+    expect(evalSrc("floor(3.9)")).toBe(3)
+    expect(evalSrc("ceil(3.1)")).toBe(4)
+  })
+  it("dateAdd — 7일 후", () =>
+    expect(evalSrc('dateAdd("2026-05-26", 7)')).toBe("2026-06-02"))
+  it("dateAdd — 음수 (days 빼기)", () =>
+    expect(evalSrc('dateAdd("2026-05-26", -5)')).toBe("2026-05-21"))
+  it("dateAdd — invalid date → error", () => {
+    expect(() => evalSrc('dateAdd("not-a-date", 1)')).toThrow(FormulaError)
+  })
+  it("weekOfYear — ISO 8601", () => {
+    // 2026-01-05 = ISO week 2 (월요일 시작 ISO 표준)
+    expect(evalSrc('weekOfYear("2026-01-05")')).toBe(2)
+    // 2026-05-26 = ISO week 22
+    expect(evalSrc('weekOfYear("2026-05-26")')).toBe(22)
+  })
+})
+
+describe("evaluator — joinProp (Q5-B2)", () => {
+  it("array — 명시 sep", () =>
+    expect(
+      evalSrc('joinProp("tags", " · ")', { tags: ["alpha", "beta"] }),
+    ).toBe("alpha · beta"))
+  it("array — 빈 sep", () =>
+    expect(
+      evalSrc('joinProp("tags", "")', { tags: ["a", "b", "c"] }),
+    ).toBe("abc"))
+  it("array — null/empty 원소 skip", () =>
+    expect(
+      evalSrc('joinProp("tags", "-")', {
+        tags: ["a", null, "", "b", "  "],
+      }),
+    ).toBe("a-b"))
+  it("non-array — toString", () =>
+    expect(evalSrc('joinProp("name", ", ")', { name: "Alice" })).toBe("Alice"))
+  it("missing column → empty string", () =>
+    expect(evalSrc('joinProp("missing", ", ")', {})).toBe(""))
+  it("number column → toString", () =>
+    expect(evalSrc('joinProp("count", ", ")', { count: 42 })).toBe("42"))
+})
+
 describe("evaluator — 통합", () => {
   it("concat + prop + if", () => {
     const src =

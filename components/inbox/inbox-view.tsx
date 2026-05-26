@@ -17,6 +17,7 @@ import {
   type LucideIcon,
   Sparkles,
 } from "lucide-react"
+import { EmptyState } from "@/components/board/empty-state"
 import { InboxSidebar, type InboxFilter } from "@/components/inbox/inbox-sidebar"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
@@ -325,11 +326,19 @@ export function InboxView() {
         {/* 항목 목록 */}
         <div className="flex flex-col px-6 py-4">
           {filtered.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border bg-card px-6 py-16 text-center text-[13px] text-muted-foreground">
-              {filter === "all"
-                ? "Inbox is empty — all clear."
-                : `No items in "${filterLabel}".`}
-            </div>
+            <EmptyState
+              Icon={InboxIcon}
+              title={
+                filter === "all"
+                  ? "Inbox is empty"
+                  : `No items in "${filterLabel}"`
+              }
+              description={
+                filter === "all"
+                  ? "All clear — no AI pending, no empty tables, no unused assets."
+                  : "Switch to a different filter, or wait for new items to appear."
+              }
+            />
           ) : (
             <div className="flex flex-col gap-2">
               {filtered.map((item) => (

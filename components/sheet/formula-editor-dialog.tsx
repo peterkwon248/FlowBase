@@ -3,8 +3,8 @@
 
 "use client"
 
-import { useMemo, useState } from "react"
-import { Calculator, X } from "lucide-react"
+import { useMemo, useRef, useState } from "react"
+import { Calculator } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useFlowBase } from "@/lib/flowbase-store"
+import { TYPE_ICON } from "@/components/sheet/header-cell"
+import { selectActiveBoard, useFlowBase } from "@/lib/flowbase-store"
 import { extractDeps, parseFormula } from "@/lib/formula"
 import type { ColumnDef, FormulaResultType } from "@/types/flowbase"
 
@@ -50,6 +51,7 @@ const EXAMPLES = [
   },
   { label: "Math", src: 'mul(prop("price"), prop("quantity"))' },
   { label: "Today", src: "today()" },
+  { label: "Multi-select join", src: 'joinProp("tags", " · ")' },
 ]
 
 export function FormulaEditorDialog({
@@ -62,6 +64,37 @@ export function FormulaEditorDialog({
   const [resultType, setResultType] = useState<FormulaResultType>(
     col.formulaResultType ?? "text",
   )
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Q6-B3: 컬럼 autocomplete — board.columns 리스트에서 prop("name") 형태로 삽입.
+  // 자기 자신은 제외 (순환 의존 가드는 store에 있지만 UI에서도 미리 차단).
+  const board = useFlowBase(selectActiveBoard)
+  const availableColumns = useMemo(() => {
+    if (!board) return []
+    return board.columns.filter((c) => c.name !== col.name && c.name !== "id")
+  }, [board, col.name])
+
+  // 컬럼 chip 클릭 시 textarea cursor 위치에 prop("name") 삽입.
+  const insertProp = (colName: string) => {
+    const ta = textareaRef.current
+    const snippet = `prop("${colName}")`
+    if (!ta) {
+      // ref 없으면 append
+      setSrc((prev) => prev + snippet)
+      return
+    }
+    const start = ta.selectionStart ?? src.length
+    const end = ta.selectionEnd ?? src.length
+    const next = src.slice(0, start) + snippet + src.slice(end)
+    setSrc(next)
+    // cursor를 삽입 후 위치로
+    requestAnimationFrame(() => {
+      if (!ta) return
+      const pos = start + snippet.length
+      ta.focus()
+      ta.setSelectionRange(pos, pos)
+    })
+  }
 
   // open 토글 시 col에서 fresh로
   // (controlled dialog — open=true로 바뀔 때 col 변화 반영)
@@ -102,8 +135,9 @@ export function FormulaEditorDialog({
             <code className="rounded bg-muted px-1 font-mono">
               prop(&quot;name&quot;)
             </code>
-            . Functions: concat · if · add/sub/mul/div · round · lower · upper ·
-            length · today · format.
+            . Functions: concat · if · add/sub/mul/div · round · abs/mod/floor/
+            ceil · lower/upper/length/trim · contains/startsWith/endsWith/
+            replace · today/format/dateAdd/weekOfYear · joinProp.
           </DialogDescription>
         </DialogHeader>
 
@@ -114,6 +148,7 @@ export function FormulaEditorDialog({
             </Label>
             <textarea
               id="formula-src"
+              ref={textareaRef}
               value={src}
               onChange={(e) => setSrc(e.target.value)}
               spellCheck={false}
@@ -174,6 +209,35 @@ export function FormulaEditorDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Q6-B3: 사용 가능한 컬럼 chip — 클릭 시 cursor 위치에 prop("name") 삽입 */}
+          {availableColumns.length > 0 && (
+            <div>
+              <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Insert column reference
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {availableColumns.map((c) => {
+                  const Icon = TYPE_ICON[c.type] ?? null
+                  return (
+                    <button
+                      key={c.name}
+                      type="button"
+                      onClick={() => insertProp(c.name)}
+                      className="inline-flex items-center gap-1 rounded-md border border-border-subtle bg-card px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
+                      title={`Insert prop("${c.name}")`}
+                      data-formula-column={c.name}
+                    >
+                      {Icon && (
+                        <Icon className="size-3" strokeWidth={1.75} />
+                      )}
+                      <span className="font-mono">{c.name}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           <div>
             <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">

@@ -52,8 +52,28 @@ function isFilterable(col: ColumnDef): boolean {
     col.type === "num" ||
     col.type === "date" ||
     col.type === "text" ||
-    col.type === "email"
+    col.type === "email" ||
+    col.type === "formula"
   )
+}
+
+// Q3: formula 컬럼의 widget kind 매핑 — resultType 기준.
+// text/date → contains · number → range · boolean → in.
+function formulaWidgetKind(
+  col: ColumnDef,
+): "text" | "num" | "date" | "in" {
+  if (col.type !== "formula") return "in"
+  switch (col.formulaResultType) {
+    case "number":
+      return "num"
+    case "date":
+      return "date"
+    case "boolean":
+      return "in" // 사실상 true/false 두 값
+    case "text":
+    default:
+      return "text"
+  }
 }
 
 interface ColumnOption {
@@ -404,26 +424,42 @@ function FilterColSub({
           </>
         )}
 
-        {/* range (num) */}
-        {option.col.type === "num" && (
+        {/* range (num) — formula(number 결과)도 같은 widget */}
+        {(option.col.type === "num" ||
+          (option.col.type === "formula" &&
+            formulaWidgetKind(option.col) === "num")) && (
           <RangeWidget cond={cond} onSet={(c) => setColumnCondition(option.col.name, c)} />
         )}
 
-        {/* date-range */}
-        {option.col.type === "date" && (
+        {/* date-range — formula(date 결과)도 같은 widget */}
+        {(option.col.type === "date" ||
+          (option.col.type === "formula" &&
+            formulaWidgetKind(option.col) === "date")) && (
           <DateRangeWidget
             cond={cond}
             onSet={(c) => setColumnCondition(option.col.name, c)}
           />
         )}
 
-        {/* contains (text/email) */}
-        {(option.col.type === "text" || option.col.type === "email") && (
+        {/* contains (text/email) — formula(text 결과)도 같은 widget */}
+        {(option.col.type === "text" ||
+          option.col.type === "email" ||
+          (option.col.type === "formula" &&
+            formulaWidgetKind(option.col) === "text")) && (
           <ContainsWidget
             cond={cond}
             onSet={(c) => setColumnCondition(option.col.name, c)}
           />
         )}
+
+        {/* boolean formula — true/false 두 값 in widget */}
+        {option.col.type === "formula" &&
+          formulaWidgetKind(option.col) === "in" && (
+            <BooleanFilterWidget
+              cond={cond}
+              onSet={(c) => setColumnCondition(option.col.name, c)}
+            />
+          )}
 
         {/* 두 번째 이후 cond — array loop으로 모두 표시 (Exclude #N / Match #N). */}
         {extraConds.map((c, i) => {
@@ -608,6 +644,65 @@ function ContainsWidget({
         data-filter-contains
         className="h-7 text-[12px]"
       />
+    </div>
+  )
+}
+
+// ─── Boolean filter widget (formula resultType="boolean") — true/false 두 값 in ────
+function BooleanFilterWidget({
+  cond,
+  onSet,
+}: {
+  cond: FilterCondition | undefined
+  onSet: (c: FilterCondition) => void
+}) {
+  const values =
+    cond?.kind === "in" || cond?.kind === "not_in" ? cond.values : []
+  const isNot = cond?.kind === "not_in"
+  const toggle = (v: string) => {
+    const next = values.includes(v)
+      ? values.filter((x) => x !== v)
+      : [...values, v]
+    onSet({ kind: isNot ? "not_in" : "in", values: next })
+  }
+  return (
+    <div className="space-y-1.5 px-2 pb-1.5 pt-1">
+      <MatchToggle
+        kind={isNot ? "exclude" : "include"}
+        onChange={(k) => {
+          if (values.length === 0) return
+          onSet({ kind: k === "exclude" ? "not_in" : "in", values })
+        }}
+      />
+      {["true", "false"].map((v) => {
+        const checked = values.includes(v)
+        return (
+          <button
+            key={v}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              toggle(v)
+            }}
+            className="flex w-full items-center gap-2 rounded px-1 py-1 text-left text-[12px] hover:bg-foreground/[0.04]"
+          >
+            <span
+              className={cn(
+                "flex size-3.5 shrink-0 items-center justify-center rounded border",
+                checked
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border",
+              )}
+            >
+              {checked && <Check className="size-2.5" strokeWidth={3} />}
+            </span>
+            <span className="flex-1">
+              {v === "true" ? "✓ Yes" : "— No"}
+            </span>
+          </button>
+        )
+      })}
     </div>
   )
 }

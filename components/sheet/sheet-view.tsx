@@ -141,6 +141,22 @@ export function SheetView() {
     containerRef,
   })
 
+  // G1-4: numeric 컬럼 outlier (z-score 2σ). 알림 + "Show only" 진입점.
+  // board 전체 rows 기준 (filter 적용 X) — outlier 자체는 객관적 통계.
+  // Hook은 early return 전에 호출 — rules-of-hooks LOCK. board 미존재면 빈 결과.
+  const outlierResults = useMemo(
+    () => (board ? computeAllOutliers(board.columns, board.rows) : []),
+    [board],
+  )
+  // G4-1: cell-level outlier mark — "rowId::colName" set. 모든 outlier 컬럼 통합.
+  const outlierCellSet = useMemo(() => {
+    const s = new Set<string>()
+    for (const o of outlierResults) {
+      for (const rid of o.rowIds) s.add(`${rid}::${o.col}`)
+    }
+    return s
+  }, [outlierResults])
+
   if (!board) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
@@ -168,22 +184,8 @@ export function SheetView() {
 
   const totalWidth = columns.reduce((acc, c) => acc + widthOf(c), 0) + 120
 
-  // G1-4: numeric 컬럼 outlier (z-score 2σ). 알림 + "Show only" 진입점.
-  // board 전체 rows 기준 (filter 적용 X) — outlier 자체는 객관적 통계.
-  const outlierResults = useMemo(
-    () => (board ? computeAllOutliers(board.columns, board.rows) : []),
-    [board],
-  )
   // 첫 outlier 컬럼만 표시 (시각 혼잡 회피)
   const firstOutlier = outlierResults[0]
-  // G4-1: cell-level outlier mark — "rowId::colName" set. 모든 outlier 컬럼 통합.
-  const outlierCellSet = useMemo(() => {
-    const s = new Set<string>()
-    for (const o of outlierResults) {
-      for (const rid of o.rowIds) s.add(`${rid}::${o.col}`)
-    }
-    return s
-  }, [outlierResults])
 
   return (
     <div

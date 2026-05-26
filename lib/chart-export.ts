@@ -106,17 +106,40 @@ export async function svgToPng(svg: SVGSVGElement, scale = 2): Promise<Blob> {
   })
 }
 
+// Q8-A7: HTML chart (Pivot 등) → PNG via html2canvas (dynamic import).
+// SVG 대안 — html2canvas로 DOM 전체를 canvas에 rasterize. bundle 영향 최소화.
+async function htmlToPng(el: HTMLElement, scale = 2): Promise<Blob> {
+  const mod = await import("html2canvas")
+  const html2canvas = mod.default ?? mod
+  const canvas = await html2canvas(el, {
+    backgroundColor: FALLBACK_BG,
+    scale,
+    useCORS: true,
+    logging: false,
+  })
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) reject(new Error("Canvas toBlob failed"))
+      else resolve(blob)
+    }, "image/png")
+  })
+}
+
 // chart card root element → 첫 SVG 추출 → PNG download.
+// Pivot 등 HTML chart는 html2canvas fallback (dynamic import).
 // container = ChartCard wrapper element. title = filename hint.
 export async function downloadChartPng(
   container: HTMLElement,
   title = "chart",
 ): Promise<void> {
   const svg = container.querySelector("svg")
-  if (!svg) {
-    throw new Error("No SVG found in chart (HTML chart can't be exported as PNG yet)")
+  let blob: Blob
+  if (svg) {
+    blob = await svgToPng(svg as SVGSVGElement)
+  } else {
+    // HTML chart (Pivot table 등) — html2canvas fallback
+    blob = await htmlToPng(container)
   }
-  const blob = await svgToPng(svg as SVGSVGElement)
   const url = URL.createObjectURL(blob)
   const link = document.createElement("a")
   link.href = url

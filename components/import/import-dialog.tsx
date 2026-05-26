@@ -24,7 +24,6 @@ import {
 import { SENTIMENT_OPTIONS, THEME_OPTIONS } from "@/lib/flowbase-seed"
 import { useFlowBase } from "@/lib/flowbase-store"
 import {
-  IMPORT_LIMITS,
   checkParsedSize,
   checkStorageBudget,
   estimatePayloadBytes,
@@ -32,7 +31,6 @@ import {
   quotaExceededMessage,
 } from "@/lib/import-limits"
 import {
-  IMPORT_SOURCE_LABELS,
   type ImportSource,
   detectImportSource,
   inferColumnTypeByHeader,
@@ -45,10 +43,9 @@ import {
   type ParsedTable,
   inferType,
   normalizeHeader,
-  parseAny,
 } from "@/lib/parsers"
 import { cn } from "@/lib/utils"
-import type { ColumnDef, ColumnType, TableRow, TicketStatus } from "@/types/flowbase"
+import type { ColumnDef, ColumnType, TableRow } from "@/types/flowbase"
 import { ImportStepAi } from "./import-step-ai"
 import { ImportStepPaste } from "./import-step-paste"
 import { ImportStepReview, type WizardColumn } from "./import-step-review"

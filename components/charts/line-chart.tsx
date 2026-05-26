@@ -26,6 +26,9 @@ export interface LineSeries {
   points: LinePoint[]
 }
 
+// 차트 dims — module scope (매 렌더 새 객체 ❌ → useMemo deps 안정)
+const LINE_DIMS = { w: 320, h: 140, padX: 12, padY: 16 }
+
 const SERIES_COLORS = [
   "var(--chart-1)",
   "var(--chart-2)",
@@ -61,7 +64,7 @@ export function LineChart({
 
   const isMulti = normalizedSeries.length > 1
 
-  const dims = { w: 320, h: 140, padX: 12, padY: 16 }
+  const dims = LINE_DIMS
 
   const { paths, max, xLabels } = useMemo(() => {
     if (normalizedSeries.length === 0) {
@@ -96,6 +99,8 @@ export function LineChart({
       return { name: s.name, color, path, areaPath, pts }
     })
     return { paths, max, xLabels }
+    // dims는 module scope const (안정 ref) — deps에서 안전하게 제외
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [normalizedSeries])
 
   if (normalizedSeries.length === 0 || xLabels.length === 0) {

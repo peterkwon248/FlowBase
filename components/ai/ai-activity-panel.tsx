@@ -49,7 +49,8 @@ export function AiActivityPanel() {
   const [composerBusy, setComposerBusy] = useState(false)
   const [applying, setApplying] = useState<AiColumn | null>(null)
 
-  const rows = board?.rows ?? []
+  // rows logical expression은 매 렌더 새 array (board?.rows ?? []) → useMemo 안정.
+  const rows = useMemo(() => board?.rows ?? [], [board?.rows])
   const pendingTheme = useMemo(
     () => rows.filter((r) => r.themeConfirmed === false),
     [rows],
