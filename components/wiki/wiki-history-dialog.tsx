@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useFlowBase } from "@/lib/flowbase-store"
+import { diffLines } from "@/lib/line-diff"
 import { cn } from "@/lib/utils"
 import type { PageRevision, WikiPage } from "@/types/flowbase"
 
@@ -26,32 +27,6 @@ interface WikiHistoryDialogProps {
   page: WikiPage
   open: boolean
   onOpenChange: (open: boolean) => void
-}
-
-type DiffLine =
-  | { kind: "same"; text: string }
-  | { kind: "added"; text: string }
-  | { kind: "removed"; text: string }
-
-// 단순 line 비교 — 정확한 Myers diff 아님. 같은 위치 line은 same, 다르면 removed/added.
-// 길이 다르면 짧은 쪽 끝까지만 비교 + 잔여는 모두 added/removed.
-// 외부 lib ❌ LOCK 준수.
-function naiveLineDiff(prev: string, next: string): DiffLine[] {
-  const a = prev.split("\n")
-  const b = next.split("\n")
-  const out: DiffLine[] = []
-  const maxLen = Math.max(a.length, b.length)
-  for (let i = 0; i < maxLen; i++) {
-    const av = a[i]
-    const bv = b[i]
-    if (av === bv) {
-      out.push({ kind: "same", text: av })
-    } else {
-      if (av !== undefined) out.push({ kind: "removed", text: av })
-      if (bv !== undefined) out.push({ kind: "added", text: bv })
-    }
-  }
-  return out
 }
 
 function formatTs(ts: number): string {
@@ -89,7 +64,7 @@ export function WikiHistoryDialog({
   // 현재 본문 vs 선택 revision body — diff lines
   const diff = useMemo(() => {
     if (!selectedRev) return null
-    return naiveLineDiff(selectedRev.body, page.body)
+    return diffLines(selectedRev.body, page.body)
   }, [selectedRev, page.body])
 
   const restore = () => {
