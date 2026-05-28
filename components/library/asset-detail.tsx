@@ -14,11 +14,18 @@ import {
   List,
   type LucideIcon,
   Pencil,
+  Plus,
   Sigma,
   Type,
+  X,
 } from "lucide-react"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { LIBRARY_CATEGORIES } from "@/lib/flowbase-library-seed"
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
@@ -29,6 +36,7 @@ import type {
   LibraryField,
   LibraryFunction,
   LibraryTemplate,
+  OptionItem,
   OptionList,
 } from "@/types/flowbase"
 
@@ -55,6 +63,15 @@ const CATEGORY_BG: Record<LibraryCategoryId, string> = {
   functions: "bg-chart-2/15",
   dashboards: "bg-chart-5/15",
 }
+
+// OptionList 옵션 recolor 팔레트 — 디자인 토큰만 (inline hex 금지 LOCK).
+const OPTION_PALETTE = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+]
 
 export function AssetDetail() {
   const library = useFlowBase((s) => s.library)
@@ -384,7 +401,68 @@ function DefRow({
 }
 
 // ─── Option List ───
+// C2: 옵션 추가/삭제/라벨 rename/색상 변경 (non-viewer). updateLibraryOptionList 재사용
+// (ensureCanEdit 가드 포함). viewer는 기존 read-only.
 function OptionListBody({ asset }: { asset: OptionList }) {
+  const isViewer = useFlowBase(selectIsViewer)
+  const updateLibraryOptionList = useFlowBase((s) => s.updateLibraryOptionList)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [draft, setDraft] = useState("")
+
+  const update = (options: OptionItem[]) =>
+    updateLibraryOptionList(asset.id, { options })
+
+  const setColor = (id: string, color: string) =>
+    update(asset.options.map((o) => (o.id === id ? { ...o, color } : o)))
+
+  const commitLabel = (id: string) => {
+    const next = draft.trim()
+    setEditingId(null)
+    if (!next) return
+    update(asset.options.map((o) => (o.id === id ? { ...o, label: next } : o)))
+  }
+
+  const remove = (id: string) =>
+    update(asset.options.filter((o) => o.id !== id))
+
+  const addOption = () => {
+    const id = `opt-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`
+    const color = OPTION_PALETTE[asset.options.length % OPTION_PALETTE.length]
+    update([...asset.options, { id, label: "New option", color }])
+    setEditingId(id)
+    setDraft("New option")
+  }
+
+  if (isViewer) {
+    return (
+      <Section title="Options" count={asset.options.length}>
+        <div className="overflow-hidden rounded-lg border border-border-subtle bg-card">
+          {asset.options.map((o, i) => (
+            <div
+              key={o.id}
+              className={cn(
+                "flex items-center gap-2.5 px-3 py-2",
+                i < asset.options.length - 1 && "border-b border-border-subtle",
+              )}
+            >
+              <span
+                className="size-3.5 shrink-0 rounded-full"
+                style={{
+                  background: o.color,
+                  boxShadow: `0 0 0 3px color-mix(in oklch, ${o.color} 22%, transparent)`,
+                }}
+              />
+              <span className="flex-1 text-[13px] font-medium">{o.label}</span>
+              <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10.5px] text-muted-foreground">
+                {o.id}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Section>
+    )
+  }
+
   return (
     <Section title="Options" count={asset.options.length}>
       <div className="overflow-hidden rounded-lg border border-border-subtle bg-card">
@@ -396,19 +474,101 @@ function OptionListBody({ asset }: { asset: OptionList }) {
               i < asset.options.length - 1 && "border-b border-border-subtle",
             )}
           >
-            <span
-              className="size-3.5 shrink-0 rounded-full"
-              style={{
-                background: o.color,
-                boxShadow: `0 0 0 3px color-mix(in oklch, ${o.color} 22%, transparent)`,
-              }}
-            />
-            <span className="flex-1 text-[13px] font-medium">{o.label}</span>
+            {/* 색상 picker */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  title="Change color"
+                  data-option-color={o.id}
+                  className="size-3.5 shrink-0 rounded-full transition-transform hover:scale-110"
+                  style={{
+                    background: o.color,
+                    boxShadow: `0 0 0 3px color-mix(in oklch, ${o.color} 22%, transparent)`,
+                  }}
+                />
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-2" align="start">
+                <div className="flex gap-1.5">
+                  {OPTION_PALETTE.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setColor(o.id, c)}
+                      title="Set color"
+                      data-option-swatch={c}
+                      className={cn(
+                        "size-5 rounded-full transition-transform hover:scale-110",
+                        o.color === c &&
+                          "ring-2 ring-foreground ring-offset-1 ring-offset-popover",
+                      )}
+                      style={{ background: c }}
+                    />
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* 라벨 — 클릭 시 인라인 편집 */}
+            {editingId === o.id ? (
+              <Input
+                autoFocus
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onBlur={() => commitLabel(o.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault()
+                    commitLabel(o.id)
+                  }
+                  if (e.key === "Escape") setEditingId(null)
+                }}
+                className="h-7 flex-1 text-[13px] font-medium"
+                data-option-label-input={o.id}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingId(o.id)
+                  setDraft(o.label)
+                }}
+                className="flex-1 cursor-text rounded px-1 py-0.5 text-left text-[13px] font-medium transition-colors hover:bg-foreground/[0.04]"
+                title="Click to rename"
+                data-option-label={o.id}
+              >
+                {o.label}
+              </button>
+            )}
+
             <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10.5px] text-muted-foreground">
               {o.id}
             </span>
+
+            <button
+              type="button"
+              onClick={() => remove(o.id)}
+              title="Remove option"
+              data-option-remove={o.id}
+              className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
+            >
+              <X className="size-3" strokeWidth={2} />
+            </button>
           </div>
         ))}
+
+        <button
+          type="button"
+          onClick={addOption}
+          data-option-add
+          className={cn(
+            "flex w-full items-center gap-2 px-3 py-2 text-left text-[12.5px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground",
+            asset.options.length > 0 && "border-t border-border-subtle",
+          )}
+        >
+          <Plus className="size-3.5" strokeWidth={2} />
+          Add option
+        </button>
       </div>
     </Section>
   )
