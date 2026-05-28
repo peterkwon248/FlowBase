@@ -26,10 +26,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { LIBRARY_CATEGORIES } from "@/lib/flowbase-library-seed"
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type {
+  FieldConfig,
   Library,
   LibraryCategoryId,
   LibraryDashboard,
@@ -575,6 +583,8 @@ function OptionListBody({ asset }: { asset: OptionList }) {
 }
 
 // ─── Field ───
+// C2 후속: config 편집 (non-viewer) — required/default/format/validation + OptionList 링크.
+// type·inline options는 read-only. viewer는 기존 read-only.
 function FieldBody({
   asset,
   library,
@@ -582,33 +592,199 @@ function FieldBody({
   asset: LibraryField
   library: Library
 }) {
+  const isViewer = useFlowBase(selectIsViewer)
+  const updateLibraryField = useFlowBase((s) => s.updateLibraryField)
   const c = asset.config
   const olRef = c.optionListId
     ? library.optionLists.find((o) => o.id === c.optionListId)
     : null
 
+  // 텍스트 config — local draft(blur commit). asset 전환 시 resync.
+  const [draft, setDraft] = useState({
+    default: c.default ?? "",
+    format: c.format ?? "",
+    validation: c.validation ?? "",
+  })
+  useEffect(() => {
+    setDraft({
+      default: c.default ?? "",
+      format: c.format ?? "",
+      validation: c.validation ?? "",
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asset.id])
+
+  if (isViewer) {
+    return (
+      <Section title="Definition">
+        <div className="rounded-lg border border-border-subtle bg-card p-4">
+          <dl className="grid grid-cols-[max-content_1fr] items-baseline gap-x-4 gap-y-2.5 text-[13px]">
+            <DefRow label="Type">
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[12px]">
+                {asset.type}
+              </code>
+            </DefRow>
+            {olRef && (
+              <DefRow label="Options">
+                <span className="inline-flex items-center gap-1.5">
+                  <LinkIcon className="size-2.5 text-primary" strokeWidth={2} />
+                  <span className="font-mono">@{olRef.name}</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    ({olRef.options.length} options)
+                  </span>
+                </span>
+              </DefRow>
+            )}
+            {c.options && c.options.length > 0 && (
+              <DefRow label="Options">
+                <div className="flex flex-wrap gap-1">
+                  {c.options.map((o) => (
+                    <span
+                      key={o.id}
+                      className="whitespace-nowrap rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium"
+                    >
+                      {o.label}
+                    </span>
+                  ))}
+                </div>
+              </DefRow>
+            )}
+            {c.required !== undefined && (
+              <DefRow label="Required">
+                <span
+                  className={cn(
+                    "whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                    c.required
+                      ? "bg-destructive/15 text-destructive"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {c.required ? "Required" : "Optional"}
+                </span>
+              </DefRow>
+            )}
+            {c.default && (
+              <DefRow label="Default">
+                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[12px]">
+                  {c.default}
+                </code>
+              </DefRow>
+            )}
+            {c.format && (
+              <DefRow label="Format">
+                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[12px]">
+                  {c.format}
+                </code>
+              </DefRow>
+            )}
+            {c.validation && (
+              <DefRow label="Validation">
+                <span className="text-[12.5px]">{c.validation}</span>
+              </DefRow>
+            )}
+          </dl>
+        </div>
+      </Section>
+    )
+  }
+
+  const patchConfig = (patch: Partial<FieldConfig>) =>
+    updateLibraryField(asset.id, { config: { ...c, ...patch } })
+
+  const commitText = (key: "default" | "format" | "validation") =>
+    patchConfig({ [key]: draft[key].trim() || undefined })
+
   return (
     <Section title="Definition">
       <div className="rounded-lg border border-border-subtle bg-card p-4">
-        <dl className="grid grid-cols-[max-content_1fr] items-baseline gap-x-4 gap-y-2.5 text-[13px]">
+        <dl className="grid grid-cols-[max-content_1fr] items-center gap-x-4 gap-y-3 text-[13px]">
           <DefRow label="Type">
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[12px]">
               {asset.type}
             </code>
           </DefRow>
-          {olRef && (
-            <DefRow label="Options">
-              <span className="inline-flex items-center gap-1.5">
-                <LinkIcon className="size-2.5 text-primary" strokeWidth={2} />
-                <span className="font-mono">@{olRef.name}</span>
-                <span className="text-[11px] text-muted-foreground">
-                  ({olRef.options.length} options)
-                </span>
-              </span>
-            </DefRow>
-          )}
+
+          <DefRow label="Required">
+            <button
+              type="button"
+              onClick={() => patchConfig({ required: !c.required })}
+              data-field-required={c.required ? "true" : "false"}
+              className={cn(
+                "whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors",
+                c.required
+                  ? "bg-destructive/15 text-destructive hover:bg-destructive/25"
+                  : "bg-muted text-muted-foreground hover:bg-foreground/[0.08]",
+              )}
+            >
+              {c.required ? "Required" : "Optional"}
+            </button>
+          </DefRow>
+
+          <DefRow label="Option list">
+            <Select
+              value={c.optionListId ?? "_none"}
+              onValueChange={(v) =>
+                patchConfig({ optionListId: v === "_none" ? undefined : v })
+              }
+            >
+              <SelectTrigger
+                className="h-7 w-[220px] text-[12px]"
+                data-field-optionlist
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">None</SelectItem>
+                {library.optionLists.map((o) => (
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.name} ({o.options.length})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </DefRow>
+
+          <DefRow label="Default">
+            <Input
+              value={draft.default}
+              onChange={(e) =>
+                setDraft((d) => ({ ...d, default: e.target.value }))
+              }
+              onBlur={() => commitText("default")}
+              placeholder="—"
+              className="h-7 max-w-[260px] text-[12px]"
+              data-field-default
+            />
+          </DefRow>
+
+          <DefRow label="Format">
+            <Input
+              value={draft.format}
+              onChange={(e) =>
+                setDraft((d) => ({ ...d, format: e.target.value }))
+              }
+              onBlur={() => commitText("format")}
+              placeholder="—"
+              className="h-7 max-w-[260px] text-[12px]"
+              data-field-format
+            />
+          </DefRow>
+
+          <DefRow label="Validation">
+            <Input
+              value={draft.validation}
+              onChange={(e) =>
+                setDraft((d) => ({ ...d, validation: e.target.value }))
+              }
+              onBlur={() => commitText("validation")}
+              placeholder="—"
+              className="h-7 max-w-[260px] text-[12px]"
+              data-field-validation
+            />
+          </DefRow>
+
           {c.options && c.options.length > 0 && (
-            <DefRow label="Options">
+            <DefRow label="Inline options">
               <div className="flex flex-wrap gap-1">
                 {c.options.map((o) => (
                   <span
@@ -619,39 +795,6 @@ function FieldBody({
                   </span>
                 ))}
               </div>
-            </DefRow>
-          )}
-          {c.required !== undefined && (
-            <DefRow label="Required">
-              <span
-                className={cn(
-                  "whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                  c.required
-                    ? "bg-destructive/15 text-destructive"
-                    : "bg-muted text-muted-foreground",
-                )}
-              >
-                {c.required ? "Required" : "Optional"}
-              </span>
-            </DefRow>
-          )}
-          {c.default && (
-            <DefRow label="Default">
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[12px]">
-                {c.default}
-              </code>
-            </DefRow>
-          )}
-          {c.format && (
-            <DefRow label="Format">
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[12px]">
-                {c.format}
-              </code>
-            </DefRow>
-          )}
-          {c.validation && (
-            <DefRow label="Validation">
-              <span className="text-[12.5px]">{c.validation}</span>
             </DefRow>
           )}
         </dl>
