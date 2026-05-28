@@ -25,12 +25,29 @@ import {
 } from "@/types/flowbase"
 
 const DAY_MS = 86_400_000
-const COL_WIDTH_DAY = 34 // day scale — px per day
-const COL_WIDTH_WEEK = 14 // week scale — 압축
-const COL_WIDTH_MONTH = 8 // month scale — 장기 timeline overview
+// scale별 컬럼(=버킷) 폭. day=1일, week=1주, month=1달이 한 컬럼.
+const COL_WIDTH_DAY = 34
+const COL_WIDTH_WEEK = 54
+const COL_WIDTH_MONTH = 68
 const LABEL_WIDTH = 280 // 좌측 item 라벨 영역
 const CHECK_WIDTH = 32 // 체크박스 영역
 const KO_WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"]
+const MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+]
+
+type TimeScale = "day" | "week" | "month"
+
+// 한 컬럼 = 한 버킷. scale에 따라 실제 시간 단위(일/주/달)로 집계.
+interface Tick {
+  key: string
+  startMs: number // 버킷 시작(UTC) — bucketIndexOf 비교 기준
+  label: string
+  sub: string
+  isToday: boolean
+  isWeekend: boolean
+}
 
 // status별 bar 색 — Tailwind v4 토큰 (CSS var). LOCK 색 매핑 보존.
 const STATUS_BAR_COLOR: Record<TicketStatus, string> = {
@@ -38,6 +55,94 @@ const STATUS_BAR_COLOR: Record<TicketStatus, string> = {
   진행중: "var(--color-amber-500)",
   대기: "var(--color-violet-500)",
   완료: "var(--color-emerald-500)",
+}
+
+// UTC 기준 스냅 — "YYYY-MM-DD"가 UTC 자정으로 파싱되므로 버킷 경계도 UTC로 맞춰
+// due 날짜 ms가 정확히 해당 버킷 startMs와 일치(day scale 기존 동작 보존).
+function startOfDayUTC(ms: number): number {
+  const d = new Date(ms)
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+}
+function startOfWeekUTC(ms: number): number {
+  const sod = startOfDayUTC(ms)
+  return sod - new Date(sod).getUTCDay() * DAY_MS // 주 시작 = 일요일
+}
+function startOfMonthUTC(ms: number): number {
+  const d = new Date(ms)
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)
+}
+
+// [minMs, maxMs] 구간을 scale 단위 버킷 배열로. day scale은 기존 day-by-day 보존.
+function buildTicks(
+  minMs: number,
+  maxMs: number,
+  scale: TimeScale,
+  todayMs: number,
+): Tick[] {
+  const ticks: Tick[] = []
+  if (scale === "month") {
+    const end = startOfMonthUTC(maxMs)
+    const todayBucket = startOfMonthUTC(todayMs)
+    let cur = startOfMonthUTC(minMs)
+    while (cur <= end) {
+      const d = new Date(cur)
+      const m = d.getUTCMonth()
+      ticks.push({
+        key: `m${cur}`,
+        startMs: cur,
+        label: MONTH_NAMES[m],
+        sub: m === 0 || ticks.length === 0 ? String(d.getUTCFullYear()) : "",
+        isToday: cur === todayBucket,
+        isWeekend: false,
+      })
+      cur = Date.UTC(d.getUTCFullYear(), m + 1, 1)
+    }
+  } else if (scale === "week") {
+    const end = startOfWeekUTC(maxMs)
+    const todayBucket = startOfWeekUTC(todayMs)
+    let cur = startOfWeekUTC(minMs)
+    while (cur <= end) {
+      const d = new Date(cur)
+      ticks.push({
+        key: `w${cur}`,
+        startMs: cur,
+        label: `${d.getUTCMonth() + 1}/${d.getUTCDate()}`,
+        sub: "",
+        isToday: cur === todayBucket,
+        isWeekend: false,
+      })
+      cur += 7 * DAY_MS
+    }
+  } else {
+    const end = startOfDayUTC(maxMs)
+    const todayBucket = startOfDayUTC(todayMs)
+    let cur = startOfDayUTC(minMs)
+    while (cur <= end) {
+      const dow = new Date(cur).getUTCDay()
+      const iso = new Date(cur).toISOString().slice(0, 10)
+      ticks.push({
+        key: iso,
+        startMs: cur,
+        label: iso.slice(5),
+        sub: KO_WEEKDAY[dow],
+        isToday: cur === todayBucket,
+        isWeekend: dow === 0 || dow === 6,
+      })
+      cur += DAY_MS
+    }
+  }
+  return ticks
+}
+
+// ms가 속한 버킷 index (ticks 오름차순 가정). 범위 밖이면 -1.
+function bucketIndexOf(ticks: Tick[], ms: number): number {
+  if (!Number.isFinite(ms) || ticks.length === 0) return -1
+  let idx = -1
+  for (let i = 0; i < ticks.length; i++) {
+    if (ticks[i].startMs <= ms) idx = i
+    else break
+  }
+  return idx
 }
 
 // ── 필드 휴리스틱 ────────────────────────────────────────
@@ -126,20 +231,26 @@ export function TimelineView() {
   const dateCol = overrideDateCol ?? picked.dateCol
   const { startCol, titleCol, subtitleCol, statusCol, priorityCol } = picked
 
-  const colWidth =
+  const scale: TimeScale =
     settings?.scale === "month"
-      ? COL_WIDTH_MONTH
+      ? "month"
       : settings?.scale === "week"
+        ? "week"
+        : "day"
+  const colWidth =
+    scale === "month"
+      ? COL_WIDTH_MONTH
+      : scale === "week"
         ? COL_WIDTH_WEEK
         : COL_WIDTH_DAY
 
-  // dated rows + date range 계산 — hooks를 항상 같은 순서로 (early return 전)
-  const { datedRows, days, todayISO } = useMemo(() => {
-    if (!dateCol) return { datedRows: [], days: [] as string[], todayISO: "" }
+  // dated rows + 버킷(ticks) 계산 — hooks를 항상 같은 순서로 (early return 전)
+  const { datedRows, ticks, todayISO } = useMemo(() => {
+    if (!dateCol) return { datedRows: [], ticks: [] as Tick[], todayISO: "" }
     const dated = rows.filter((r) => typeof r[dateCol.name] === "string" && r[dateCol.name])
     if (dated.length === 0) {
       const today = new Date().toISOString().slice(0, 10)
-      return { datedRows: [], days: [], todayISO: today }
+      return { datedRows: [], ticks: [] as Tick[], todayISO: today }
     }
     const allTs: number[] = []
     for (const r of dated) {
@@ -161,18 +272,15 @@ export function TimelineView() {
     allTs.push(todayMs)
     const min = Math.min(...allTs) - 2 * DAY_MS
     const max = Math.max(...allTs) + 2 * DAY_MS
-    const dayList: string[] = []
-    for (let t = min; t <= max; t += DAY_MS) {
-      dayList.push(new Date(t).toISOString().slice(0, 10))
-    }
+    const built = buildTicks(min, max, scale, todayMs)
     // due 오름차순 정렬
     const sorted = [...dated].sort((a, b) => {
       const at = new Date(String(a[dateCol.name])).getTime()
       const bt = new Date(String(b[dateCol.name])).getTime()
       return at - bt
     })
-    return { datedRows: sorted, days: dayList, todayISO: today.toISOString().slice(0, 10) }
-  }, [rows, dateCol, startCol])
+    return { datedRows: sorted, ticks: built, todayISO: today.toISOString().slice(0, 10) }
+  }, [rows, dateCol, startCol, scale])
 
   if (!board) return null
 
@@ -222,34 +330,28 @@ export function TimelineView() {
             Item ({datedRows.length}) · by {dateCol.name}
           </div>
           <div className="flex">
-            {days.map((d) => {
-              const isToday = d === todayISO
-              const isWeekend = [0, 6].includes(new Date(d).getDay())
-              return (
-                <div
-                  key={d}
-                  style={{
-                    width: colWidth,
-                    background: isToday
-                      ? "color-mix(in oklch, var(--primary) 14%, transparent)"
-                      : isWeekend
-                        ? "var(--muted)"
-                        : "transparent",
-                  }}
-                  className={cn(
-                    "flex flex-col items-center gap-px border-r border-border-subtle py-2 font-mono text-[10px] leading-[1.2]",
-                    isToday
-                      ? "font-semibold text-primary"
-                      : "font-medium text-muted-foreground",
-                  )}
-                >
-                  <span>{d.slice(5)}</span>
-                  <span className="text-[8.5px] opacity-70">
-                    {KO_WEEKDAY[new Date(d).getDay()]}
-                  </span>
-                </div>
-              )
-            })}
+            {ticks.map((t) => (
+              <div
+                key={t.key}
+                style={{
+                  width: colWidth,
+                  background: t.isToday
+                    ? "color-mix(in oklch, var(--primary) 14%, transparent)"
+                    : t.isWeekend
+                      ? "var(--muted)"
+                      : "transparent",
+                }}
+                className={cn(
+                  "flex flex-col items-center gap-px border-r border-border-subtle py-2 font-mono text-[10px] leading-[1.2]",
+                  t.isToday
+                    ? "font-semibold text-primary"
+                    : "font-medium text-muted-foreground",
+                )}
+              >
+                <span>{t.label}</span>
+                <span className="text-[8.5px] opacity-70">{t.sub}</span>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -258,9 +360,10 @@ export function TimelineView() {
           <RowContextMenu key={row.id} rowId={row.id}>
             <GanttRow
               row={row}
-              days={days}
+              ticks={ticks}
               todayISO={todayISO}
               colWidth={colWidth}
+              scale={scale}
               dateCol={dateCol}
               startCol={startCol}
               titleCol={titleCol}
@@ -280,9 +383,10 @@ export function TimelineView() {
 
 interface GanttRowProps {
   row: TableRow
-  days: string[]
+  ticks: Tick[]
   todayISO: string
   colWidth: number
+  scale: TimeScale
   dateCol: ColumnDef
   startCol: ColumnDef | null
   titleCol: ColumnDef | null
@@ -296,9 +400,10 @@ interface GanttRowProps {
 
 function GanttRow({
   row,
-  days,
+  ticks,
   todayISO,
   colWidth,
+  scale,
   dateCol,
   startCol,
   titleCol,
@@ -328,10 +433,13 @@ function GanttRow({
   const title =
     (titleCol ? String(row[titleCol.name] ?? "") : "") || String(row.id)
 
-  const dueIdx = days.indexOf(due)
-  // start 명시 없으면 dueIdx - 4 (최소 4일 폭) fallback
-  const startIdx = start ? days.indexOf(start) : Math.max(0, dueIdx - 4)
-  const barStart = startIdx >= 0 ? startIdx : Math.max(0, dueIdx - 4)
+  const dueIdx = bucketIndexOf(ticks, due ? new Date(due).getTime() : NaN)
+  // start 명시 없으면 fallback 폭 — day scale은 4버킷(≈5일), week/month는 1버킷
+  const fallbackBack = scale === "day" ? 4 : 0
+  const startIdx = start
+    ? bucketIndexOf(ticks, new Date(start).getTime())
+    : Math.max(0, dueIdx - fallbackBack)
+  const barStart = startIdx >= 0 ? startIdx : Math.max(0, dueIdx - fallbackBack)
   const barEnd = Math.max(barStart, dueIdx)
   const barWidth = Math.max(1, barEnd - barStart + 1)
   const overdue =
@@ -412,24 +520,20 @@ function GanttRow({
 
       {/* Gantt 영역 */}
       <div className="relative flex flex-1">
-        {days.map((d) => {
-          const isToday = d === todayISO
-          const isWeekend = [0, 6].includes(new Date(d).getDay())
-          return (
-            <div
-              key={d}
-              style={{
-                width: colWidth,
-                background: isToday
-                  ? "color-mix(in oklch, var(--primary) 8%, transparent)"
-                  : isWeekend
-                    ? "color-mix(in oklch, var(--muted) 50%, transparent)"
-                    : "transparent",
-              }}
-              className="border-r border-border-subtle"
-            />
-          )
-        })}
+        {ticks.map((t) => (
+          <div
+            key={t.key}
+            style={{
+              width: colWidth,
+              background: t.isToday
+                ? "color-mix(in oklch, var(--primary) 8%, transparent)"
+                : t.isWeekend
+                  ? "color-mix(in oklch, var(--muted) 50%, transparent)"
+                  : "transparent",
+            }}
+            className="border-r border-border-subtle"
+          />
+        ))}
         {dueIdx >= 0 && (
           <div
             data-gantt-bar={row.id}
