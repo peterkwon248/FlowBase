@@ -8,13 +8,14 @@
 
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import {
   ArrowDown,
   ArrowUp,
   Check,
   ChevronDown,
   ChevronUp,
+  GripVertical,
   Plus,
   Settings2,
   X,
@@ -426,11 +427,25 @@ function GallerySection({ board }: { board: { columns: ColumnDef[] } }) {
   const cards = new Set(settings?.cardFields ?? [])
   const cols = settings?.columns ?? 3
 
+  // dnd reorder 상태 (네이티브 HTML5 — dnd lib ❌ LOCK 준수)
+  const [dragIdx, setDragIdx] = useState<number | null>(null)
+  const [overIdx, setOverIdx] = useState<number | null>(null)
+
   const toggleCard = (name: string) => {
     const next = new Set(cards)
     if (next.has(name)) next.delete(name)
     else next.add(name)
     setViewOption("gallery", { cardFields: Array.from(next) })
+  }
+
+  // from → to 이동(swap 아님). ↑/↓ 버튼과 동일하게 setViewOption 재사용.
+  const reorder = (from: number, to: number) => {
+    if (from === to) return
+    const arr = (settings?.cardFields ?? []).slice()
+    if (from < 0 || from >= arr.length || to < 0 || to >= arr.length) return
+    const [moved] = arr.splice(from, 1)
+    arr.splice(to, 0, moved)
+    setViewOption("gallery", { cardFields: arr })
   }
 
   return (
@@ -504,8 +519,41 @@ function GallerySection({ board }: { board: { columns: ColumnDef[] } }) {
               <div
                 key={col.name}
                 data-display-gallery-card={col.name}
-                className="flex items-center gap-1.5 rounded-sm px-1.5 py-1 text-[12px] transition-colors hover:bg-accent"
+                draggable
+                onDragStart={(e) => {
+                  setDragIdx(i)
+                  e.dataTransfer.effectAllowed = "move"
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  e.dataTransfer.dropEffect = "move"
+                  if (overIdx !== i) setOverIdx(i)
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  if (dragIdx !== null) reorder(dragIdx, i)
+                  setDragIdx(null)
+                  setOverIdx(null)
+                }}
+                onDragEnd={() => {
+                  setDragIdx(null)
+                  setOverIdx(null)
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-sm px-1.5 py-1 text-[12px] transition-colors hover:bg-accent",
+                  dragIdx === i && "opacity-40",
+                  overIdx === i &&
+                    dragIdx !== i &&
+                    "bg-primary/[0.06] ring-1 ring-inset ring-primary/40",
+                )}
               >
+                <span
+                  className="flex size-4 shrink-0 cursor-grab items-center justify-center text-muted-foreground/50 active:cursor-grabbing"
+                  title="Drag to reorder"
+                  aria-hidden
+                >
+                  <GripVertical className="size-3" strokeWidth={1.75} />
+                </span>
                 <button
                   type="button"
                   onClick={() => toggleCard(col.name)}
