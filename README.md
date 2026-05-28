@@ -1,4 +1,6 @@
-# FlowDB
+# FlowBase
+
+[![CI](https://github.com/peterkwon248/FlowBase/actions/workflows/ci.yml/badge.svg)](https://github.com/peterkwon248/FlowBase/actions/workflows/ci.yml)
 
 > **AI가 초안을 만들고 사람이 확정하는 가벼운 데이터 보드.**
 >
@@ -6,13 +8,13 @@
 
 ## 현재 상태
 
-**Phase 0 — Plan 단계 완료.** Phase 1 (Beta) 시작 직전.
+**Phase 1 (Beta) — 데이터 보드 자체는 거의 완성.** 상용화 기준 ~37%.
 
-- ✅ Claude Design 앱 기능 이식 (설계·데이터·운영 3 섹션)
-- ✅ shadcn/ui 기반 디자인 시스템
-- ✅ 메모리상 mock 데이터로 인터랙션 검증
-- ⬜ BaaS 결정 (Supabase vs bkend.ai)
-- ⬜ 인증·DB·CRUD·import flow
+- ✅ 제네릭 데이터 보드 (Sheet·Kanban·Gallery·Timeline·Dashboard·Schema)
+- ✅ 6 액티비티 모드 (Inbox·Tables·Workspace·Library·Wiki·Search)
+- ✅ AI 추천 + 사람 확정 패널 · Import 위저드 · Saved Views · Formula 컬럼
+- ✅ ESLint 9 + GitHub Actions CI + husky pre-commit · vitest
+- ⬜ BaaS 결정 (Supabase vs bkend.ai) · 인증 · 협업 · 결제 · 모바일 반응형
 
 자세한 계획은 [docs/00-product-plan.md](./docs/00-product-plan.md) 참조.
 
@@ -33,4 +35,4 @@ npm run dev
 
 ## 스택
 
-Next.js 16 · TypeScript · Tailwind v4 · shadcn/ui · lucide-react · next-themes
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · shadcn/ui · zustand · @phosphor-icons/react + lucide-react · Geist · next-themes
