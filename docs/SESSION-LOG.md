@@ -4,6 +4,79 @@
 
 ---
 
+## 2026-05-28 (kkh94 머신, 7 phase / 7 commit) — G7 후속 폴리시 묶음 (Wiki diff LCS · Gallery dnd · Timeline 버킷 · Library 깊은 편집 · Chart a11y)
+
+### 완료 (7 commit · 베이스 `663c6b7`)
+
+`/before-work`로 origin 동기화(이미 최신) 후, 사용자 선택 "G7 후속 폴리시 묶음"을
+**phase별 commit**으로 진행. 신규 워크트리라 `node_modules` 없어 `npm install` 선행.
+
+1. **`e4ea9e4` feat(wiki): A3 — Wiki diff LCS** — `naiveLineDiff`(위치-대-위치)를
+   `lib/line-diff.ts` `diffLines`(LCS DP + backtrack)로 교체. 한 줄 삽입/삭제가
+   이후 라인을 어긋나게 잡던 결함 해소. **+10 단위 테스트**(307→317). 의존성 0.
+   wiki-history-dialog는 동일 `DiffLine` 타입 import만 교체(렌더 불변).
+2. **`ed02ef7` docs: README** — 제목 FlowDB→FlowBase · GitHub Actions CI badge
+   (`peterkwon248/FlowBase`, push 후 활성) · 현재 상태/스택을 Phase 1 실제로 갱신.
+3. **`37e1ad6` feat(gallery): A10 — cardFields 네이티브 dnd** — Display 팝오버
+   선택 cardField 행에 HTML5 `draggable` + grip 핸들 + drag/over 시각 피드백.
+   `reorder`(splice 이동) → `setViewOption("gallery",{cardFields})`. ↑/↓ 버튼 유지
+   (접근성). **dnd 라이브러리 ❌ LOCK 준수**(코드베이스 첫 네이티브 dnd 패턴).
+4. **`fd79451` feat(timeline): A9 — month/week 실제 버킷 집계** — 기존엔 항상 day
+   컬럼 렌더 + month/week는 컬럼 폭만 압축(8/14px). `days[]` → scale-aware
+   `ticks[]`(버킷)로 일반화: month=달, week=주(일요일 시작), day=일. bar 위치를
+   버킷 index(`bucketIndexOf`, timestamp 기반)로 계산. UTC 자정 스냅으로
+   due ms == 버킷 startMs → **day scale 기존 동작 그대로 보존**. 컬럼 폭 상수
+   의미 변경(per-day→per-bucket): WEEK 14→54, MONTH 8→68.
+5. **`612bf42` feat(library): C2 — OptionList 옵션 깊은 편집** — read-only였던
+   `OptionListBody`를 non-viewer 편집: 옵션 추가/삭제(X)/라벨 인라인 rename/색상
+   picker. 색상 = **토큰 팔레트 `var(--chart-1..5)`**(inline hex 금지 LOCK).
+   `updateLibraryOptionList` 재사용(ensureCanEdit 가드). viewer read-only.
+6. **`2368aee` feat(library): C2 후속 — Field config 인라인 편집** — `FieldBody`
+   non-viewer 편집: required 토글 · default/format/validation 텍스트(blur commit) ·
+   OptionList 링크 select(None 포함). type·inline options read-only.
+   `updateLibraryField` 재사용. → **"Library 깊은 편집"(옵션+config) 완성**.
+7. **`b43c93e` feat(dashboard): chart toolbar 키보드 접근성** — 호버 toolbar
+   (↑↓ ⋯ X)에 `focus-within:opacity-100` 추가(키보드 탭 노출). touch(hover:none)는
+   이미 적용돼 있었음. CSS only, 기존 hover/touch 불변.
+
+### 큰 결정 / LOCK
+
+- **`lib/line-diff.ts` 신규** — LCS 기반 공용 line diff(`diffLines` + `DiffLine`).
+  의존성 0. Wiki 외 재사용 가능.
+- **네이티브 HTML5 dnd 패턴 도입** — Gallery cardFields가 첫 사례. dnd lib ❌ LOCK
+  유지(draggable + onDragStart/Over/Drop + splice 이동). 향후 dnd는 이 패턴 답습.
+- **Timeline ticks 모델** — `days[]` → `ticks[]`(scale별 버킷). `bucketIndexOf`로
+  timestamp→버킷. UTC 스냅 LOCK(date 문자열이 UTC 자정 파싱 → 버킷 경계도 UTC).
+- **Library 편집 = 토큰 색상만** — OptionList recolor 팔레트는 `var(--chart-N)`
+  토큰 5종. inline hex 금지 LOCK 준수. 모든 편집 `ensureCanEdit` + viewer read-only.
+
+### 검증
+
+- vitest **317 passed**(+10) · tsc **0** · eslint **0/0** 클린.
+- 브라우저 실측(preview): Gallery 실제 drag-drop reorder(store 반영) · Timeline
+  day(25 ticks)/week(4 일요일 버킷)/month(1 May 버킷) 3 scale · Library OptionList
+  add/rename/recolor/remove 4동작 + Field required 토글·default 편집(store 반영).
+  콘솔 에러 0. **테스트 중 변경한 preview 상태 전부 원복.**
+
+### 다음 (결정/규모 이슈 — 자율 진행 보류)
+
+- **Formula propArr(col)** — ⚠ Formula 결과타입 LOCK(4종)을 array로 확장해야 함. 승인 필요.
+- **Saved Views 폴더 그룹화** — 폴리시 아닌 기능 규모.
+- **Library Function/Template/Dashboard 깊은 편집** — rename만 됨, deeper는 후속.
+- **상용화 마일스톤 M1~M7** — BaaS/인증/결제/반응형/마케팅/운영/협업.
+
+### Watch Out
+
+- `next-env.d.ts` — dev 서버가 `./.next/dev/types/...`로 재생성. **커밋 제외**(빌드 산출물).
+- **워크트리는 별도 `node_modules` 필요** — 새 워크트리에서 `npm install` 선행.
+
+### 머신
+
+kkh94 (`C:\Users\kkh94\OneDrive\Desktop\FlowBase`), 워크트리
+`.claude/worktrees/peaceful-liskov-c52b85` (branch `claude/peaceful-liskov-c52b85`).
+
+---
+
 ## 2026-05-26 (kkh94 머신, 17 phase / 2 commit) — ESLint 풀스택 + G7-C 후속 폴리시 + Library rename
 
 ### 완료 (2 commits — `cb5e19d` + `26ddcdb` · 27 파일 변경 · +6883/-620)

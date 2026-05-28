@@ -1,20 +1,20 @@
 # NEXT-ACTION
 
 > 다음 세션 시작 시 이 파일부터 읽으세요.
-> 마지막 갱신: 2026-05-26 후속 (kkh94 머신, 17 phase 2 commit — `cb5e19d` ESLint 인프라 + `26ddcdb` 17 phase 폴리시)
+> 마지막 갱신: 2026-05-28 (kkh94 머신, G7 후속 폴리시 묶음 7 phase / 7 commit)
 
 ---
 
 ## 한 줄 요약
 
-**ESLint 9 + GitHub Actions CI + husky pre-commit 인프라 완성(0/0 클린) · G7-C 후속 폴리시(Formula sort/filter + autocomplete + 11 추가 함수 + Import 재검증) · UI 폴리시(Pivot PNG + Empty state + Saved Views UI) · Library rename MVP. vitest 307. 다음: 상용화 마일스톤(M1 BaaS·M2 인증·M4 모바일) 또는 후속 폴리시(Library 깊은 편집 · CI badge · Formula 1000행 성능).**
+**G7 후속 폴리시 7 phase 완료: Wiki diff LCS(+10 tests) · README CI badge · Gallery cardFields 네이티브 dnd · Timeline month/week 실제 버킷 집계 · Library 깊은 편집(OptionList 옵션 추가/삭제/색상 + Field config) · Chart toolbar focus-within a11y. vitest 307→317 · tsc 0 · eslint 0/0. 다음: 상용화 마일스톤(M1 BaaS·M2 인증·M4 반응형) — 또는 결정 필요 항목(Formula propArr LOCK 확장 · Saved Views 폴더 · Library 나머지 카테고리 편집).**
 
 ---
 
 ## ✅ 머지 완료
 
-- `origin/main = 26ddcdb` 예정 (이번 세션 push 후 머지 — `cb5e19d` ESLint 인프라 + `26ddcdb` 17 phase 폴리시).
-- 다른 머신: `git fetch && git checkout main && git pull && npm install` (husky가 자동 install).
+- `origin/main = b43c93e` 예정 (이번 세션 push 후 머지 — A3·D1·A10·A9·C2·C2후속·chart a11y 7 commit, 베이스 `663c6b7`).
+- 다른 머신: `git fetch && git checkout main && git pull && npm install` (husky가 자동 install). **워크트리는 별도 `npm install`.**
 
 ---
 
@@ -32,24 +32,25 @@
 - **M6 운영** (Sentry + 분석 + email + support) — 1주
 - **M7 협업** (comment·mention·snooze, Phase 2 W11 후) — 2-3주
 
-### G7 추가 polish (선택, 도메인 fit 후속)
-- ~~**G7-C Power user** — Formula 컬럼 · Saved views~~ ✅ 완료 (Sankey chart는 묶음에서 제외)
+### G7 추가 polish
+- ~~**G7-C Power user** — Formula 컬럼 · Saved views~~ ✅ 완료
 - **G7-D 모바일** — 반응형 fix (M4 마일스톤 통합 가능)
-- **G7-C 후속**: Formula sort/filter by formula 컬럼 · Formula multiSelect `join(arr, sep)` 함수 · Saved view deep equal helper(JSON.stringify 의존 제거)
+- ~~**A3 Wiki body diff LCS**~~ ✅ 완료 (2026-05-28 — `lib/line-diff.ts`)
+- ~~**A9 Timeline real month aggregation**~~ ✅ 완료 (2026-05-28 — scale별 ticks 버킷)
+- ~~**A10 Gallery dnd reorder**~~ ✅ 완료 (2026-05-28 — cardFields 네이티브 HTML5 dnd)
+- ~~**Library 깊은 편집 (옵션 추가/색상/field config)**~~ ✅ 완료 (2026-05-28 — OptionList 옵션 CRUD + Field config)
+- ~~**Chart toolbar 터치 UX**~~ ✅ 완료 (2026-05-28 — focus-within 키보드 a11y; touch는 기존 적용)
 
-### 우선순위 중간 (소소)
-- 알림 시스템 강화 (toast position 통일)
-- HTML chart (Pivot) PNG export (html-to-canvas 의존성)
-- Bullet chart "as KPI" preset (G7-A1 후속)
-- Empty state 일관성 (Kanban/Gallery/Timeline)
-- ESLint flat config 복구 · CI 추가 · pre-commit hook
+### 결정/규모 이슈 (자율 진행 보류 — 승인·우선순위 필요)
+- **Formula propArr(col)** — ⚠ Formula 결과타입 LOCK(text/number/date/boolean 4종)을 array로 확장해야. 승인 필요.
+- **Saved Views 폴더 그룹화** — B9 후속. 폴리시 아닌 기능 규모.
+- **Library 나머지 카테고리 깊은 편집** — Function params · Template fields · Dashboard charts (현재 rename + OptionList/Field만 편집됨).
+- **Formula sort/filter 1000행 성능 측정** — 기능 아님, 측정 task.
 
-### 우선순위 낮음 (NEXT-ACTION 직전 LOCK)
+### 우선순위 낮음 (LOCK)
 - **xlsx alt lib 검토** — Phase 3+ 클라우드 sync 전 필수. 옵션: SheetJS CDN 0.20+ · exceljs · read-excel-file. 현재 단기 자기 디바이스 위험 낮음.
 - **postcss vuln 추적** — next 16.2.6 transitive (3 moderate). next patch 기다림.
-- **Schema pinch-zoom 트랙패드** + 멀티 테이블 → N개 보드 (G3-2 완료)
-- **Chart toolbar 터치 UX** (이미 적용)
-- **firedKeys cleanup runtime ref sync** (G4-4 완료)
+- **Q11-D1 CI 실 검증** — README badge 추가됨. push 후 GitHub Actions 통과 확인 필요.
 
 ### B4 (가장 마지막, 사용자 명시)
 - 컬럼 ↔ Library 자산 링크 → "Use in table" (Library asset에서 시작)
@@ -203,8 +204,23 @@ kkh94 (`C:\Users\kkh94\OneDrive\Desktop\FlowBase`). 다음 머신: `git fetch &&
 
 **dev cache 주의**: Next.js 업데이트 후 `.next` 삭제 + dev server 재시작 필요 (stale chunk 방지).
 **워크트리 주의**: 워크트리는 main과 별도 node_modules 필요. `npm install` 워크트리 디렉토리에서 실행.
+**next-env.d.ts 주의**: dev 서버가 `./.next/dev/types/...`로 재생성 → 커밋 제외(빌드 산출물).
 
-## 이번 세션 후속 (2026-05-26 추가) 완료 17 phase
+## 이번 세션 (2026-05-28) 완료 7 phase — G7 후속 폴리시 묶음
+
+| Phase | Commit | 내용 |
+|---|---|---|
+| A3 | `e4ea9e4` | Wiki diff LCS — `lib/line-diff.ts` `diffLines` + 10 tests |
+| D1 | `ed02ef7` | README FlowBase 리브랜드 + CI badge + 상태 갱신 |
+| A10 | `37e1ad6` | Gallery cardFields 네이티브 HTML5 dnd (dnd lib ❌ LOCK) |
+| A9 | `fd79451` | Timeline month/week 실제 버킷 집계 (days→ticks) |
+| C2 | `612bf42` | Library OptionList 옵션 추가/삭제/rename/색상(토큰) |
+| C2후속 | `2368aee` | Library Field config 편집 (required/default/format/validation/OptionList) |
+| a11y | `b43c93e` | Chart toolbar focus-within 키보드 접근성 |
+
+검증: vitest 317 · tsc 0 · eslint 0/0 · 브라우저 실측 전부 통과 · preview 상태 원복.
+
+## 이전 세션 (2026-05-26) 완료 17 phase
 
 ### ESLint + CI 인프라 (`cb5e19d`)
 - Q2 ESLint 9 flat config (Next plugin 직접 import · FlatCompat 회피)

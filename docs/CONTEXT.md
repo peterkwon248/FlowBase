@@ -6,7 +6,15 @@
 
 ## Current Features (Completed — 최근 우선)
 
-1. **ESLint 풀스택 + G7-C 후속 폴리시 (17 phase)** (2026-05-26 후속, 2 commit `cb5e19d` 인프라 + `26ddcdb` 17 phase, **main 머지 예정**) —
+1. **G7 후속 폴리시 묶음 (7 phase)** (2026-05-28, 7 commit `e4ea9e4`~`b43c93e`, 베이스 `663c6b7`, **main 머지 예정**) —
+   - **A3 Wiki diff LCS** (`lib/line-diff.ts`) — `naiveLineDiff`(위치 비교) → `diffLines`(LCS DP+backtrack). 한 줄 삽입/삭제 어긋남 해소. 의존성 0. +10 단위 테스트(307→317). wiki-history-dialog import 교체(렌더 불변).
+   - **D1 README** — 제목 FlowDB→FlowBase · GitHub Actions CI badge(`peterkwon248/FlowBase`) · 현재 상태/스택 갱신.
+   - **A10 Gallery cardFields 네이티브 dnd** (`display-menu.tsx`) — HTML5 `draggable`+grip+splice reorder. ↑/↓ 버튼 유지. **dnd lib ❌ LOCK**(코드베이스 첫 네이티브 dnd 패턴).
+   - **A9 Timeline month/week 실제 버킷** (`timeline-view.tsx`) — `days[]`→scale별 `ticks[]` 버킷(day/week/month). `bucketIndexOf` timestamp 기반 · UTC 자정 스냅. day scale 보존. 컬럼 폭 per-day→per-bucket(WEEK 54·MONTH 68).
+   - **C2 Library 깊은 편집** (`asset-detail.tsx`) — OptionList 옵션 추가/삭제/rename/색상(토큰 `var(--chart-1..5)`) + Field config(required/default/format/validation/OptionList 링크). `updateLibraryOptionList`/`updateLibraryField` 재사용(ensureCanEdit). viewer read-only.
+   - **Chart toolbar a11y** (`dashboard-view.tsx`) — `focus-within:opacity-100` 키보드 노출(touch는 기존).
+
+2. **ESLint 풀스택 + G7-C 후속 폴리시 (17 phase)** (2026-05-26 후속, 2 commit `cb5e19d` 인프라 + `26ddcdb` 17 phase, **main 머지 완료**) —
    - **ESLint 9 flat config** + GitHub Actions CI + husky pre-commit (자동 작동) · ESLint **0/0 클린**
    - **Q13-D3 추가 룰** — prefer-const · no-console (allow warn/error/info) · eqeqeq smart
    - **G7-C 후속**: Q1-A6 Theme accent 미세 조정 · Q1-B5 lib/deep-equal.ts · Q1-B6 saved view fallback 명시
@@ -160,5 +168,4 @@ P0는 [TODO.md](TODO.md) 참조.
 - **반응형 레이아웃 깨짐** — ~800px 폭에서 4패널이 무너짐(AI 패널이 보드 영역 덮음, 시트가 컬럼 못 폄). 반응형 처리 부재 — 별도 작업 대기.
 - `ANTHROPIC_API_KEY` 미설정 — AI 라우트(`infer-batch`/`ask`/`analyze-import`) 실호출 미검증. 키 없으면 graceful 500 + toast.
 - **BaaS 미결정** (Supabase vs bkend.ai, `docs/01-baas-decision.md`) — 옛 Phase 7. 서브시스템 구축 뒤로 후순위.
-- 프로젝트 eslint flat config 부재 — `npm run lint` 동작 안 함 (기존 이슈, 빌드 무관).
-- 내부 docs/spec의 "FlowDB" 표기 다수 잔존 (사용자 노출은 FlowBase, 내부는 점진 정리).
+- 내부 docs/spec의 "FlowDB" 표기 다수 잔존 (사용자 노출은 FlowBase, 내부는 점진 정리. README는 2026-05-28 FlowBase로 정정).

@@ -142,11 +142,11 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 - [x] ~~**Filter And/Or UI 본격**~~ — 직전 세션 #19에서 ExtraCondBlock + "Add condition" 완료 (Q1-A1)
 - [x] ~~**Schema pinch-zoom 트랙패드 + 멀티 테이블**~~ — `41cd262` + G3-2에서 완료 (Q1-A2)
 - [x] ~~**MATCH_FROM_DROPDOWN sourceField 명시**~~ — G3-3 완료 (Q1-A4)
-- [ ] **Chart toolbar 터치 UX** — group-hover 한계 추가 보완
-- [ ] **A3 Wiki body diff 정교화** — naive line diff → LCS 알고리즘
+- [x] ~~**Chart toolbar 터치 UX**~~ — 2026-05-28 `b43c93e` focus-within 키보드 a11y (touch 기존)
+- [x] ~~**A3 Wiki body diff 정교화**~~ — 2026-05-28 `e4ea9e4` LCS (`lib/line-diff.ts` + 10 tests)
 - [x] ~~**firedKeys runtime ref sync**~~ — `39a9c4e` CustomEvent listener 완료 (Q1-A5)
-- [ ] **A9 Timeline real month aggregation** — month scale은 colWidth만
-- [ ] **A10 Gallery dnd reorder** — 현재 ↑↓ 버튼만
+- [x] ~~**A9 Timeline real month aggregation**~~ — 2026-05-28 `fd79451` scale별 ticks 버킷
+- [x] ~~**A10 Gallery dnd reorder**~~ — 2026-05-28 `37e1ad6` cardFields 네이티브 HTML5 dnd
 - [x] ~~**HTML chart (Pivot) PNG export**~~ — html2canvas dynamic import 완료 (Q8-A7)
 - [x] ~~**ESLint flat config 복구**~~ — Q2 풀스택 완료 (config + CI + pre-commit)
 
@@ -162,13 +162,13 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 - [x] ~~**Empty state 잔여**~~ Q9-A11 완료 (Search + Inbox, Wiki sidebar는 inline 유지)
 - [x] ~~**Saved Views UI 폴리시**~~ Q10-B9 완료 (search filter + sort toggle)
 
-## ESLint/CI 후속 (이번 세션 신규 task)
+## ESLint/CI 후속 + 결정/규모 보류
 
-- [ ] **Q11-D1 CI workflow 실 검증** — GitHub PR/push에서 Actions 통과 확인 + README badge 추가
-- [ ] **Formula sort/filter 1000행 성능 측정** — useMemo evaluation 비용 측정
-- [ ] **Library 깊은 편집 (C2 후속)** — 옵션 추가/제거 · 색상 picker · field config 편집
-- [ ] **Formula propArr(col) 함수** — raw array 반환 (FormulaValue 타입 확장 필요)
-- [ ] **Saved Views 폴더 그룹화** — B9 후속
+- [~] **Q11-D1 CI workflow 실 검증** — README badge 추가 완료 (2026-05-28 `ed02ef7`). GitHub Actions push 후 통과 확인은 잔여.
+- [ ] **Formula sort/filter 1000행 성능 측정** — useMemo evaluation 비용 측정 (측정 task)
+- [~] **Library 깊은 편집 (C2 후속)** — OptionList 옵션 CRUD + Field config 완료 (2026-05-28 `612bf42`+`2368aee`). **잔여**: Function params · Template fields · Dashboard charts 편집.
+- [ ] **Formula propArr(col) 함수** — ⚠ raw array 반환 → Formula 결과타입 LOCK(4종) 확장 필요. 승인 후.
+- [ ] **Saved Views 폴더 그룹화** — B9 후속 (기능 규모)
 
 ---
 
