@@ -179,9 +179,11 @@ export function SnapshotsView() {
   ])
 
   // memberId → name 매핑 — 없는 멤버는 id 그대로 표시.
+  // members 가드: persisted/snapshot state가 members 없이 복원될 수 있음 (store restore가
+  // settings 통째 교체 → undefined 가능). 빈 배열 fallback으로 iterate 보호.
   const memberNameById = useMemo(() => {
     const map = new Map<string, string>()
-    for (const m of members) map.set(m.id, m.name)
+    for (const m of members ?? []) map.set(m.id, m.name)
     return map
   }, [members])
 

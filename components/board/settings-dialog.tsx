@@ -243,11 +243,15 @@ function MembersTab() {
     setInviteOpen(false)
   }
 
+  // members 가드: persisted/snapshot state가 members 없이 복원될 수 있음 (undefined 가능).
+  // 셀렉터에서 새 배열 fallback 시 무한 루프(LOCK) → 파생 로컬에서 빈 배열 처리.
+  const memberList = members ?? []
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="text-[12px] text-muted-foreground">
-          {members.length} {members.length === 1 ? "member" : "members"}
+          {memberList.length} {memberList.length === 1 ? "member" : "members"}
         </div>
         <Button
           size="sm"
@@ -264,7 +268,7 @@ function MembersTab() {
       </div>
 
       <div className="max-h-[320px] space-y-1.5 overflow-y-auto pr-1">
-        {members.map((m) => (
+        {memberList.map((m) => (
           <MemberRow
             key={m.id}
             member={m}
