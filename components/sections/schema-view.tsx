@@ -7,7 +7,16 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { KeyRound, Link2, List, Network, Plus, X } from "lucide-react"
+import {
+  ArrowLeft,
+  ArrowRight,
+  KeyRound,
+  Link2,
+  List,
+  Network,
+  Plus,
+  X,
+} from "lucide-react"
 import { toast } from "sonner"
 import { SchemaERDiagram } from "@/components/sections/schema-er-diagram"
 import { Input } from "@/components/ui/input"
@@ -140,6 +149,31 @@ function BoardFieldsCard({ board }: { board: Board }) {
   const color = board.colorVar ?? "var(--chart-1)"
   const isViewer = useFlowBase(selectIsViewer)
   const addColumn = useFlowBase((s) => s.addColumn)
+  const allBoards = useFlowBase((s) => s.boards)
+  const switchBoard = useFlowBase((s) => s.switchBoard)
+  const setActivityMode = useFlowBase((s) => s.setActivityMode)
+
+  // 양방향 관계 — outgoing(이 보드의 fk) · incoming(이 보드를 가리키는 다른 보드의 fk).
+  const outgoing = board.columns
+    .filter((c) => c.type === "fk" && c.fk)
+    .map((c) => ({
+      via: c.name,
+      id: c.fk as string,
+      label: allBoards[c.fk as string]?.label ?? (c.fk as string),
+    }))
+  const incoming = Object.values(allBoards)
+    .filter((b) => b.id !== board.id)
+    .flatMap((b) =>
+      b.columns
+        .filter((c) => c.type === "fk" && c.fk === board.id)
+        .map((c) => ({ via: c.name, id: b.id, label: b.label })),
+    )
+  const jumpTo = (id: string, label: string) => {
+    switchBoard(id)
+    setActivityMode("tables")
+    toast.success(`Opened ${label}`, { id: "rel-jump" })
+  }
+
   return (
     <div className="flex flex-col overflow-hidden rounded-lg border border-border-subtle bg-card">
       <div
@@ -157,6 +191,36 @@ function BoardFieldsCard({ board }: { board: Board }) {
           {board.columns.length}
         </span>
       </div>
+      {(outgoing.length > 0 || incoming.length > 0) && (
+        <div className="flex flex-wrap gap-1 border-b border-border-subtle bg-background/40 px-3 py-1.5">
+          {outgoing.map((r, i) => (
+            <button
+              key={`out-${i}`}
+              type="button"
+              onClick={() => jumpTo(r.id, r.label)}
+              data-rel-out={r.id}
+              title={`References ${r.label} (via ${r.via})`}
+              className="inline-flex items-center gap-0.5 rounded-full bg-primary/12 px-2 py-0.5 text-[10.5px] font-medium text-primary transition-colors hover:bg-primary/20"
+            >
+              <ArrowRight className="size-2.5" strokeWidth={2.5} />
+              {r.label}
+            </button>
+          ))}
+          {incoming.map((r, i) => (
+            <button
+              key={`in-${i}`}
+              type="button"
+              onClick={() => jumpTo(r.id, r.label)}
+              data-rel-in={r.id}
+              title={`${r.label} references this (via ${r.via})`}
+              className="inline-flex items-center gap-0.5 rounded-full bg-violet-500/12 px-2 py-0.5 text-[10.5px] font-medium text-violet-600 transition-colors hover:bg-violet-500/20 dark:text-violet-400"
+            >
+              <ArrowLeft className="size-2.5" strokeWidth={2.5} />
+              {r.label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex flex-col">
         {board.columns.map((c, i) =>
           isViewer ? (
