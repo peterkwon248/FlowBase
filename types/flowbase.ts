@@ -34,6 +34,7 @@ export type ColumnType =
   | "button"
   | "fk"
   | "formula"
+  | "lookup"
 
 // Formula 컬럼의 결과 타입. 셀 렌더가 이 값으로 포맷 분기.
 export type FormulaResultType = "text" | "number" | "date" | "boolean"
@@ -64,6 +65,9 @@ export interface ColumnDef {
   formula?: string
   formulaDeps?: string[]
   formulaResultType?: FormulaResultType
+  // P7: Lookup 컬럼 — via(같은 보드의 fk 컬럼명)로 연결된 타겟 행의 field 값을 읽어옴.
+  //   read-only · 표시 전용. 타겟 행/필드 없으면 "—".
+  lookup?: { via: string; field: string }
 }
 
 // G7-A3 Conditional formatting

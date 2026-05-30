@@ -19,6 +19,7 @@ import {
   Tags,
   Type,
   User,
+  Waypoints,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -90,6 +91,7 @@ export function AddColumnMenu() {
   const boards = useFlowBase((s) => s.boards)
   const isViewer = useFlowBase(selectIsViewer)
   const boardList = Object.values(boards)
+  const activeBoard = useFlowBase((s) => s.boards[s.activeBoardId])
 
   const handleBasic = (
     type: ColumnType,
@@ -137,6 +139,32 @@ export function AddColumnMenu() {
       type: "fk",
       fk: targetBoardId,
       width: 160,
+    })
+  }
+
+  // Lookup — 같은 보드의 fk 컬럼을 통해 타겟 행의 field 값을 읽어오는 컬럼.
+  // 옵션 = (각 fk 컬럼) × (타겟 보드의 비-id, 비-파생 필드).
+  const lookupOptions = (activeBoard?.columns ?? [])
+    .filter((c) => c.type === "fk" && c.fk && boards[c.fk])
+    .flatMap((fkc) => {
+      const tb = boards[fkc.fk as string]
+      return tb.columns
+        .filter((tc) => tc.name !== "id" && tc.type !== "lookup")
+        .map((tc) => ({
+          via: fkc.name,
+          viaLabel: fkc.label || fkc.name,
+          field: tc.name,
+          fieldLabel: tc.label || tc.name,
+        }))
+    })
+
+  const handleLookup = (opt: (typeof lookupOptions)[number]) => {
+    addColumn({
+      name: slugify(`${opt.viaLabel}_${opt.fieldLabel}`),
+      label: opt.fieldLabel,
+      type: "lookup",
+      lookup: { via: opt.via, field: opt.field },
+      width: 140,
     })
   }
 
@@ -220,6 +248,35 @@ export function AddColumnMenu() {
                     →
                   </span>
                   <span className="truncate">{b.label}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        )}
+        {lookupOptions.length > 0 && (
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="gap-2" data-add-lookup>
+              <Waypoints
+                className="size-3.5 text-muted-foreground"
+                strokeWidth={1.75}
+              />
+              <span>Lookup</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="max-h-[320px] overflow-auto">
+              <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
+                Pull field via relation
+              </DropdownMenuLabel>
+              {lookupOptions.map((opt) => (
+                <DropdownMenuItem
+                  key={`${opt.via}.${opt.field}`}
+                  onSelect={() => handleLookup(opt)}
+                  className="gap-2"
+                  data-lookup-opt={`${opt.via}.${opt.field}`}
+                >
+                  <span className="rounded bg-muted px-1 py-0.5 font-mono text-[9.5px] text-muted-foreground">
+                    {opt.viaLabel}
+                  </span>
+                  <span className="truncate">{opt.fieldLabel}</span>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuSubContent>

@@ -14,7 +14,7 @@ import {
   CircleHalf,
   CircleNotch,
 } from "@phosphor-icons/react"
-import { ArrowUpRight, Calculator, Clock, Link2 } from "lucide-react"
+import { ArrowUpRight, Calculator, Clock, Link2, Waypoints } from "lucide-react"
 import { STATUS_LABELS, type ColumnDef, type TableRow, type TicketStatus } from "@/types/flowbase"
 import { toast } from "sonner"
 import { MEMORY_MIN_COUNT, useFlowBase } from "@/lib/flowbase-store"
@@ -74,6 +74,8 @@ export function EditableCell(props: EditableCellProps) {
       return <MultiSelectCell {...props} />
     case "fk":
       return <FkCell {...props} />
+    case "lookup":
+      return <LookupCell {...props} />
     case "formula":
       return <FormulaCell {...props} />
     default:
@@ -872,6 +874,60 @@ function FkCell({
       )}
     </span>
   )
+}
+
+// ── lookup ──────────────────────────────────────────────────────────
+// via(같은 보드의 fk 컬럼) → 연결된 타겟 행 → field 값을 읽어 표시 (read-only).
+function LookupCell({ col, row }: EditableCellProps) {
+  const lookup = col.lookup
+  const viaName = lookup?.via
+  const targetBoard = useFlowBase((s) => {
+    if (!viaName) return undefined
+    const b = s.boards[s.activeBoardId]
+    const fkc = b?.columns.find((c) => c.name === viaName)
+    return fkc?.fk ? s.boards[fkc.fk] : undefined
+  })
+
+  if (!lookup || !targetBoard) {
+    return <span className="text-xs text-muted-foreground">—</span>
+  }
+
+  const targetId = row[lookup.via]
+  if (targetId == null || targetId === "") {
+    return <span className="text-xs italic text-muted-foreground/50">—</span>
+  }
+  const targetRow = targetBoard.rows.find(
+    (r) => String(r.id) === String(targetId),
+  )
+  if (!targetRow) {
+    return <span className="text-xs text-muted-foreground">—</span>
+  }
+
+  const display = formatLookupValue(targetRow[lookup.field])
+  return (
+    <span
+      className="inline-flex max-w-full items-center gap-1 truncate text-[13px] text-muted-foreground"
+      data-lookup-cell={col.name}
+      title={`${lookup.via} → ${lookup.field}`}
+    >
+      <Waypoints
+        className="size-3 shrink-0 text-muted-foreground/40"
+        strokeWidth={1.75}
+      />
+      {display ? (
+        <span className="truncate">{display}</span>
+      ) : (
+        <span className="text-muted-foreground/50">—</span>
+      )}
+    </span>
+  )
+}
+
+function formatLookupValue(v: unknown): string {
+  if (v == null) return ""
+  if (Array.isArray(v)) return v.join(", ")
+  if (typeof v === "object") return ""
+  return String(v)
 }
 
 // ── 공통 인라인 텍스트 입력 ────────────────────────────────────────

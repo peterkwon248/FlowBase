@@ -21,6 +21,7 @@ import {
   Tags,
   Type,
   User,
+  Waypoints,
 } from "lucide-react"
 import { ColumnHeaderMenu } from "@/components/sheet/column-header-menu"
 import type { ColumnDef, ColumnType, SortDir } from "@/types/flowbase"
@@ -40,6 +41,7 @@ export const TYPE_ICON: Record<ColumnType, typeof Type> = {
   button: MousePointerClick,
   fk: Link2,
   formula: Calculator,
+  lookup: Waypoints,
 }
 
 interface HeaderCellProps {
