@@ -10,11 +10,15 @@ import { useEffect, useState } from "react"
 import {
   ArrowLeft,
   ArrowRight,
+  ChevronDown,
+  ChevronRight,
+  GripVertical,
   KeyRound,
   Link2,
   List,
   Network,
   Plus,
+  Search,
   X,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -91,6 +95,18 @@ function deriveRelations(boards: Record<string, Board>): Relation[] {
   return out
 }
 
+// 검색 매칭 — 테이블 많을 때 1순위 (2026-05-30 합의). q는 미리 lowercase·trim.
+function colMatchesQuery(c: ColumnDef, q: string): boolean {
+  if (!q) return false
+  return c.name.toLowerCase().includes(q) || c.type.toLowerCase().includes(q)
+}
+function boardMatchesQuery(b: Board, q: string): boolean {
+  if (!q) return true
+  if (b.label.toLowerCase().includes(q) || b.id.toLowerCase().includes(q))
+    return true
+  return b.columns.some((c) => colMatchesQuery(c, q))
+}
+
 export function SchemaView() {
   const boards = useFlowBase((s) => s.boards)
   const boardList = Object.values(boards)
@@ -146,25 +162,173 @@ export function SchemaView() {
 
 // ─── Fields inventory ──────────────────────────────────────────────
 function FieldsInventory({ boards }: { boards: Board[] }) {
+  const [rawQuery, setRawQuery] = useState("")
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const reorderBoards = useFlowBase((s) => s.reorderBoards)
+  const isViewer = useFlowBase(selectIsViewer)
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [overId, setOverId] = useState<string | null>(null)
+
+  const q = rawQuery.trim().toLowerCase()
+  const filtered = q ? boards.filter((b) => boardMatchesQuery(b, q)) : boards
+  const matchCount = q
+    ? boards.reduce(
+        (n, b) => n + b.columns.filter((c) => colMatchesQuery(c, q)).length,
+        0,
+      )
+    : 0
+
+  const allCollapsed =
+    boards.length > 0 && boards.every((b) => collapsed.has(b.id))
+  const toggleAll = () =>
+    setCollapsed(allCollapsed ? new Set() : new Set(boards.map((b) => b.id)))
+  const toggleOne = (id: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  // dnd 순서변경 — 검색 중이 아니고 non-viewer + 2개 이상일 때만. 드롭=대상 카드 앞에 삽입.
+  const reorderable = !q && !isViewer && boards.length > 1
+  const handleReorderDrop = (targetId: string) => {
+    if (dragId && dragId !== targetId) {
+      const rest = boards.map((b) => b.id).filter((id) => id !== dragId)
+      rest.splice(rest.indexOf(targetId), 0, dragId)
+      reorderBoards(rest)
+    }
+    setDragId(null)
+    setOverId(null)
+  }
+
   return (
     <div className="flex-1 overflow-auto bg-background p-5">
-      <div className="mb-4">
-        <h3 className="text-[14px] font-semibold">Field inventory</h3>
-        <p className="mt-0.5 text-[12px] text-muted-foreground">
-          Every column across every table.
-        </p>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-[14px] font-semibold">Field inventory</h3>
+          <p className="mt-0.5 text-[12px] text-muted-foreground">
+            {q ? (
+              <>
+                {filtered.length} of {boards.length} tables
+                {matchCount > 0 && <> · {matchCount} matching fields</>}
+              </>
+            ) : (
+              "Every column across every table."
+            )}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
+              strokeWidth={1.75}
+            />
+            <Input
+              value={rawQuery}
+              onChange={(e) => setRawQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setRawQuery("")
+              }}
+              placeholder="Search tables & fields…"
+              data-fields-search
+              className="h-8 w-56 pl-7 pr-7 text-[12px]"
+            />
+            {rawQuery && (
+              <button
+                type="button"
+                onClick={() => setRawQuery("")}
+                title="Clear search"
+                className="absolute right-1.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+              >
+                <X className="size-3" strokeWidth={2} />
+              </button>
+            )}
+          </div>
+          {boards.length > 1 && (
+            <button
+              type="button"
+              onClick={toggleAll}
+              data-fields-collapse-all
+              className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
+            >
+              {allCollapsed ? (
+                <ChevronDown className="size-3.5" strokeWidth={2} />
+              ) : (
+                <ChevronRight className="size-3.5" strokeWidth={2} />
+              )}
+              {allCollapsed ? "Expand all" : "Collapse all"}
+            </button>
+          )}
+        </div>
       </div>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
-        {boards.map((b) => (
-          <BoardFieldsCard key={b.id} board={b} />
-        ))}
-      </div>
+      {q && filtered.length === 0 ? (
+        <div className="max-w-[820px] rounded-lg border border-dashed border-border bg-card px-5 py-10 text-center text-[12.5px] text-muted-foreground">
+          No tables or fields match{" "}
+          <span className="font-medium text-foreground">
+            &ldquo;{rawQuery.trim()}&rdquo;
+          </span>
+          .
+        </div>
+      ) : (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] items-start gap-4">
+          {filtered.map((b) => (
+            <BoardFieldsCard
+              key={b.id}
+              board={b}
+              query={q}
+              collapsed={collapsed.has(b.id)}
+              forceExpand={!!q}
+              onToggleCollapse={() => toggleOne(b.id)}
+              reorderable={reorderable}
+              dragging={dragId === b.id}
+              over={overId === b.id && dragId !== b.id}
+              onReorderStart={() => setDragId(b.id)}
+              onReorderOver={() => {
+                if (dragId && dragId !== b.id) setOverId(b.id)
+              }}
+              onReorderDrop={() => handleReorderDrop(b.id)}
+              onReorderEnd={() => {
+                setDragId(null)
+                setOverId(null)
+              }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 
-function BoardFieldsCard({ board }: { board: Board }) {
+function BoardFieldsCard({
+  board,
+  query = "",
+  collapsed = false,
+  forceExpand = false,
+  onToggleCollapse,
+  reorderable = false,
+  dragging = false,
+  over = false,
+  onReorderStart,
+  onReorderOver,
+  onReorderDrop,
+  onReorderEnd,
+}: {
+  board: Board
+  query?: string
+  collapsed?: boolean
+  forceExpand?: boolean
+  onToggleCollapse?: () => void
+  reorderable?: boolean
+  dragging?: boolean
+  over?: boolean
+  onReorderStart?: () => void
+  onReorderOver?: () => void
+  onReorderDrop?: () => void
+  onReorderEnd?: () => void
+}) {
   const color = board.colorVar ?? "var(--chart-1)"
+  const showBody = !collapsed || forceExpand
   const isViewer = useFlowBase(selectIsViewer)
   const addColumn = useFlowBase((s) => s.addColumn)
   const allBoards = useFlowBase((s) => s.boards)
@@ -193,7 +357,29 @@ function BoardFieldsCard({ board }: { board: Board }) {
   }
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-lg border border-border-subtle bg-card">
+    <div
+      onDragOver={
+        reorderable
+          ? (e) => {
+              e.preventDefault()
+              onReorderOver?.()
+            }
+          : undefined
+      }
+      onDrop={
+        reorderable
+          ? (e) => {
+              e.preventDefault()
+              onReorderDrop?.()
+            }
+          : undefined
+      }
+      className={cn(
+        "flex flex-col overflow-hidden rounded-lg border bg-card transition-all",
+        over ? "border-primary ring-2 ring-primary" : "border-border-subtle",
+        dragging && "opacity-50",
+      )}
+    >
       <div
         className="flex items-center gap-2 border-b border-border-subtle px-3 py-2"
         style={{
@@ -201,6 +387,37 @@ function BoardFieldsCard({ board }: { board: Board }) {
           color,
         }}
       >
+        {reorderable && (
+          <span
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.effectAllowed = "move"
+              e.dataTransfer.setData("text/plain", board.id)
+              onReorderStart?.()
+            }}
+            onDragEnd={() => onReorderEnd?.()}
+            title="Drag to reorder table"
+            data-board-card-grip={board.id}
+            className="-ml-1 flex size-5 shrink-0 cursor-grab items-center justify-center rounded opacity-60 transition hover:bg-foreground/10 hover:opacity-100 active:cursor-grabbing"
+          >
+            <GripVertical className="size-3.5" strokeWidth={2} />
+          </span>
+        )}
+        {!forceExpand && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            title={collapsed ? "Expand table" : "Collapse table"}
+            data-board-card-collapse={board.id}
+            className="-ml-1 flex size-5 shrink-0 items-center justify-center rounded transition-colors hover:bg-foreground/10"
+          >
+            {collapsed ? (
+              <ChevronRight className="size-3.5" strokeWidth={2.25} />
+            ) : (
+              <ChevronDown className="size-3.5" strokeWidth={2.25} />
+            )}
+          </button>
+        )}
         <span className="flex-1 truncate text-[13px] font-bold">
           {board.label}
         </span>
@@ -209,7 +426,7 @@ function BoardFieldsCard({ board }: { board: Board }) {
           {board.columns.length}
         </span>
       </div>
-      {(outgoing.length > 0 || incoming.length > 0) && (
+      {showBody && (outgoing.length > 0 || incoming.length > 0) && (
         <div className="flex flex-wrap gap-1 border-b border-border-subtle bg-background/40 px-3 py-1.5">
           {outgoing.map((r, i) => (
             <button
@@ -239,35 +456,43 @@ function BoardFieldsCard({ board }: { board: Board }) {
           ))}
         </div>
       )}
-      <div className="flex flex-col">
-        {board.columns.map((c, i) =>
-          isViewer ? (
-            <SchemaFieldRow
-              key={c.name}
-              col={c}
-              last={i === board.columns.length - 1}
-            />
-          ) : (
-            <EditableFieldRow key={c.name} col={c} boardId={board.id} />
-          ),
-        )}
-        {!isViewer && (
-          <button
-            type="button"
-            onClick={() =>
-              addColumn(
-                { name: "field", label: "Field", type: "text", width: 140 },
-                board.id,
-              )
-            }
-            data-schema-add-col={board.id}
-            className="flex items-center gap-2 px-3 py-1.5 text-left text-[12px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
-          >
-            <Plus className="size-3.5" strokeWidth={2} />
-            Add column
-          </button>
-        )}
-      </div>
+      {showBody && (
+        <div className="flex flex-col">
+          {board.columns.map((c, i) =>
+            isViewer ? (
+              <SchemaFieldRow
+                key={c.name}
+                col={c}
+                last={i === board.columns.length - 1}
+                highlight={colMatchesQuery(c, query)}
+              />
+            ) : (
+              <EditableFieldRow
+                key={c.name}
+                col={c}
+                boardId={board.id}
+                highlight={colMatchesQuery(c, query)}
+              />
+            ),
+          )}
+          {!isViewer && (
+            <button
+              type="button"
+              onClick={() =>
+                addColumn(
+                  { name: "field", label: "Field", type: "text", width: 140 },
+                  board.id,
+                )
+              }
+              data-schema-add-col={board.id}
+              className="flex items-center gap-2 px-3 py-1.5 text-left text-[12px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
+            >
+              <Plus className="size-3.5" strokeWidth={2} />
+              Add column
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -301,9 +526,11 @@ function TypeBadge({
 function EditableFieldRow({
   col,
   boardId,
+  highlight = false,
 }: {
   col: ColumnDef
   boardId: string
+  highlight?: boolean
 }) {
   const renameColumn = useFlowBase((s) => s.renameColumn)
   const updateColumn = useFlowBase((s) => s.updateColumn)
@@ -336,7 +563,12 @@ function EditableFieldRow({
   }
 
   return (
-    <div className="flex items-center gap-2 border-b border-border-subtle px-3 py-1.5 text-[12px]">
+    <div
+      className={cn(
+        "flex items-center gap-2 border-b border-border-subtle px-3 py-1.5 text-[12px]",
+        highlight && "bg-primary/[0.07]",
+      )}
+    >
       {isPk ? (
         <KeyRound
           className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400"
@@ -460,7 +692,15 @@ function EditableFieldRow({
   )
 }
 
-function SchemaFieldRow({ col, last }: { col: ColumnDef; last: boolean }) {
+function SchemaFieldRow({
+  col,
+  last,
+  highlight = false,
+}: {
+  col: ColumnDef
+  last: boolean
+  highlight?: boolean
+}) {
   const Icon = TYPE_ICON[col.type]
   const isPk = col.name === "id"
   const isFk = col.type === "fk"
@@ -470,6 +710,7 @@ function SchemaFieldRow({ col, last }: { col: ColumnDef; last: boolean }) {
       className={cn(
         "flex items-center gap-2 px-3 py-1.5 text-[12px]",
         !last && "border-b border-border-subtle",
+        highlight && "bg-primary/[0.07]",
       )}
     >
       {isPk ? (
