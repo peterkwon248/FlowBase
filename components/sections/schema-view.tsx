@@ -6,13 +6,34 @@
 
 "use client"
 
-import { useState } from "react"
-import { KeyRound, Link2, List, Network } from "lucide-react"
+import { useEffect, useState } from "react"
+import { KeyRound, Link2, List, Network, Plus, X } from "lucide-react"
 import { SchemaERDiagram } from "@/components/sections/schema-er-diagram"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { TYPE_ICON } from "@/components/sheet/header-cell"
-import { useFlowBase } from "@/lib/flowbase-store"
+import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
-import type { Board, ColumnDef } from "@/types/flowbase"
+import type { Board, ColumnDef, ColumnType } from "@/types/flowbase"
+
+// Schema Fields 편집에서 변경 가능한 타입 — fk(타겟 필요)·formula(expression 필요)·
+// reaction·button은 제외 (단순 타입만 인라인 전환).
+const SCHEMA_EDIT_TYPES: ColumnType[] = [
+  "text",
+  "num",
+  "date",
+  "email",
+  "select",
+  "multiSelect",
+  "status",
+  "avatar",
+]
 
 type Sub = "schema" | "fields" | "relations"
 
@@ -116,6 +137,8 @@ function FieldsInventory({ boards }: { boards: Board[] }) {
 
 function BoardFieldsCard({ board }: { board: Board }) {
   const color = board.colorVar ?? "var(--chart-1)"
+  const isViewer = useFlowBase(selectIsViewer)
+  const addColumn = useFlowBase((s) => s.addColumn)
   return (
     <div className="flex flex-col overflow-hidden rounded-lg border border-border-subtle bg-card">
       <div
@@ -134,14 +157,193 @@ function BoardFieldsCard({ board }: { board: Board }) {
         </span>
       </div>
       <div className="flex flex-col">
-        {board.columns.map((c, i) => (
-          <SchemaFieldRow
-            key={c.name}
-            col={c}
-            last={i === board.columns.length - 1}
-          />
-        ))}
+        {board.columns.map((c, i) =>
+          isViewer ? (
+            <SchemaFieldRow
+              key={c.name}
+              col={c}
+              last={i === board.columns.length - 1}
+            />
+          ) : (
+            <EditableFieldRow key={c.name} col={c} boardId={board.id} />
+          ),
+        )}
+        {!isViewer && (
+          <button
+            type="button"
+            onClick={() =>
+              addColumn(
+                { name: "field", label: "Field", type: "text", width: 140 },
+                board.id,
+              )
+            }
+            data-schema-add-col={board.id}
+            className="flex items-center gap-2 px-3 py-1.5 text-left text-[12px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
+          >
+            <Plus className="size-3.5" strokeWidth={2} />
+            Add column
+          </button>
+        )}
       </div>
+    </div>
+  )
+}
+
+// 타입 배지 — PK(amber) / FK(violet) / 일반(neutral). read-only 표시용.
+function TypeBadge({
+  label,
+  tone,
+}: {
+  label: string
+  tone: "amber" | "violet" | "neutral"
+}) {
+  return (
+    <span
+      className={cn(
+        "rounded px-1.5 py-px font-mono text-[10px] font-semibold lowercase",
+        tone === "amber"
+          ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+          : tone === "violet"
+            ? "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+            : "bg-muted text-muted-foreground",
+      )}
+    >
+      {label}
+    </span>
+  )
+}
+
+// 편집 가능 필드 행 (non-viewer) — name rename(키 migrate) · 타입 변경 · 삭제.
+// id는 read-only(키 보호). fk/formula 등 특수 타입은 타입 변경 ❌(배지만), rename·삭제는 ✓.
+function EditableFieldRow({
+  col,
+  boardId,
+}: {
+  col: ColumnDef
+  boardId: string
+}) {
+  const renameColumn = useFlowBase((s) => s.renameColumn)
+  const updateColumn = useFlowBase((s) => s.updateColumn)
+  const deleteColumn = useFlowBase((s) => s.deleteColumn)
+
+  const isPk = col.name === "id"
+  const isFk = col.type === "fk"
+  const canChangeType = SCHEMA_EDIT_TYPES.includes(col.type)
+  const Icon = TYPE_ICON[col.type]
+
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(col.name)
+  useEffect(() => {
+    setDraft(col.name)
+  }, [col.name])
+
+  const commitRename = () => {
+    const next = draft.trim()
+    setEditing(false)
+    if (!next || next === col.name) {
+      setDraft(col.name)
+      return
+    }
+    // schema는 키(name)를 표시·편집 — name+label 동시 갱신 (행 키 migrate).
+    renameColumn(col.name, next, next, boardId)
+  }
+
+  return (
+    <div className="flex items-center gap-2 border-b border-border-subtle px-3 py-1.5 text-[12px]">
+      {isPk ? (
+        <KeyRound
+          className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400"
+          strokeWidth={2}
+        />
+      ) : (
+        <Icon
+          className="size-3.5 shrink-0 text-muted-foreground"
+          strokeWidth={1.5}
+        />
+      )}
+
+      {isPk ? (
+        <span className="min-w-0 flex-1 truncate font-mono text-muted-foreground">
+          {col.name}
+        </span>
+      ) : editing ? (
+        <Input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commitRename}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault()
+              commitRename()
+            }
+            if (e.key === "Escape") {
+              setDraft(col.name)
+              setEditing(false)
+            }
+          }}
+          className="h-6 min-w-0 flex-1 font-mono text-[12px]"
+          data-schema-col-name={col.name}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setEditing(true)
+            setDraft(col.name)
+          }}
+          title="Click to rename"
+          data-schema-col-rename={col.name}
+          className="min-w-0 flex-1 truncate text-left font-mono transition-colors hover:text-foreground"
+        >
+          {col.name}
+        </button>
+      )}
+
+      {col.ai && (
+        <span className="rounded bg-primary/15 px-1 text-[9px] font-bold text-primary">
+          AI
+        </span>
+      )}
+
+      {isPk ? (
+        <TypeBadge label="PK" tone="amber" />
+      ) : !canChangeType ? (
+        <TypeBadge label={isFk ? "FK" : col.type} tone={isFk ? "violet" : "neutral"} />
+      ) : (
+        <Select
+          value={col.type}
+          onValueChange={(v) =>
+            updateColumn(col.name, { type: v as ColumnType }, boardId)
+          }
+        >
+          <SelectTrigger
+            className="h-6 w-[112px] text-[11px]"
+            data-schema-col-type={col.name}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SCHEMA_EDIT_TYPES.map((t) => (
+              <SelectItem key={t} value={t}>
+                {t}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      {!isPk && (
+        <button
+          type="button"
+          onClick={() => deleteColumn(col.name, boardId)}
+          title="Delete column"
+          data-schema-col-delete={col.name}
+          className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
+        >
+          <X className="size-3" strokeWidth={2} />
+        </button>
+      )}
     </div>
   )
 }

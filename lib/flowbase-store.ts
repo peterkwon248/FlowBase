@@ -199,11 +199,21 @@ export interface FlowBaseActions {
   acceptSuggestion: (id: string) => void
   dismissSuggestion: (id: string) => void
 
-  // Columns — active board의 columns 편집. 행 값은 보존(필요 시 키 migrate).
-  addColumn: (col: ColumnDef) => void
-  deleteColumn: (colName: string) => void
-  renameColumn: (colName: string, newName: string, newLabel?: string) => void
-  updateColumn: (colName: string, patch: Partial<ColumnDef>) => void
+  // Columns — 기본 active board. boardId 명시 시 해당 보드 대상 (Schema Fields cross-board).
+  // 행 값은 보존(필요 시 키 migrate).
+  addColumn: (col: ColumnDef, boardId?: string) => void
+  deleteColumn: (colName: string, boardId?: string) => void
+  renameColumn: (
+    colName: string,
+    newName: string,
+    newLabel?: string,
+    boardId?: string,
+  ) => void
+  updateColumn: (
+    colName: string,
+    patch: Partial<ColumnDef>,
+    boardId?: string,
+  ) => void
 
   // Dashboard charts (active board)
   addChart: (chart: Omit<ChartConfig, "id">) => string
@@ -1317,9 +1327,9 @@ export const useFlowBase = create<FlowBaseStore>()(
           })
         },
 
-        addColumn: (col) => {
+        addColumn: (col, boardId) => {
           const s = get()
-          const b = s.boards[s.activeBoardId]
+          const b = s.boards[boardId ?? s.activeBoardId]
           if (!b) return
           if (!ensureCanEdit(s, "Add column")) return
           // 중복 이름 방어 — "name", "name 2", "name 3" 순으로 자동 증가
@@ -1368,9 +1378,9 @@ export const useFlowBase = create<FlowBaseStore>()(
           })
         },
 
-        deleteColumn: (colName) => {
+        deleteColumn: (colName, boardId) => {
           const s = get()
-          const b = s.boards[s.activeBoardId]
+          const b = s.boards[boardId ?? s.activeBoardId]
           if (!b) return
           if (colName === "id") return // id 컬럼 보호
           if (!ensureCanEdit(s, "Delete column")) return
@@ -1393,9 +1403,9 @@ export const useFlowBase = create<FlowBaseStore>()(
           })
         },
 
-        renameColumn: (colName, newName, newLabel) => {
+        renameColumn: (colName, newName, newLabel, boardId) => {
           const s = get()
-          const b = s.boards[s.activeBoardId]
+          const b = s.boards[boardId ?? s.activeBoardId]
           if (!b) return
           if (colName === "id") return
           if (!newName.trim()) return
@@ -1439,9 +1449,9 @@ export const useFlowBase = create<FlowBaseStore>()(
           })
         },
 
-        updateColumn: (colName, patch) => {
+        updateColumn: (colName, patch, boardId) => {
           const s = get()
-          const b = s.boards[s.activeBoardId]
+          const b = s.boards[boardId ?? s.activeBoardId]
           if (!b) return
           if (!ensureCanEdit(s, "Change column")) return
           // Formula patch — formula 변경 또는 type → "formula" 전환 시 parse + deps 자동 추출.
