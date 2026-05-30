@@ -20,6 +20,7 @@ import {
   Network,
   Plus,
   Search,
+  Settings2,
   X,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -43,6 +44,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import {
   Select,
   SelectContent,
@@ -270,44 +276,86 @@ function FieldsInventory({ boards }: { boards: Board[] }) {
               </button>
             )}
           </div>
-          {/* 열 수 토글 — Auto / 1(세로) / 2 / 3. localStorage persist. */}
-          <div
-            className="inline-flex h-8 shrink-0 items-center rounded-md border border-border p-0.5"
-            role="group"
-            aria-label="Columns"
-            data-fields-cols={cols}
-          >
-            {FIELDS_COLS_ORDER.map((opt) => {
-              const on = cols === opt
-              return (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => changeCols(opt)}
-                  title={
-                    opt === "auto"
-                      ? "Auto-fit columns"
-                      : opt === "1"
-                        ? "Single column (stacked)"
-                        : `${opt} columns`
-                  }
-                  data-fields-cols-opt={opt}
-                  className={cn(
-                    "inline-flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-[11.5px] font-medium transition-colors",
-                    on
-                      ? "bg-foreground/[0.08] text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {opt === "auto" ? (
-                    <LayoutGrid className="size-3.5" strokeWidth={2} />
-                  ) : (
-                    opt
-                  )}
-                </button>
-              )
-            })}
-          </div>
+          {/* Display 옵션 — Columns(열 수). display-menu.tsx Popover 패턴 일치.
+              Fields는 workspace-level(보드 무관)이라 viewSettings 아닌 localStorage persist. */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                title="Display options"
+                data-fields-display
+                className={cn(
+                  "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-border-subtle px-2.5 text-[12px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground",
+                  cols !== "auto" &&
+                    "border-border bg-foreground/[0.06] text-foreground",
+                )}
+              >
+                <Settings2 className="size-3.5" strokeWidth={1.75} />
+                <span>Display</span>
+                {cols !== "auto" && (
+                  <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9.5px] font-semibold text-primary-foreground tabular-nums">
+                    1
+                  </span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              sideOffset={6}
+              className="w-64 p-0"
+              data-fields-display-popover
+            >
+              <div className="space-y-0.5 py-1">
+                <div className="px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  Display · Fields
+                </div>
+                <div className="px-3 pb-2 pt-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[12px] text-muted-foreground">
+                      Columns
+                    </span>
+                    <div
+                      className="inline-flex rounded-md border border-border-subtle p-0.5"
+                      role="group"
+                      aria-label="Columns"
+                      data-fields-cols={cols}
+                    >
+                      {FIELDS_COLS_ORDER.map((opt) => {
+                        const on = cols === opt
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => changeCols(opt)}
+                            title={
+                              opt === "auto"
+                                ? "Auto-fit columns"
+                                : opt === "1"
+                                  ? "Single column (stacked)"
+                                  : `${opt} columns`
+                            }
+                            data-fields-cols-opt={opt}
+                            className={cn(
+                              "inline-flex h-6 min-w-6 items-center justify-center rounded-sm px-1.5 text-[11.5px] transition-colors",
+                              on
+                                ? "bg-primary/15 font-semibold text-primary"
+                                : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
+                            )}
+                          >
+                            {opt === "auto" ? (
+                              <LayoutGrid className="size-3.5" strokeWidth={2} />
+                            ) : (
+                              opt
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
           {boards.length > 1 && (
             <button
               type="button"
