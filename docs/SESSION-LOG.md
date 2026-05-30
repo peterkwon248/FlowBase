@@ -4,6 +4,71 @@
 
 ---
 
+## 2026-05-30 (kkh94 머신, 3 commit) — 테이블 많을 때 1순위 + Schema ER 캔버스(드래그/선택/더블클릭) + 전역 테이블 순서
+
+### 완료 (3 commit · 베이스 `c35d896`)
+
+`/before-work` 후 "테이블 많을 때 1순위" 선택 → 구현·검증. 이어서 사용자가 Schema/Fields의
+"클릭 선택 + 위치 이동(=캔버스 모드)" 가능 여부를 질문 → 논의 끝에 **Schema 캔버스 강화 +
+전역 테이블 순서**까지 확장. 신규 워크트리 `npm install` 선행.
+
+- `2d31752→d83cb29` feat(store): **reorderBoards** — boards Record 자체를 재정렬하는 전역
+  순서 액션(ensureCanEdit 가드). 별도 boardOrder 필드 ❌ — Record 순서가 곧 테이블 순서.
+- `3b2ddef→ea73462` feat(schema): **Schema ER 캔버스** — ① 검색 포커스(좌상단 검색창+결과
+  드롭다운 → 클릭/Enter 시 카드 중앙 이동 ≥100% 줌 + ring) ② 카드 **본문 전체** 드래그 이동
+  (헤더 한정 철회) ③ 클릭 선택(selectedId+ring) ④ 빈 캔버스 클릭 = 선택/포커스 해제 ⑤ 더블클릭 = 테이블 열기.
+- `9938f9b→88033cb` feat(schema): **Fields 검색+카드 접기**(테이블명/id+필드명/타입 매칭 필터
+  · 매칭 행 하이라이트 · 카운트 · 카드별 chevron + Collapse/Expand all · 검색 중 force-expand) +
+  **grip 드래그 순서변경**(네이티브 HTML5 dnd · reorderBoards 호출 · 검색중/viewer/1개 비활성).
+
+> ⚠️ 위 SHA는 워크트리 재커밋으로 변동(최종: `d83cb29`·`ea73462`·`88033cb` + docs `69f627f`).
+
+### 큰 결정 / LOCK
+
+- **Schema ER = 캔버스 모델 LOCK**: 카드 전체가 드래그 핸들(기존 헤더 한정 철회). 클릭=선택
+  (ring) · 더블클릭=open(switchBoard+tables) · 빈 캔버스=해제+pan. highlight=`hovered ??
+  focusedId`(검색 포커스), 선택은 별도 ring. ER 카드 안엔 인터랙션 요소 없어 전체 드래그 안전.
+  dnd 라이브러리 ❌(좌표 직접 계산).
+- **전역 테이블 순서 LOCK**: `reorderBoards(orderedIds)`가 boards **Record를 재구성** →
+  `Object.values(boards)`를 쓰는 모든 곳(사이드바 TABLES·Schema 자동레이아웃·Fields)이 자동
+  일관. persist는 Record 순서 그대로 저장(마이그레이션 불필요). dnd = **네이티브 HTML5 +
+  grip 핸들**(dnd lib ❌ LOCK 답습). 드롭 = 대상 카드 앞 삽입. ensureCanEdit 가드.
+- **Fields 검색/접기**: 검색은 가변 항목 로컬 필터. 검색 중엔 강제 펼침 + chevron/grip 숨김,
+  검색 해제 시 수동 접기 상태 복원. grip reorder는 검색 안 할 때만(필터 중 순서변경 혼란 회피).
+
+### 검증
+
+- tsc **0** · eslint **0/0** · vitest **317**. 브라우저 실측 전부 통과 — 본문 드래그 이동
+  (dx80/dy55) · 클릭 선택 ring · 빈곳 해제 · 더블클릭 Tasks 열림 · ER 검색→중앙+ring ·
+  Fields 검색 "2 of 2 tables · 2 matching fields" + 행 하이라이트 · Collapse all/펼침/접힌채
+  검색 force-expand · grip 드래그 reorder(영속 + 사이드바 순서 반영). 콘솔 0. 테스트로 옮긴
+  카드 위치 Reset 원복.
+
+### 다음
+
+- 상용화 마일스톤(M1 BaaS · M2 인증 · M4 반응형)이 여전히 큰 남은 작업.
+- 테이블 많을 때 2·3순위(미니맵/자동레이아웃/도메인그룹/마스터-디테일)는 YAGNI 백로그
+  (실제 15~20개+ 신호 시).
+
+### Watch Out
+
+- **새 워크트리 dev 서버를 `npm install` 완료 전에 켜면** react/react-dom의 `cjs/`가 누락돼
+  화면이 검정(turbopack `Can't resolve './cjs/react.development.js'` + `<eof>` 파싱). 복구 =
+  preview_stop + `rm -rf .next node_modules/react node_modules/react-dom` + `npm install` +
+  재기동. **tsc/vitest는 통과하므로 정적 검사만으로 "동작 검증"이라 단정 ❌ — 브라우저 실렌더 확인.**
+- **main 직접 push는 하니스 권한 분류기가 차단** — feature 브랜치(`claude/heuristic-goldstine-9a8bc1`,
+  `69f627f`)는 origin에 push됨. main 반영은 사용자 명시 승인 또는 PR 필요(2026-05-30 기준 미반영).
+- **next-env.d.ts** 커밋 제외(빌드 산출물). **워크트리 별도 `npm install`**.
+- preview MCP 인자: `serverId` + `expression`(eval) / `name`(start). 틀리면 조용히 실패.
+
+### 머신
+
+kkh94 (`C:\Users\kkh94\OneDrive\Desktop\FlowBase`), 워크트리
+`.claude/worktrees/heuristic-goldstine-9a8bc1`. 다음 머신: `git fetch && git checkout main
+&& git pull && npm install`.
+
+---
+
 ## 2026-05-30 (kkh94 머신, 15 commit) — Schema 관계 시스템(FK→Lookup/Rollup) + IA 정합성 + 계정 메뉴
 
 ### 완료 (15 commit · 베이스 `8c8a137`)
