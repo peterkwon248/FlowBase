@@ -19,6 +19,16 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { SchemaERDiagram } from "@/components/sections/schema-er-diagram"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -298,9 +308,13 @@ function EditableFieldRow({
 
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(col.name)
+  const [confirmDel, setConfirmDel] = useState(false)
   useEffect(() => {
     setDraft(col.name)
   }, [col.name])
+
+  const isDerived =
+    col.type === "lookup" || col.type === "rollup" || col.type === "formula"
 
   const commitRename = () => {
     const next = draft.trim()
@@ -401,7 +415,7 @@ function EditableFieldRow({
       {!isPk && (
         <button
           type="button"
-          onClick={() => deleteColumn(col.name, boardId)}
+          onClick={() => setConfirmDel(true)}
           title="Delete column"
           data-schema-col-delete={col.name}
           className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
@@ -409,6 +423,31 @@ function EditableFieldRow({
           <X className="size-3" strokeWidth={2} />
         </button>
       )}
+
+      <AlertDialog open={confirmDel} onOpenChange={setConfirmDel}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete &quot;{col.name}&quot;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {isDerived
+                ? "Removes this computed column. Row data isn't affected."
+                : isFk
+                  ? "Removes the relation column and its value from every row. Lookup/rollup columns using it will stop working. This can't be undone."
+                  : "Removes the column and its value from every row. This can't be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteColumn(col.name, boardId)}
+              data-schema-col-delete-confirm={col.name}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
