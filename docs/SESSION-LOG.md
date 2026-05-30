@@ -20,7 +20,7 @@
 - `9938f9b→88033cb` feat(schema): **Fields 검색+카드 접기**(테이블명/id+필드명/타입 매칭 필터
   · 매칭 행 하이라이트 · 카운트 · 카드별 chevron + Collapse/Expand all · 검색 중 force-expand) +
   **grip 드래그 순서변경**(네이티브 HTML5 dnd · reorderBoards 호출 · 검색중/viewer/1개 비활성).
-- `abbb318` **fix(schema): ER 캔버스 드래그 결함 수정** — 사용자 피드백("캔버스 모드 제대로
+- `d93ad35` **fix(schema): ER 캔버스 드래그 결함 수정** — 사용자 피드백("캔버스 모드 제대로
   구현 안 됨")으로 첫 구현 재검토. **결함**: ① 카드 `transition-all`이 left/top까지 애니메이션
   → 드래그 시 커서 추적 lag(둥둥 뜸) ② mouse 이벤트 + `onMouseLeave` 취소 → 캔버스 밖/빠른
   드래그 시 끊김. **수정**: 카드 transition을 `border-color,box-shadow`로 한정(위치 즉시 추적) ·
@@ -28,7 +28,7 @@
   연속 추적, 캔버스 표준). `touch-none` 추가. 실 PointerEvent로 재검증(연속 6틱 추적 dx120/dy72 ·
   클릭 선택 ring · 빈곳 해제 · 더블클릭 open · transition-property 직접 확인).
 
-> ⚠️ 위 SHA는 워크트리 재커밋으로 변동(최종: `d83cb29`·`ea73462`·`88033cb` + docs `69f627f`·`c53cc94` + fix `abbb318`).
+> ⚠️ 위 SHA는 워크트리 재커밋으로 변동(최종: `d83cb29`·`ea73462`·`88033cb` + docs `69f627f`·`c53cc94` + fix `d93ad35`).
 > ⚠️ **검증 교훈**: 합성 MouseEvent 2틱 테스트로는 드래그 "느낌"(lag/끊김)을 못 잡았음 — 첫
 > 검증이 "통과"였는데 실제론 결함. 드래그류는 연속 pointermove 다수 + computed transition 직접 확인 필요.
 
