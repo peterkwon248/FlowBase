@@ -62,7 +62,7 @@ export function WorkspaceSidebar() {
         <span className="flex size-5 items-center justify-center rounded bg-chart-4/15 text-chart-4">
           <Layers className="size-3" strokeWidth={1.75} />
         </span>
-        <span className="text-[13px] font-semibold">Control</span>
+        <span className="text-[13px] font-semibold">Layer</span>
       </div>
 
       <div className="flex-1 px-2 py-2">

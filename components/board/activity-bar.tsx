@@ -23,7 +23,7 @@ import type { ActivityMode } from "@/types/flowbase"
 const MODES: { id: ActivityMode; label: string; Icon: LucideIcon }[] = [
   { id: "inbox", label: "Inbox", Icon: Inbox },
   { id: "tables", label: "Workspace", Icon: Database },
-  { id: "workspace", label: "Control", Icon: Layers },
+  { id: "workspace", label: "Layer", Icon: Layers },
   { id: "library", label: "Library", Icon: Library },
   { id: "wiki", label: "Wiki", Icon: BookText },
   { id: "search", label: "Search", Icon: Search },
