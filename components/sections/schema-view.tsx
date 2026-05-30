@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react"
 import { KeyRound, Link2, List, Network, Plus, X } from "lucide-react"
+import { toast } from "sonner"
 import { SchemaERDiagram } from "@/components/sections/schema-er-diagram"
 import { Input } from "@/components/ui/input"
 import {
@@ -403,13 +404,20 @@ function RelationsList({
 }) {
   const findColor = (id: string): string =>
     boards.find((b) => b.id === id)?.colorVar ?? "var(--chart-1)"
+  const switchBoard = useFlowBase((s) => s.switchBoard)
+  const setActivityMode = useFlowBase((s) => s.setActivityMode)
+  const jumpToBoard = (id: string, label: string) => {
+    switchBoard(id)
+    setActivityMode("tables")
+    toast.success(`Opened ${label}`, { id: "rel-jump" })
+  }
 
   return (
     <div className="flex-1 overflow-auto bg-background p-5">
       <div className="mb-4">
         <h3 className="text-[14px] font-semibold">Table relations</h3>
         <p className="mt-0.5 text-[12px] text-muted-foreground">
-          Foreign keys connecting tables. Add an FK column to link two boards.
+          Foreign keys connecting tables. Click a table to open it.
         </p>
       </div>
       {relations.length === 0 ? (
@@ -427,9 +435,19 @@ function RelationsList({
               data-relation-from={r.fromId}
               data-relation-to={r.toId}
             >
-              <TableChip label={r.fromLabel} id={r.fromId} color={findColor(r.fromId)} />
+              <TableChip
+                label={r.fromLabel}
+                id={r.fromId}
+                color={findColor(r.fromId)}
+                onClick={() => jumpToBoard(r.fromId, r.fromLabel)}
+              />
               <Link2 className="size-3 text-muted-foreground" strokeWidth={2} />
-              <TableChip label={r.toLabel} id={r.toId} color={findColor(r.toId)} />
+              <TableChip
+                label={r.toLabel}
+                id={r.toId}
+                color={findColor(r.toId)}
+                onClick={() => jumpToBoard(r.toId, r.toLabel)}
+              />
               <div className="flex-1" />
               <span className="rounded bg-muted px-2 py-0.5 font-mono text-[10.5px] font-semibold text-muted-foreground">
                 1:N
@@ -449,29 +467,30 @@ function TableChip({
   label,
   id,
   color,
+  onClick,
 }: {
   label: string
   id: string
   color: string
+  onClick: () => void
 }) {
   return (
-    <span
-      className="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[12.5px] font-semibold"
+    <button
+      type="button"
+      onClick={onClick}
+      title={`Open ${label}`}
+      data-relation-jump={id}
+      className="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[12.5px] font-semibold transition-transform hover:scale-[1.03]"
       style={{
         background: `color-mix(in oklch, ${color} 18%, var(--background))`,
         color,
       }}
     >
-      <span
-        className="size-1.5 rounded-full"
-        style={{ background: color }}
-      />
+      <span className="size-1.5 rounded-full" style={{ background: color }} />
       {label}
-      <span
-        className="ml-0.5 font-mono text-[10.5px] font-medium opacity-70"
-      >
+      <span className="ml-0.5 font-mono text-[10.5px] font-medium opacity-70">
         {id}
       </span>
-    </span>
+    </button>
   )
 }

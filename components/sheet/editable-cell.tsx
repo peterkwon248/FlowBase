@@ -14,7 +14,7 @@ import {
   CircleHalf,
   CircleNotch,
 } from "@phosphor-icons/react"
-import { Calculator, Clock, Link2 } from "lucide-react"
+import { ArrowUpRight, Calculator, Clock, Link2 } from "lucide-react"
 import { STATUS_LABELS, type ColumnDef, type TableRow, type TicketStatus } from "@/types/flowbase"
 import { toast } from "sonner"
 import { MEMORY_MIN_COUNT, useFlowBase } from "@/lib/flowbase-store"
@@ -770,6 +770,10 @@ function FkCell({
   onUpdate,
 }: EditableCellProps) {
   const targetBoard = useFlowBase((s) => (col.fk ? s.boards[col.fk] : undefined))
+  const switchBoard = useFlowBase((s) => s.switchBoard)
+  const setActivityMode = useFlowBase((s) => s.setActivityMode)
+  const setSelected = useFlowBase((s) => s.setSelected)
+  const setFocused = useFlowBase((s) => s.setFocused)
 
   const labelCol = useMemo(() => {
     if (!targetBoard) return "id"
@@ -810,6 +814,19 @@ function FkCell({
     })),
   ]
 
+  // 연결된 행으로 점프 — 타겟 보드로 전환 + 해당 행 선택/포커스.
+  const jumpToRelated = () => {
+    if (!col.fk || !currentRow) return
+    switchBoard(col.fk)
+    setActivityMode("tables")
+    setSelected([String(currentRow.id)])
+    setFocused({ row: String(currentRow.id), col: labelCol })
+    toast.success(`Jumped to ${targetBoard.label}`, {
+      id: "fk-jump",
+      description: labelOf(currentRow),
+    })
+  }
+
   const trigger = (
     <button
       type="button"
@@ -828,16 +845,32 @@ function FkCell({
   )
 
   return (
-    <CellPopover
-      open={editing}
-      onOpenChange={(o) => (o ? onStartEdit() : onStopEdit())}
-      label={`→ ${targetBoard.label}`}
-      width={220}
-      options={options}
-      value={currentId}
-      onSelect={(v) => onUpdate({ [col.name]: v })}
-      trigger={trigger}
-    />
+    <span className="inline-flex max-w-full items-center gap-0.5">
+      <CellPopover
+        open={editing}
+        onOpenChange={(o) => (o ? onStartEdit() : onStopEdit())}
+        label={`→ ${targetBoard.label}`}
+        width={220}
+        options={options}
+        value={currentId}
+        onSelect={(v) => onUpdate({ [col.name]: v })}
+        trigger={trigger}
+      />
+      {currentRow && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            jumpToRelated()
+          }}
+          title={`Go to ${targetBoard.label} · ${labelOf(currentRow)}`}
+          data-fk-jump={col.name}
+          className="flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-foreground/[0.08] hover:text-primary"
+        >
+          <ArrowUpRight className="size-3" strokeWidth={2} />
+        </button>
+      )}
+    </span>
   )
 }
 
