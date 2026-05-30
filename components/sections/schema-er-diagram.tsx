@@ -201,46 +201,49 @@ export function SchemaERDiagram() {
     | null
   >(null)
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      // 카드 헤더 드래그 시작은 별도. 여기는 빈 배경 → pan.
+  // 단일 pointerdown 핸들러 — 카드(노드 드래그+선택) vs 빈 캔버스(pan)를 구분.
+  // setPointerCapture로 이후 pointermove/up이 커서가 컨테이너를 벗어나도 계속 전달됨
+  // (마우스 이벤트의 "빠른 드래그 시 끊김/캔버스 밖 나가면 취소" 결함 해소 — 캔버스 표준).
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
       const target = e.target as HTMLElement
-      if (target.closest("[data-er-card]")) return // 카드 자체 핸들러가 처리
-      if (target.closest("[data-er-toolbar]")) return
-      // 빈 캔버스 클릭/드래그 = 포커스·선택 해제 + pan
-      setFocusedId(null)
-      setSelectedId(null)
-      dragRef.current = {
-        kind: "pan",
-        startX: e.clientX,
-        startY: e.clientY,
-        startPan: pan,
+      if (target.closest("[data-er-toolbar]")) return // 툴바/검색은 자체 처리
+      // 주 버튼만 드래그 시작 (우클릭/보조버튼 무시)
+      if (e.button !== 0) return
+      // capture 실패(비활성 pointer 등)는 무시 — 캡처 없이도 컨테이너 내 이동은 동작.
+      try {
+        containerRef.current?.setPointerCapture(e.pointerId)
+      } catch {
+        /* noop */
       }
-      e.preventDefault()
-    },
-    [pan],
-  )
-
-  // 카드 전체가 드래그 핸들 + 클릭 선택. mousedown = 선택(+ 비-viewer는 드래그 시작),
-  // 빈 캔버스 드래그 = pan. (Figma식 — 노드 잡으면 이동, 빈 곳 잡으면 화면 이동.)
-  const handleCardMouseDown = useCallback(
-    (boardId: string, e: React.MouseEvent) => {
-      e.stopPropagation() // 캔버스 pan/포커스해제 막기
-      setSelectedId(boardId)
-      setFocusedId(null) // 수동 선택이 검색 포커스 대체
-      if (isViewer) return // viewer는 선택만, 이동 ❌
-      const cur = layout.find((r) => r.id === boardId)
-      if (!cur) return
-      dragRef.current = {
-        kind: "card",
-        id: boardId,
-        startX: e.clientX,
-        startY: e.clientY,
-        startCard: { x: cur.x, y: cur.y },
+      const cardEl = target.closest("[data-er-card]") as HTMLElement | null
+      if (cardEl) {
+        const id = cardEl.getAttribute("data-er-card") ?? ""
+        setSelectedId(id)
+        setFocusedId(null) // 수동 선택이 검색 포커스 대체
+        if (isViewer) return // viewer는 선택만, 이동 ❌
+        const cur = layout.find((r) => r.id === id)
+        if (!cur) return
+        dragRef.current = {
+          kind: "card",
+          id,
+          startX: e.clientX,
+          startY: e.clientY,
+          startCard: { x: cur.x, y: cur.y },
+        }
+      } else {
+        // 빈 캔버스 = 선택·포커스 해제 + pan
+        setSelectedId(null)
+        setFocusedId(null)
+        dragRef.current = {
+          kind: "pan",
+          startX: e.clientX,
+          startY: e.clientY,
+          startPan: pan,
+        }
       }
-      e.preventDefault()
     },
-    [layout, isViewer],
+    [layout, isViewer, pan],
   )
 
   // 더블클릭 = 그 테이블을 Workspace(데이터)에서 열기.
@@ -255,8 +258,8 @@ export function SchemaERDiagram() {
     [boards, switchBoard, setActivityMode],
   )
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
       const d = dragRef.current
       if (!d) return
       if (d.kind === "pan") {
@@ -277,7 +280,7 @@ export function SchemaERDiagram() {
     [zoom, setSchemaPosition],
   )
 
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUp = useCallback(() => {
     dragRef.current = null
   }, [])
 
@@ -329,15 +332,13 @@ export function SchemaERDiagram() {
     <>
       <div
         ref={containerRef}
-        className="relative flex min-h-0 flex-1 overflow-hidden bg-background select-none"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        className="relative flex min-h-0 flex-1 cursor-grab touch-none select-none overflow-hidden bg-background active:cursor-grabbing"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onLostPointerCapture={handlePointerUp}
         onWheel={handleWheel}
-        style={{
-          cursor: dragRef.current?.kind === "pan" ? "grabbing" : "default",
-        }}
       >
         {/* Grid bg (pan offset 반영) */}
         <div
@@ -429,7 +430,6 @@ export function SchemaERDiagram() {
               active={highlightId === r.id}
               selected={selectedId === r.id}
               onHover={setHovered}
-              onCardMouseDown={(e) => handleCardMouseDown(r.id, e)}
               onOpen={() => openBoard(r.id)}
             />
           ))}
@@ -593,31 +593,30 @@ function TableCard({
   active,
   selected,
   onHover,
-  onCardMouseDown,
   onOpen,
 }: {
   rect: LayoutRect
   active: boolean
   selected: boolean
   onHover: (id: string | null) => void
-  onCardMouseDown: (e: React.MouseEvent) => void
   onOpen: () => void
 }) {
   const { board } = rect
   const color = board.colorVar ?? "var(--chart-1)"
   const accentBg = `color-mix(in oklch, ${color} 18%, var(--background))`
 
+  // pointerdown/이동/선택은 컨테이너(캔버스)가 일괄 처리 (setPointerCapture 위해).
+  // 카드는 hover·더블클릭(open)만. ⚠ 위치(left/top) transition 금지 — 드래그 시 커서 추적 lag.
   return (
     <div
       data-er-card={board.id}
       data-er-card-selected={selected ? board.id : undefined}
-      onMouseDown={onCardMouseDown}
       onDoubleClick={onOpen}
       onMouseEnter={() => onHover(board.id)}
       onMouseLeave={() => onHover(null)}
       title="Drag to move · double-click to open"
       className={cn(
-        "absolute flex flex-col cursor-grab overflow-hidden rounded-lg border bg-card transition-all active:cursor-grabbing",
+        "absolute flex flex-col cursor-grab overflow-hidden rounded-lg border bg-card transition-[border-color,box-shadow] active:cursor-grabbing",
         selected
           ? "border-primary shadow-lg ring-2 ring-primary z-10"
           : active
