@@ -8,8 +8,10 @@
 "use client"
 
 import { useCallback, useMemo, useRef, useState } from "react"
-import { KeyRound, Minus, Plus, RotateCcw, Sparkles } from "lucide-react"
+import { KeyRound, Minus, Plus, RotateCcw, Search, Sparkles, X } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { TYPE_ICON } from "@/components/sheet/header-cell"
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
@@ -151,6 +153,8 @@ export function SchemaERDiagram() {
   const schemaPositions = useFlowBase((s) => s.schemaPositions)
   const setSchemaPosition = useFlowBase((s) => s.setSchemaPosition)
   const resetSchemaPositions = useFlowBase((s) => s.resetSchemaPositions)
+  const switchBoard = useFlowBase((s) => s.switchBoard)
+  const setActivityMode = useFlowBase((s) => s.setActivityMode)
   const isViewer = useFlowBase(selectIsViewer)
   const viewerTitle = isViewer ? "Viewers can't edit schema" : undefined
 
@@ -161,9 +165,28 @@ export function SchemaERDiagram() {
   const edges = useMemo(() => deriveEdges(boardList), [boardList])
 
   const [hovered, setHovered] = useState<string | null>(null)
+  const [focusedId, setFocusedId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [query, setQuery] = useState("")
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [newTableOpen, setNewTableOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // 검색 하이라이트 = hover 우선, 없으면 focus된 테이블 (검색 후 포커스 유지).
+  const highlightId = hovered ?? focusedId
+
+  const results = useMemo(() => {
+    const qq = query.trim().toLowerCase()
+    if (!qq) return []
+    return boardList
+      .filter(
+        (b) =>
+          b.label.toLowerCase().includes(qq) ||
+          b.id.toLowerCase().includes(qq),
+      )
+      .slice(0, 8)
+  }, [query, boardList])
 
   // 드래그 상태: 캔버스 pan vs 카드 drag.
   const dragRef = useRef<
@@ -182,8 +205,11 @@ export function SchemaERDiagram() {
     (e: React.MouseEvent) => {
       // 카드 헤더 드래그 시작은 별도. 여기는 빈 배경 → pan.
       const target = e.target as HTMLElement
-      if (target.closest("[data-er-card-header]")) return
+      if (target.closest("[data-er-card]")) return // 카드 자체 핸들러가 처리
       if (target.closest("[data-er-toolbar]")) return
+      // 빈 캔버스 클릭/드래그 = 포커스·선택 해제 + pan
+      setFocusedId(null)
+      setSelectedId(null)
       dragRef.current = {
         kind: "pan",
         startX: e.clientX,
@@ -195,10 +221,14 @@ export function SchemaERDiagram() {
     [pan],
   )
 
-  const handleCardHeaderMouseDown = useCallback(
+  // 카드 전체가 드래그 핸들 + 클릭 선택. mousedown = 선택(+ 비-viewer는 드래그 시작),
+  // 빈 캔버스 드래그 = pan. (Figma식 — 노드 잡으면 이동, 빈 곳 잡으면 화면 이동.)
+  const handleCardMouseDown = useCallback(
     (boardId: string, e: React.MouseEvent) => {
-      // viewer는 schema 카드 drag 불가 — silent skip (store guard도 있지만 UX로 미리 차단)
-      if (isViewer) return
+      e.stopPropagation() // 캔버스 pan/포커스해제 막기
+      setSelectedId(boardId)
+      setFocusedId(null) // 수동 선택이 검색 포커스 대체
+      if (isViewer) return // viewer는 선택만, 이동 ❌
       const cur = layout.find((r) => r.id === boardId)
       if (!cur) return
       dragRef.current = {
@@ -209,9 +239,20 @@ export function SchemaERDiagram() {
         startCard: { x: cur.x, y: cur.y },
       }
       e.preventDefault()
-      e.stopPropagation()
     },
     [layout, isViewer],
+  )
+
+  // 더블클릭 = 그 테이블을 Workspace(데이터)에서 열기.
+  const openBoard = useCallback(
+    (boardId: string) => {
+      switchBoard(boardId)
+      setActivityMode("tables")
+      toast.success(`Opened ${boards[boardId]?.label ?? boardId}`, {
+        id: "schema-open",
+      })
+    },
+    [boards, switchBoard, setActivityMode],
   )
 
   const handleMouseMove = useCallback(
@@ -264,9 +305,30 @@ export function SchemaERDiagram() {
     return Math.max(...layout.map((r) => r.y + r.h)) + VIEWPORT_PAD
   }, [layout])
 
+  // 검색 → 해당 테이블을 뷰포트 중앙으로 이동 + 하이라이트.
+  const focusBoard = useCallback(
+    (id: string) => {
+      const rect = layout.find((r) => r.id === id)
+      const el = containerRef.current
+      if (!rect || !el) return
+      const z = Math.max(zoom, 1) // 읽기 좋은 줌(≥100%) 보장
+      const cx = rect.x + rect.w / 2
+      const cy = rect.y + rect.h / 2
+      setZoom(z)
+      setPan({
+        x: el.clientWidth / 2 - cx * z,
+        y: el.clientHeight / 2 - cy * z,
+      })
+      setFocusedId(id)
+      setQuery("")
+    },
+    [layout, zoom],
+  )
+
   return (
     <>
       <div
+        ref={containerRef}
         className="relative flex min-h-0 flex-1 overflow-hidden bg-background select-none"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -314,12 +376,13 @@ export function SchemaERDiagram() {
               const midX = (p1.x + p2.x) / 2
               const midY = (p1.y + p2.y) / 2
               const isActive =
-                hovered !== null && (hovered === a.id || hovered === b.id)
+                highlightId !== null &&
+                (highlightId === a.id || highlightId === b.id)
               const stroke = isActive ? "var(--primary)" : "var(--border)"
               return (
                 <g
                   key={i}
-                  opacity={hovered && !isActive ? 0.3 : 1}
+                  opacity={highlightId && !isActive ? 0.3 : 1}
                   style={{ transition: "opacity 160ms ease" }}
                 >
                   <path
@@ -363,9 +426,11 @@ export function SchemaERDiagram() {
             <TableCard
               key={r.id}
               rect={r}
-              hovered={hovered === r.id}
+              active={highlightId === r.id}
+              selected={selectedId === r.id}
               onHover={setHovered}
-              onHeaderMouseDown={(e) => handleCardHeaderMouseDown(r.id, e)}
+              onCardMouseDown={(e) => handleCardMouseDown(r.id, e)}
+              onOpen={() => openBoard(r.id)}
             />
           ))}
         </div>
@@ -374,6 +439,76 @@ export function SchemaERDiagram() {
         {boardList.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-[13px] text-muted-foreground">
             No boards yet.
+          </div>
+        )}
+
+        {/* Search — top left (find & focus a table) */}
+        {boardList.length > 0 && (
+          <div
+            className="absolute left-4 top-3 z-20 w-60"
+            data-er-toolbar
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
+                strokeWidth={1.75}
+              />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && results[0]) focusBoard(results[0].id)
+                  if (e.key === "Escape") {
+                    setQuery("")
+                    setFocusedId(null)
+                  }
+                }}
+                placeholder="Find a table…"
+                data-er-search
+                className="h-8 bg-card pl-7 pr-7 text-[12px] shadow-sm"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  title="Clear search"
+                  className="absolute right-1.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+                >
+                  <X className="size-3" strokeWidth={2} />
+                </button>
+              )}
+            </div>
+            {query.trim() && (
+              <div className="mt-1 overflow-hidden rounded-md border border-border bg-card shadow-md">
+                {results.length === 0 ? (
+                  <div className="px-3 py-2 text-[12px] text-muted-foreground">
+                    No tables match.
+                  </div>
+                ) : (
+                  results.map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => focusBoard(b.id)}
+                      data-er-search-result={b.id}
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12.5px] transition-colors hover:bg-foreground/[0.05]"
+                    >
+                      <span
+                        className="size-2 shrink-0 rounded-full"
+                        style={{ background: b.colorVar ?? "var(--chart-1)" }}
+                      />
+                      <span className="min-w-0 flex-1 truncate font-medium">
+                        {b.label}
+                      </span>
+                      <span className="shrink-0 font-mono text-[10.5px] text-muted-foreground">
+                        {b.id}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -444,7 +579,7 @@ export function SchemaERDiagram() {
             Relations: <b className="font-semibold tabular-nums text-foreground">{edges.length}</b>
           </span>
           <span className="opacity-60">·</span>
-          <span>Drag header to move · ⌘+wheel to zoom</span>
+          <span>Drag a table to move · double-click to open · ⌘+wheel to zoom</span>
         </div>
       </div>
 
@@ -455,14 +590,18 @@ export function SchemaERDiagram() {
 
 function TableCard({
   rect,
-  hovered,
+  active,
+  selected,
   onHover,
-  onHeaderMouseDown,
+  onCardMouseDown,
+  onOpen,
 }: {
   rect: LayoutRect
-  hovered: boolean
+  active: boolean
+  selected: boolean
   onHover: (id: string | null) => void
-  onHeaderMouseDown: (e: React.MouseEvent) => void
+  onCardMouseDown: (e: React.MouseEvent) => void
+  onOpen: () => void
 }) {
   const { board } = rect
   const color = board.colorVar ?? "var(--chart-1)"
@@ -471,13 +610,19 @@ function TableCard({
   return (
     <div
       data-er-card={board.id}
+      data-er-card-selected={selected ? board.id : undefined}
+      onMouseDown={onCardMouseDown}
+      onDoubleClick={onOpen}
       onMouseEnter={() => onHover(board.id)}
       onMouseLeave={() => onHover(null)}
+      title="Drag to move · double-click to open"
       className={cn(
-        "absolute flex flex-col overflow-hidden rounded-lg border bg-card transition-all",
-        hovered
-          ? "border-primary/70 shadow-lg z-10"
-          : "border-border-subtle shadow-sm",
+        "absolute flex flex-col cursor-grab overflow-hidden rounded-lg border bg-card transition-all active:cursor-grabbing",
+        selected
+          ? "border-primary shadow-lg ring-2 ring-primary z-10"
+          : active
+            ? "border-primary/70 shadow-lg ring-2 ring-primary/40 z-10"
+            : "border-border-subtle shadow-sm",
       )}
       style={{
         left: rect.x,
@@ -487,9 +632,7 @@ function TableCard({
       }}
     >
       <div
-        data-er-card-header={board.id}
-        onMouseDown={onHeaderMouseDown}
-        className="flex shrink-0 cursor-grab items-center gap-2 border-b border-border-subtle px-3 active:cursor-grabbing"
+        className="flex shrink-0 items-center gap-2 border-b border-border-subtle px-3"
         style={{
           height: HEADER_H,
           background: accentBg,
