@@ -4,6 +4,87 @@
 
 ---
 
+## 2026-05-30 (kkh94 머신, 15 commit) — Schema 관계 시스템(FK→Lookup/Rollup) + IA 정합성 + 계정 메뉴
+
+### 완료 (15 commit · 베이스 `8c8a137`)
+
+`/before-work` 후 사용자 선택 "Library 나머지 깊은 편집"으로 시작 → Schema 관계
+시스템 전반 + 사이드바 IA 정합성 + 계정 메뉴까지 확장. 신규 워크트리 `npm install` 선행.
+
+**Library 깊은 편집 + 버그 fix**
+- `aeaba45` Library C2 잔여 — Function params CRUD/example · Template 단일테이블 편집
+  (linked fields · extraFields · recommendedViews · defaultGroupBy) · Dashboard charts
+  CRUD(seed의 enum 밖 "one-third"/"area" tolerant 표시). viewer read-only 분기.
+- `4431945` fix — `settings.members` undefined 가드("members is not iterable" 크래시).
+  snapshots-view·settings-dialog 두 consumer `?? []`(셀렉터 새 배열 무한루프 LOCK 회피).
+
+**Schema 관계 시스템 (FK → Lookup/Rollup)**
+- `670d5fd` FK 관계 컬럼 — add-column "Relation" submenu + FkCell(타겟 행 선택 popover).
+  컬럼 생성만으로 Relations 리스트/ER 엣지 자동 반영.
+- `c545cdc` Fields 탭 컬럼 편집 — store 4액션에 optional `boardId`(cross-board) + 편집 UI.
+- `3bacb4a` P5 관계 네비게이션 — fk 셀 ↗ 점프 + Relations chip 점프(board-jump 패턴).
+- `89f3be4` P6 양방향 관계 — Fields 카드 outgoing(→)/incoming(←) 배지.
+- `9e3555d` P7 Lookup 컬럼 — ColumnType "lookup"{via,field} + 연결 행 필드값(read-only).
+- `c67306a` P8 Rollup 컬럼 — ColumnType "rollup"{sourceBoard,viaFk,aggFn,field} + 역참조
+  집계(count/sum/avg/min/max/median, 기존 AggFn 재사용).
+- `fc86db1` P9 컬럼 삭제 확인 다이얼로그 — 타입별 메시지(derived/fk/일반).
+- `1f7b321` Relations 탭 "Add relation" — From/To 테이블 select → fk 자동 생성(진입점 갭).
+
+**IA 정합성 (네이밍 + 헤더 + 검색)**
+- `bbddea6` Tables→Workspace · Workspace→Control · board-sidebar 헤더 닉네임→표준
+  패턴([Database]+모드명) · 섹션 BOARDS→TABLES.
+- `aafbe03` 사이드바 검색 실동작 — Library enable(disabled였음) + Workspace 신설.
+  Wiki 검색은 원래 동작. Inbox·Control은 고정 메뉴라 검색 없음.
+- `266a799`→`85d0a6d` Control→Layer→Control (최종 Control, 의미 우선·아이콘 Layers).
+
+**계정 메뉴**
+- `3d4adb4` F박스(하드코딩 "F") → 현재 사용자 이니셜 + 클릭 시 계정/워크스페이스 팝오버.
+
+### 큰 결정 / LOCK
+
+- **ColumnType 확장 LOCK**: "lookup"·"rollup" 추가(12→14종). lookup·rollup·formula는
+  read-only 파생 셀(행 데이터 없음). TYPE_ICON: lookup=Waypoints · rollup=Sigma.
+  SCHEMA_EDIT_TYPES(타입 전환)·add-column-menu에는 lookup/rollup 미포함(전용 생성 경로).
+- **모드 네이밍 LOCK**: 활동바 = Inbox · **Workspace**(구 Tables, 데이터 메인 작업공간) ·
+  **Control**(구 Workspace, Schema/Automations/History/Snapshots) · Library · Wiki · Search.
+  ⚠ `id`는 유지("tables"/"workspace" — ActivityMode 키, 라벨만 변경). 아이콘: Workspace=
+  Database · Control=Layers. 섹션 BOARDS→TABLES(데이터 단위 "table").
+- **검색 정합 룰**: 가변·다수 항목(Workspace/Library/Wiki)만 검색창. Inbox·Control은 고정
+  메뉴라 검색 없음(기능 신호). 검색 = 로컬 필터(Wiki 패턴: query state + filter + clear + 빈상태).
+- **cross-board 컬럼 액션 LOCK**: addColumn/deleteColumn/renameColumn/updateColumn에
+  optional `boardId`(미지정=activeBoard, 기존 호출 호환). set은 b.id 기준이라 안전.
+- **F박스 = 사용자 이니셜**: `settings.currentUserId` 매칭 멤버의 `initial`. members
+  undefined 가드(첫 멤버 fallback). 인증(M2) 전 데모(currentUser=peter→P).
+- **테이블 많을 때 대응 = YAGNI 합의**: "미리 다 만들기 ❌, 확장 쉽게 설계 + 필요 시 추가".
+  1순위(Fields 검색+접기·Schema 검색 포커스 — 저비용)만 다음 세션. 2·3순위(미니맵/
+  자동레이아웃/도메인그룹/마스터-디테일)는 백로그(실제 15~20개+ 신호 오면).
+
+### 검증
+
+- vitest **317** · tsc **0** · eslint **0/0**. 브라우저 실측 전부 통과 — 관계 생성/fk 셀
+  점프/Lookup("진행중")/Rollup(count 1)/삭제 다이얼로그/네이밍/3 검색/F박스 메뉴/Add
+  relation. 세션 중 만든 테스트 데이터(fk·lookup·rollup 컬럼·새 보드) 전부 정리·원복.
+
+### 다음
+
+- **테이블 많을 때 1순위**(다음 세션 구현): Fields 검색+카드 접기 · Schema ER 검색 포커스.
+  나머지는 백로그(위 YAGNI 합의).
+- 상용화 마일스톤(M1 BaaS · M2 인증 · M4 반응형)은 여전히 큰 남은 작업.
+
+### Watch Out
+
+- **next-env.d.ts** 커밋 제외(빌드 산출물). **워크트리 별도 `npm install`**.
+- Control 모드명은 의미 우선(Layer 철회) — 아이콘만 Layers라 이름-아이콘 약간 분리(의도).
+- F박스 계정 정보는 인증 전 데모. Relations "Add relation"으로 fk 만들면 Relations/ER 채워짐
+  (이전엔 시트로 가야 했음 — 이게 "Relations 미구현처럼 보이던" 갭이었음).
+
+### 머신
+
+kkh94 (`C:\Users\kkh94\OneDrive\Desktop\FlowBase`). 다음 머신: `git fetch && git checkout
+main && git pull && npm install`.
+
+---
+
 ## 2026-05-28 (kkh94 머신, 7 phase / 7 commit) — G7 후속 폴리시 묶음 (Wiki diff LCS · Gallery dnd · Timeline 버킷 · Library 깊은 편집 · Chart a11y)
 
 ### 완료 (7 commit · 베이스 `663c6b7`)

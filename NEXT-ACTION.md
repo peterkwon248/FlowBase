@@ -1,19 +1,17 @@
 # NEXT-ACTION
 
 > 다음 세션 시작 시 이 파일부터 읽으세요.
-> 마지막 갱신: 2026-05-28 (kkh94 머신, G7 후속 폴리시 묶음 7 phase / 7 commit)
+> 마지막 갱신: 2026-05-30 (kkh94 머신, Schema 관계 시스템 + IA 정합성 + 계정 메뉴, 15 commit)
 
 ---
 
-## 한 줄 요약
-
-**G7 후속 폴리시 7 phase 완료: Wiki diff LCS(+10 tests) · README CI badge · Gallery cardFields 네이티브 dnd · Timeline month/week 실제 버킷 집계 · Library 깊은 편집(OptionList 옵션 추가/삭제/색상 + Field config) · Chart toolbar focus-within a11y. vitest 307→317 · tsc 0 · eslint 0/0. 다음: 상용화 마일스톤(M1 BaaS·M2 인증·M4 반응형) — 또는 결정 필요 항목(Formula propArr LOCK 확장 · Saved Views 폴더 · Library 나머지 카테고리 편집).**
+**Schema 관계 시스템 + IA 정합성 + 계정 메뉴 (15 commit): Library C2 잔여(Function/Template/Dashboard 편집) · members undefined fix · FK 관계 컬럼(생성+FkCell+Relations/ER 자동) · Fields 탭 cross-board 편집 · P5 점프 · P6 양방향 배지 · P7 Lookup · P8 Rollup · P9 삭제 확인 · Relations "Add relation" 다이얼로그 · 모드 네이밍(Tables→Workspace, Workspace→Control, 아이콘 Layers) · 사이드바 헤더 통일 + BOARDS→TABLES · 검색 실동작(Library/Workspace) · F박스→사용자 이니셜+계정 메뉴. vitest 317 · tsc 0 · eslint 0/0. 다음: 테이블 많을 때 1순위(Fields 검색+접기 · Schema 검색 포커스) — 2·3순위는 YAGNI 백로그.**
 
 ---
 
 ## ✅ 머지 완료
 
-- `origin/main = b43c93e` 예정 (이번 세션 push 후 머지 — A3·D1·A10·A9·C2·C2후속·chart a11y 7 commit, 베이스 `663c6b7`).
+- `origin/main` 갱신 예정 (이번 세션 push 후 머지 — Schema 관계 시스템 + IA + 계정 메뉴 15 commit + docs, 베이스 `8c8a137`).
 - 다른 머신: `git fetch && git checkout main && git pull && npm install` (husky가 자동 install). **워크트리는 별도 `npm install`.**
 
 ---
@@ -21,7 +19,8 @@
 ## 🎯 다음 작업
 
 ### 우선순위 높음 (사용자 명시)
-1. **AI_CLASSIFY 자동 실행** — ⚠ **사용자 명시 룰**: 사용자가 직접 요청할 때만 시작. 메모리 `feedback-ai-classify-user-triggered-only.md` 참조. Claude 자율 진행 ❌.
+1. **테이블 많을 때 대응 1순위** (2026-05-30 합의) — Fields 검색 + 카드 접기 · Schema ER 검색 포커스. 저비용 + 확장 쉽게 설계. ⚠ 2·3순위(미니맵 · 자동레이아웃 · 도메인그룹 · 마스터-디테일)는 **YAGNI 백로그** — 실제 15~20개+ 신호 오면. ("미리 다 만들기 ❌, 필요 시 추가" 합의).
+2. **AI_CLASSIFY 자동 실행** — ⚠ **사용자 명시 룰**: 사용자가 직접 요청할 때만 시작. 메모리 `feedback-ai-classify-user-triggered-only.md` 참조. Claude 자율 진행 ❌.
 
 ### 상용화 마일스톤 (M1~M7, 9-14주 추정)
 - **M1 BaaS** (Supabase vs bkend.ai 결정 + DB schema + sync + auth) — 2-4주
@@ -44,7 +43,7 @@
 ### 결정/규모 이슈 (자율 진행 보류 — 승인·우선순위 필요)
 - **Formula propArr(col)** — ⚠ Formula 결과타입 LOCK(text/number/date/boolean 4종)을 array로 확장해야. 승인 필요.
 - **Saved Views 폴더 그룹화** — B9 후속. 폴리시 아닌 기능 규모.
-- **Library 나머지 카테고리 깊은 편집** — Function params · Template fields · Dashboard charts (현재 rename + OptionList/Field만 편집됨).
+- ~~**Library 나머지 카테고리 깊은 편집**~~ ✅ 완료 (2026-05-30 — Function params · Template fields · Dashboard charts, `aeaba45`).
 - **Formula sort/filter 1000행 성능 측정** — 기능 아님, 측정 task.
 
 ### 우선순위 낮음 (LOCK)
