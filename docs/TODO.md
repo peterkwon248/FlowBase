@@ -4,6 +4,16 @@ Phase 별 우선순위 (P0 / P1 / P2 / P3).
 
 ---
 
+## 2026-05-30 — 테이블 많을 때 1순위 + Schema 캔버스 + 전역 순서 (3 commit, main 머지)
+
+- [x] **Fields 검색 + 카드 접기** (`9938f9b`) — 테이블/필드 매칭 필터 · 행 하이라이트 · 카운트 · Collapse/Expand all · 검색 중 force-expand
+- [x] **Schema ER 검색 포커스** (`3b2ddef`) — 검색창 + 드롭다운 → 카드 중앙 이동 + ring
+- [x] **Schema ER 캔버스** (`3b2ddef`) — 카드 본문 드래그 · 클릭 선택 · 빈곳 해제 · 더블클릭 열기
+- [x] **전역 테이블 순서** (`2d31752` reorderBoards + `9938f9b` Fields grip dnd) — boards Record 재정렬 · 사이드바/Schema/Fields 일관
+- [ ] 테이블 많을 때 **2·3순위** — 미니맵 · 자동레이아웃 · 도메인그룹 · 마스터-디테일 (YAGNI 백로그, 15~20개+ 신호 시)
+
+---
+
 ## P0 (완료 — breadth 100% + 셸 chrome 보정)
 
 > 🎯 **앱 breadth P0 100%** (2026-05-23): Tables · Workspace(Schema·Automations) · Library(B1·B2) · Inbox · Detail bar · Wiki · Search.

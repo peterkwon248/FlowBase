@@ -6,6 +6,15 @@
 
 ## Current Features (Completed — 최근 우선)
 
+1. **테이블 많을 때 1순위 + Schema ER 캔버스 + 전역 테이블 순서 (3 commit)** (2026-05-30, `2d31752`~`9938f9b`, 베이스 `c35d896`, **main 머지**) —
+   - **Fields 검색 + 카드 접기** (`schema-view.tsx`) — 테이블명/id + 필드명/타입 매칭 필터 · 매칭 행 하이라이트 · "N of M tables · K matching fields" 카운트 · 카드별 chevron + Collapse/Expand all · 검색 중 force-expand(chevron/grip 숨김) · 검색 해제 시 수동 접기 복원.
+   - **Schema ER 검색 포커스** (`schema-er-diagram.tsx`) — 좌상단 검색창 + 결과 드롭다운 → 클릭/Enter 시 카드 중앙 이동(≥100% 줌) + ring.
+   - **Schema ER 캔버스** (`schema-er-diagram.tsx`) — 카드 **본문 전체** 드래그 이동(헤더 한정 철회) · 클릭 선택(ring) · 빈 캔버스 클릭 해제 · 더블클릭 테이블 열기.
+   - **전역 테이블 순서** (`store.reorderBoards` + `schema-view.tsx`) — boards Record 재정렬 → 사이드바·Schema·Fields 일관. Fields grip 네이티브 HTML5 dnd(검색중/viewer/1개 비활성). 마이그레이션 불필요.
+   - 검증: tsc 0 · eslint 0/0 · vitest 317 · 브라우저 실측 전부(드래그/선택/더블클릭/검색포커스/Fields필터/Collapse/grip reorder 영속+사이드바 반영).
+
+   > (직전 2026-05-30 15 commit — Schema 관계 시스템 FK→Lookup/Rollup + IA 정합 + 계정 메뉴 — 상세는 [MEMORY.md](MEMORY.md) PR History 참조.)
+
 1. **G7 후속 폴리시 묶음 (7 phase)** (2026-05-28, 7 commit `e4ea9e4`~`b43c93e`, 베이스 `663c6b7`, **main 머지 예정**) —
    - **A3 Wiki diff LCS** (`lib/line-diff.ts`) — `naiveLineDiff`(위치 비교) → `diffLines`(LCS DP+backtrack). 한 줄 삽입/삭제 어긋남 해소. 의존성 0. +10 단위 테스트(307→317). wiki-history-dialog import 교체(렌더 불변).
    - **D1 README** — 제목 FlowDB→FlowBase · GitHub Actions CI badge(`peterkwon248/FlowBase`) · 현재 상태/스택 갱신.

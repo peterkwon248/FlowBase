@@ -1,11 +1,13 @@
 # NEXT-ACTION
 
 > 다음 세션 시작 시 이 파일부터 읽으세요.
-> 마지막 갱신: 2026-05-30 (kkh94 머신, Schema 관계 시스템 + IA 정합성 + 계정 메뉴, 15 commit)
+> 마지막 갱신: 2026-05-30 (kkh94 머신, 테이블 많을 때 1순위 + Schema ER 캔버스 + 전역 테이블 순서, 3 commit)
 
 ---
 
-**Schema 관계 시스템 + IA 정합성 + 계정 메뉴 (15 commit): Library C2 잔여(Function/Template/Dashboard 편집) · members undefined fix · FK 관계 컬럼(생성+FkCell+Relations/ER 자동) · Fields 탭 cross-board 편집 · P5 점프 · P6 양방향 배지 · P7 Lookup · P8 Rollup · P9 삭제 확인 · Relations "Add relation" 다이얼로그 · 모드 네이밍(Tables→Workspace, Workspace→Control, 아이콘 Layers) · 사이드바 헤더 통일 + BOARDS→TABLES · 검색 실동작(Library/Workspace) · F박스→사용자 이니셜+계정 메뉴. vitest 317 · tsc 0 · eslint 0/0. 다음: 테이블 많을 때 1순위(Fields 검색+접기 · Schema 검색 포커스) — 2·3순위는 YAGNI 백로그.**
+**테이블 많을 때 1순위 + Schema ER 캔버스 + 전역 테이블 순서 (3 commit, 베이스 `c35d896`): Fields 검색+카드 접기(매칭 행 하이라이트·카운트·Collapse/Expand all·검색 중 force-expand) · Schema ER 검색 포커스(검색창+드롭다운 → 카드 중앙 이동 + ring) · Schema ER 캔버스(카드 본문 전체 드래그 이동·클릭 선택 ring·빈곳 클릭 해제·더블클릭 테이블 열기 — 기존 헤더 한정 철회) · 전역 테이블 순서(`reorderBoards` = boards Record 재정렬 → 사이드바·Schema 자동레이아웃·Fields 일관 · Fields grip 네이티브 HTML5 dnd). vitest 317 · tsc 0 · eslint 0/0. 커밋 `2d31752`(store)·`3b2ddef`(ER)·`9938f9b`(Fields). 다음: 상용화 마일스톤(M1 BaaS·M2 인증·M4 반응형). 2·3순위는 YAGNI 백로그.**
+
+> 이전 (2026-05-30, 15 commit): Schema 관계 시스템(FK→Lookup/Rollup) + IA 정합성 + 계정 메뉴.
 
 ---
 
@@ -19,7 +21,7 @@
 ## 🎯 다음 작업
 
 ### 우선순위 높음 (사용자 명시)
-1. **테이블 많을 때 대응 1순위** (2026-05-30 합의) — Fields 검색 + 카드 접기 · Schema ER 검색 포커스. 저비용 + 확장 쉽게 설계. ⚠ 2·3순위(미니맵 · 자동레이아웃 · 도메인그룹 · 마스터-디테일)는 **YAGNI 백로그** — 실제 15~20개+ 신호 오면. ("미리 다 만들기 ❌, 필요 시 추가" 합의).
+1. ~~**테이블 많을 때 대응 1순위**~~ ✅ 완료 (2026-05-30 — Fields 검색+카드 접기 · Schema ER 검색 포커스). **+추가 확장**: Schema ER 캔버스(카드 본문 드래그·클릭 선택·더블클릭 열기) + 전역 테이블 순서(Fields grip 드래그 reorder → `reorderBoards`). ⚠ 2·3순위(미니맵 · 자동레이아웃 · 도메인그룹 · 마스터-디테일)는 여전히 **YAGNI 백로그** — 실제 15~20개+ 신호 오면 ("미리 다 만들기 ❌, 필요 시 추가" 합의).
 2. **AI_CLASSIFY 자동 실행** — ⚠ **사용자 명시 룰**: 사용자가 직접 요청할 때만 시작. 메모리 `feedback-ai-classify-user-triggered-only.md` 참조. Claude 자율 진행 ❌.
 
 ### 상용화 마일스톤 (M1~M7, 9-14주 추정)
