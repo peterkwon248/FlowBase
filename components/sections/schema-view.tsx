@@ -29,6 +29,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -509,6 +517,8 @@ function RelationsList({
     boards.find((b) => b.id === id)?.colorVar ?? "var(--chart-1)"
   const switchBoard = useFlowBase((s) => s.switchBoard)
   const setActivityMode = useFlowBase((s) => s.setActivityMode)
+  const isViewer = useFlowBase(selectIsViewer)
+  const [addOpen, setAddOpen] = useState(false)
   const jumpToBoard = (id: string, label: string) => {
     switchBoard(id)
     setActivityMode("tables")
@@ -517,17 +527,48 @@ function RelationsList({
 
   return (
     <div className="flex-1 overflow-auto bg-background p-5">
-      <div className="mb-4">
-        <h3 className="text-[14px] font-semibold">Table relations</h3>
-        <p className="mt-0.5 text-[12px] text-muted-foreground">
-          Foreign keys connecting tables. Click a table to open it.
-        </p>
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-[14px] font-semibold">Table relations</h3>
+          <p className="mt-0.5 text-[12px] text-muted-foreground">
+            Foreign keys connecting tables. Click a table to open it.
+          </p>
+        </div>
+        {!isViewer && boards.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            data-add-relation-open
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            <Plus className="size-3.5" strokeWidth={2} />
+            Add relation
+          </button>
+        )}
       </div>
       {relations.length === 0 ? (
         <div className="max-w-[820px] rounded-lg border border-dashed border-border bg-card px-5 py-10 text-center text-[12.5px] text-muted-foreground">
-          No relations yet. Add a column with{" "}
-          <code className="rounded bg-muted px-1 font-mono text-[11px]">fk</code>
-          {" "}type to link tables.
+          No relations yet.{" "}
+          {!isViewer ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setAddOpen(true)}
+                className="font-medium text-primary underline-offset-2 hover:underline"
+              >
+                Add a relation
+              </button>{" "}
+              to link two tables.
+            </>
+          ) : (
+            <>
+              Add a column with{" "}
+              <code className="rounded bg-muted px-1 font-mono text-[11px]">
+                fk
+              </code>{" "}
+              type to link tables.
+            </>
+          )}
         </div>
       ) : (
         <div className="flex max-w-[820px] flex-col gap-2.5">
@@ -562,7 +603,120 @@ function RelationsList({
           ))}
         </div>
       )}
+      <AddRelationDialog
+        boards={boards}
+        open={addOpen}
+        onOpenChange={setAddOpen}
+      />
     </div>
+  )
+}
+
+// Relations 탭에서 직접 관계 생성 — From 테이블에 To를 가리키는 fk 컬럼을 추가.
+// cross-board addColumn(boardId) 재사용. deriveRelations가 자동 반영.
+function AddRelationDialog({
+  boards,
+  open,
+  onOpenChange,
+}: {
+  boards: Board[]
+  open: boolean
+  onOpenChange: (o: boolean) => void
+}) {
+  const addColumn = useFlowBase((s) => s.addColumn)
+  const [fromId, setFromId] = useState("")
+  const [toId, setToId] = useState("")
+  useEffect(() => {
+    if (open) {
+      setFromId(boards[0]?.id ?? "")
+      setToId(boards[1]?.id ?? boards[0]?.id ?? "")
+    }
+  }, [open, boards])
+
+  const create = () => {
+    const from = boards.find((b) => b.id === fromId)
+    const to = boards.find((b) => b.id === toId)
+    if (!from || !to) return
+    const base =
+      to.label
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "") || "ref"
+    addColumn(
+      { name: base, label: to.label, type: "fk", fk: to.id, width: 160 },
+      from.id,
+    )
+    toast.success(`Relation added — ${from.label} → ${to.label}`)
+    onOpenChange(false)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add relation</DialogTitle>
+          <DialogDescription>
+            Adds an fk column to the source table that points to the target.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-3 py-1">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11.5px] font-medium text-muted-foreground">
+              From table (gets the relation column)
+            </span>
+            <Select value={fromId} onValueChange={setFromId}>
+              <SelectTrigger className="h-8" data-relation-from-select>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {boards.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-center text-muted-foreground">
+            <Link2 className="size-4" strokeWidth={2} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11.5px] font-medium text-muted-foreground">
+              To table (referenced)
+            </span>
+            <Select value={toId} onValueChange={setToId}>
+              <SelectTrigger className="h-8" data-relation-to-select>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {boards.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="rounded-md border border-border px-3 py-1.5 text-[12.5px] font-medium transition-colors hover:bg-foreground/[0.04]"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={create}
+            data-relation-create
+            className="rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            Add relation
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
