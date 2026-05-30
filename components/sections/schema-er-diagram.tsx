@@ -7,7 +7,7 @@
 
 "use client"
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { KeyRound, Minus, Plus, RotateCcw, Search, Sparkles, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -201,21 +201,16 @@ export function SchemaERDiagram() {
     | null
   >(null)
 
-  // 단일 pointerdown 핸들러 — 카드(노드 드래그+선택) vs 빈 캔버스(pan)를 구분.
-  // setPointerCapture로 이후 pointermove/up이 커서가 컨테이너를 벗어나도 계속 전달됨
-  // (마우스 이벤트의 "빠른 드래그 시 끊김/캔버스 밖 나가면 취소" 결함 해소 — 캔버스 표준).
+  // 드래그 시작(pointerdown)에서 카드(노드 이동+선택) vs 빈 캔버스(pan)를 구분만 하고,
+  // 실제 추적은 window의 pointermove/up 리스너가 담당(아래 useEffect).
+  // ⚠ setPointerCapture ❌ — 카드 클릭 시 setSelectedId 리렌더가 lostpointercapture를
+  // 발화시켜 드래그가 즉시 끊기던 결함(실 마우스에서만 재현)을 회피. window 리스너는
+  // 리렌더·캡처 상실에 영향 없음 + 커서가 캔버스를 벗어나도 계속 추적(캔버스 표준 패턴).
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       const target = e.target as HTMLElement
       if (target.closest("[data-er-toolbar]")) return // 툴바/검색은 자체 처리
-      // 주 버튼만 드래그 시작 (우클릭/보조버튼 무시)
-      if (e.button !== 0) return
-      // capture 실패(비활성 pointer 등)는 무시 — 캡처 없이도 컨테이너 내 이동은 동작.
-      try {
-        containerRef.current?.setPointerCapture(e.pointerId)
-      } catch {
-        /* noop */
-      }
+      if (e.button !== 0) return // 주 버튼만
       const cardEl = target.closest("[data-er-card]") as HTMLElement | null
       if (cardEl) {
         const id = cardEl.getAttribute("data-er-card") ?? ""
@@ -258,31 +253,42 @@ export function SchemaERDiagram() {
     [boards, switchBoard, setActivityMode],
   )
 
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
+  // window 레벨 pointermove/up — dragRef가 활성일 때만 동작. zoom은 ref로 읽어
+  // (리스너 재등록 없이 항상 최신 zoom 사용). mount 시 1회 등록.
+  const zoomRef = useRef(zoom)
+  zoomRef.current = zoom
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
       const d = dragRef.current
       if (!d) return
+      e.preventDefault()
       if (d.kind === "pan") {
         setPan({
           x: d.startPan.x + (e.clientX - d.startX),
           y: d.startPan.y + (e.clientY - d.startY),
         })
       } else {
-        // zoom 보정: 드래그 거리를 1/zoom으로 나눠 inverse-scale
-        const dx = (e.clientX - d.startX) / zoom
-        const dy = (e.clientY - d.startY) / zoom
+        const z = zoomRef.current
+        const dx = (e.clientX - d.startX) / z // zoom 보정 (inverse-scale)
+        const dy = (e.clientY - d.startY) / z
         setSchemaPosition(d.id, {
           x: Math.max(0, d.startCard.x + dx),
           y: Math.max(0, d.startCard.y + dy),
         })
       }
-    },
-    [zoom, setSchemaPosition],
-  )
-
-  const handlePointerUp = useCallback(() => {
-    dragRef.current = null
-  }, [])
+    }
+    const onUp = () => {
+      dragRef.current = null
+    }
+    window.addEventListener("pointermove", onMove, { passive: false })
+    window.addEventListener("pointerup", onUp)
+    window.addEventListener("pointercancel", onUp)
+    return () => {
+      window.removeEventListener("pointermove", onMove)
+      window.removeEventListener("pointerup", onUp)
+      window.removeEventListener("pointercancel", onUp)
+    }
+  }, [setSchemaPosition])
 
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
@@ -334,10 +340,6 @@ export function SchemaERDiagram() {
         ref={containerRef}
         className="relative flex min-h-0 flex-1 cursor-grab touch-none select-none overflow-hidden bg-background active:cursor-grabbing"
         onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        onLostPointerCapture={handlePointerUp}
         onWheel={handleWheel}
       >
         {/* Grid bg (pan offset 반영) */}
