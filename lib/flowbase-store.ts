@@ -141,6 +141,7 @@ export interface FlowBaseActions {
   ) => string
   deleteBoard: (boardId: string) => void
   renameBoard: (boardId: string, label: string) => void
+  reorderBoards: (orderedIds: string[]) => void
 
   // Trash — 복원/영구 삭제
   restoreBoard: (boardId: string) => void
@@ -1324,6 +1325,23 @@ export const useFlowBase = create<FlowBaseStore>()(
                 [boardId]: { ...b, label: label.trim(), updatedAt: nowIso() },
               },
             }
+          })
+        },
+
+        // 전역 테이블 순서 — boards Record 자체를 재정렬. 사이드바·Schema 자동레이아웃·
+        // Fields가 모두 Object.values(boards) 순서를 공유하므로 한 번에 일관 적용됨.
+        reorderBoards: (orderedIds) => {
+          if (!ensureCanEdit(get(), "Reorder tables")) return
+          set((s) => {
+            const next: Record<string, Board> = {}
+            for (const id of orderedIds) {
+              if (s.boards[id]) next[id] = s.boards[id]
+            }
+            // orderedIds에 빠진 보드는 기존 순서로 뒤에 append (안전장치)
+            for (const id of Object.keys(s.boards)) {
+              if (!next[id]) next[id] = s.boards[id]
+            }
+            return { boards: next }
           })
         },
 
