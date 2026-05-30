@@ -12,6 +12,7 @@ import {
   Calendar,
   CircleDot,
   Hash,
+  Link2,
   List,
   Plus,
   Sparkles,
@@ -25,6 +26,9 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
@@ -83,7 +87,9 @@ function slugify(name: string): string {
 export function AddColumnMenu() {
   const library = useFlowBase((s) => s.library)
   const addColumn = useFlowBase((s) => s.addColumn)
+  const boards = useFlowBase((s) => s.boards)
   const isViewer = useFlowBase(selectIsViewer)
+  const boardList = Object.values(boards)
 
   const handleBasic = (
     type: ColumnType,
@@ -118,6 +124,20 @@ export function AddColumnMenu() {
         }
       })
     }
+  }
+
+  // Relation(FK) — 타겟 보드를 참조하는 컬럼 생성. 값 = 타겟 row id (FkCell이 렌더).
+  // 새 컬럼으로만 생성 (기존 컬럼 타입 변경 ❌ — 기존 값이 row id가 아니라 무효).
+  const handleFk = (targetBoardId: string) => {
+    const target = boards[targetBoardId]
+    if (!target) return
+    addColumn({
+      name: slugify(target.label),
+      label: target.label,
+      type: "fk",
+      fk: targetBoardId,
+      width: 160,
+    })
   }
 
   const handleLibField = (fieldId: string) => {
@@ -176,6 +196,35 @@ export function AddColumnMenu() {
             <span>{label}</span>
           </DropdownMenuItem>
         ))}
+        {boardList.length > 0 && (
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="gap-2" data-add-relation>
+              <Link2
+                className="size-3.5 text-muted-foreground"
+                strokeWidth={1.75}
+              />
+              <span>Relation</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
+                Link to table
+              </DropdownMenuLabel>
+              {boardList.map((b) => (
+                <DropdownMenuItem
+                  key={b.id}
+                  onSelect={() => handleFk(b.id)}
+                  className="gap-2"
+                  data-relation-target={b.id}
+                >
+                  <span className="font-mono text-[11px] text-muted-foreground">
+                    →
+                  </span>
+                  <span className="truncate">{b.label}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        )}
         {library.fields.length > 0 && (
           <>
             <DropdownMenuSeparator />

@@ -14,7 +14,7 @@ import {
   CircleHalf,
   CircleNotch,
 } from "@phosphor-icons/react"
-import { Calculator, Clock } from "lucide-react"
+import { Calculator, Clock, Link2 } from "lucide-react"
 import { STATUS_LABELS, type ColumnDef, type TableRow, type TicketStatus } from "@/types/flowbase"
 import { toast } from "sonner"
 import { MEMORY_MIN_COUNT, useFlowBase } from "@/lib/flowbase-store"
@@ -72,6 +72,8 @@ export function EditableCell(props: EditableCellProps) {
       return <SelectCell {...props} />
     case "multiSelect":
       return <MultiSelectCell {...props} />
+    case "fk":
+      return <FkCell {...props} />
     case "formula":
       return <FormulaCell {...props} />
     default:
@@ -753,6 +755,89 @@ function ButtonCell({ col, row, onButtonAction }: EditableCellProps) {
     >
       {col.buttonLabel ?? "Action"}
     </button>
+  )
+}
+
+// ── fk (relation) ──────────────────────────────────────────────────
+// cross-board 참조 — col.fk = 타겟 보드 id. 값 = 타겟 row id. 표시 = 타겟 행 라벨 컬럼.
+// 라벨 컬럼 = 타겟 보드 첫 비-id text/avatar (없으면 id). 편집 = 타겟 행 선택 popover.
+function FkCell({
+  col,
+  row,
+  editing,
+  onStartEdit,
+  onStopEdit,
+  onUpdate,
+}: EditableCellProps) {
+  const targetBoard = useFlowBase((s) => (col.fk ? s.boards[col.fk] : undefined))
+
+  const labelCol = useMemo(() => {
+    if (!targetBoard) return "id"
+    const c = targetBoard.columns.find(
+      (col2) =>
+        col2.name !== "id" && (col2.type === "text" || col2.type === "avatar"),
+    )
+    return c?.name ?? "id"
+  }, [targetBoard])
+
+  const currentId = row[col.name] == null ? "" : String(row[col.name])
+
+  // 타겟 보드 없음 (삭제됨 등) — fk id 평문 fallback.
+  if (!targetBoard) {
+    return (
+      <span
+        className="font-mono text-xs text-muted-foreground"
+        title="Target table not found"
+      >
+        {currentId || "—"}
+      </span>
+    )
+  }
+
+  const labelOf = (r: TableRow): string => {
+    const v = r[labelCol]
+    return v == null || v === "" ? String(r.id) : String(v)
+  }
+
+  const currentRow = targetBoard.rows.find((r) => String(r.id) === currentId)
+  const display = currentRow ? labelOf(currentRow) : currentId
+
+  const options: CellOption[] = [
+    { value: "", label: "— None" },
+    ...targetBoard.rows.map((r) => ({
+      value: String(r.id),
+      label: labelOf(r),
+    })),
+  ]
+
+  const trigger = (
+    <button
+      type="button"
+      data-fk-cell={col.name}
+      className="inline-flex max-w-full items-center gap-1 truncate rounded border border-border-subtle bg-muted px-1.5 py-0.5 text-xs"
+    >
+      {display ? (
+        <>
+          <Link2 className="size-3 shrink-0 text-primary" strokeWidth={2} />
+          <span className="truncate">{display}</span>
+        </>
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      )}
+    </button>
+  )
+
+  return (
+    <CellPopover
+      open={editing}
+      onOpenChange={(o) => (o ? onStartEdit() : onStopEdit())}
+      label={`→ ${targetBoard.label}`}
+      width={220}
+      options={options}
+      value={currentId}
+      onSelect={(v) => onUpdate({ [col.name]: v })}
+      trigger={trigger}
+    />
   )
 }
 
