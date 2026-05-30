@@ -8,7 +8,7 @@
 "use client"
 
 import { useState } from "react"
-import { MoreHorizontal, Plus, Sparkles, Upload } from "lucide-react"
+import { Database, MoreHorizontal, Plus, Sparkles, Upload } from "lucide-react"
 import { GenerateBoardDialog } from "@/components/board/generate-board-dialog"
 import {
   DropdownMenu,
@@ -30,7 +30,6 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
   const createBoard = useFlowBase((s) => s.createBoard)
   const renameBoard = useFlowBase((s) => s.renameBoard)
   const deleteBoard = useFlowBase((s) => s.deleteBoard)
-  const settings = useFlowBase((s) => s.settings)
 
   // 인라인 이름 변경 중인 보드 id (Q1 — 인라인)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -51,12 +50,12 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
 
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r border-border-subtle bg-surface">
-      {/* 워크스페이스 헤더 */}
-      <div className="flex items-center gap-2 border-b border-border-subtle px-3.5 py-2.5">
-        <span className="flex size-[18px] items-center justify-center rounded bg-primary text-[11px] font-bold text-primary-foreground">
-          {settings.workspaceInitial}
+      {/* 헤더 — 다른 사이드바(Control·Library)와 동일 패턴: 아이콘 박스 + 모드명 */}
+      <div className="flex items-center gap-2 border-b border-border-subtle px-3 py-2.5">
+        <span className="flex size-5 items-center justify-center rounded bg-chart-1/15 text-chart-1">
+          <Database className="size-3" strokeWidth={1.75} />
         </span>
-        <span className="text-[13px] font-semibold">{settings.workspaceLabel}</span>
+        <span className="text-[13px] font-semibold">Workspace</span>
       </div>
 
       {/* 액션 */}
@@ -88,9 +87,9 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
         </button>
       </div>
 
-      {/* BOARDS 목록 */}
+      {/* TABLES 목록 */}
       <div className="px-3.5 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-        Boards
+        Tables
       </div>
       <nav className="flex flex-col gap-0.5 px-2">
         {boardList.map((b) => {
