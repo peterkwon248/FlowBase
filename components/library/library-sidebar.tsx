@@ -4,7 +4,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import {
   BarChart3,
   Box,
@@ -15,6 +15,7 @@ import {
   Search,
   Sigma,
   Type,
+  X,
 } from "lucide-react"
 import { LIBRARY_CATEGORIES } from "@/lib/flowbase-library-seed"
 import { useFlowBase } from "@/lib/flowbase-store"
@@ -77,6 +78,20 @@ export function LibrarySidebar() {
     setExpanded((e) => ({ ...e, [id]: !e[id] }))
   }
 
+  // 검색 — 자산 name 매치. 매치 있는 카테고리만, 검색 중 자동 펼침. (Wiki 패턴)
+  const [query, setQuery] = useState("")
+  const cats = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return LIBRARY_CATEGORIES.map((cat) => ({
+      cat,
+      assets: q
+        ? getAssets(library, cat.id).filter((a) =>
+            a.name.toLowerCase().includes(q),
+          )
+        : getAssets(library, cat.id),
+    })).filter(({ assets }) => !q || assets.length > 0)
+  }, [library, query])
+
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r border-border-subtle bg-surface text-[13px]">
       {/* 헤더 */}
@@ -87,26 +102,47 @@ export function LibrarySidebar() {
         <span className="text-[13px] font-semibold">Library</span>
       </div>
 
-      {/* 검색 (placeholder — B3에서 활성) */}
+      {/* 검색 — 활성 (자산 name 매치) */}
       <div className="px-2.5 pb-1 pt-2.5">
-        <div className="flex items-center gap-1.5 rounded-md border border-border-subtle bg-muted px-2 py-1 opacity-60">
+        <div
+          className={cn(
+            "flex items-center gap-1.5 rounded-md border bg-muted px-2 py-1 transition-colors",
+            query ? "border-border" : "border-border-subtle",
+          )}
+        >
           <Search className="size-3 text-muted-foreground" />
           <input
             type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder="Search library…"
+            data-library-sidebar-search
             className="w-full bg-transparent text-[12px] outline-none placeholder:text-muted-foreground"
-            disabled
           />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="flex size-3 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+              title="Clear"
+            >
+              <X className="size-2.5" strokeWidth={2.5} />
+            </button>
+          )}
         </div>
       </div>
 
       {/* 카테고리 트리 */}
       <div className="flex-1 overflow-y-auto px-1.5 pb-3 pt-2">
-        {LIBRARY_CATEGORIES.map((cat) => {
+        {cats.length === 0 && (
+          <div className="px-3 py-6 text-center text-[11.5px] text-muted-foreground">
+            No assets matching &quot;{query}&quot;
+          </div>
+        )}
+        {cats.map(({ cat, assets }) => {
           const Icon = CATEGORY_ICON[cat.id]
           const color = CATEGORY_COLOR[cat.id]
-          const assets = getAssets(library, cat.id)
-          const isOpen = expanded[cat.id]
+          const isOpen = query.trim() ? true : expanded[cat.id]
           const isActive = !libAssetId && libCategory === cat.id
           return (
             <div key={cat.id} className="mb-0.5">

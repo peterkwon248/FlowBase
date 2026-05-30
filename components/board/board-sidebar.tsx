@@ -8,7 +8,15 @@
 "use client"
 
 import { useState } from "react"
-import { Database, MoreHorizontal, Plus, Sparkles, Upload } from "lucide-react"
+import {
+  Database,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Sparkles,
+  Upload,
+  X,
+} from "lucide-react"
 import { GenerateBoardDialog } from "@/components/board/generate-board-dialog"
 import {
   DropdownMenu,
@@ -35,8 +43,13 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   // G6-2: AI 보드 템플릿 generator dialog
   const [generateOpen, setGenerateOpen] = useState(false)
+  const [query, setQuery] = useState("")
 
   const boardList = Object.values(boards)
+  const q = query.trim().toLowerCase()
+  const filteredBoards = q
+    ? boardList.filter((b) => b.label.toLowerCase().includes(q))
+    : boardList
 
   const handleNewBoard = () => {
     const id = createBoard("New board")
@@ -87,12 +100,47 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
         </button>
       </div>
 
+      {/* 검색 — 테이블 필터 */}
+      <div className="px-2.5 pb-1">
+        <div
+          className={cn(
+            "flex items-center gap-1.5 rounded-md border bg-muted px-2 py-1 transition-colors",
+            query ? "border-border" : "border-border-subtle",
+          )}
+        >
+          <Search className="size-3 text-muted-foreground" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search tables…"
+            data-board-sidebar-search
+            className="w-full bg-transparent text-[12px] outline-none placeholder:text-muted-foreground"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="flex size-3 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+              title="Clear"
+            >
+              <X className="size-2.5" strokeWidth={2.5} />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* TABLES 목록 */}
       <div className="px-3.5 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
         Tables
       </div>
       <nav className="flex flex-col gap-0.5 px-2">
-        {boardList.map((b) => {
+        {filteredBoards.length === 0 && (
+          <div className="px-2 py-6 text-center text-[11.5px] text-muted-foreground">
+            No tables matching &quot;{query}&quot;
+          </div>
+        )}
+        {filteredBoards.map((b) => {
           const active = b.id === activeBoardId
           const editing = editingId === b.id
           return (
