@@ -15,6 +15,7 @@ import {
   Link2,
   List,
   Plus,
+  Sigma,
   Sparkles,
   Tags,
   Type,
@@ -33,7 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
-import type { ColumnDef, ColumnType } from "@/types/flowbase"
+import type { AggFn, ColumnDef, ColumnType } from "@/types/flowbase"
 import { cn } from "@/lib/utils"
 
 const BASIC_TYPES: {
@@ -149,7 +150,10 @@ export function AddColumnMenu() {
     .flatMap((fkc) => {
       const tb = boards[fkc.fk as string]
       return tb.columns
-        .filter((tc) => tc.name !== "id" && tc.type !== "lookup")
+        .filter(
+          (tc) =>
+            tc.name !== "id" && tc.type !== "lookup" && tc.type !== "rollup",
+        )
         .map((tc) => ({
           via: fkc.name,
           viaLabel: fkc.label || fkc.name,
@@ -165,6 +169,55 @@ export function AddColumnMenu() {
       type: "lookup",
       lookup: { via: opt.via, field: opt.field },
       width: 140,
+    })
+  }
+
+  // Rollup — 현재 보드를 참조하는 source 보드(incoming fk)의 행들을 집계.
+  // 옵션 = (각 incoming fk) × (count + source의 numeric 필드별 sum).
+  const rollupOptions = boardList
+    .filter((src) => src.id !== activeBoard?.id)
+    .flatMap((src) =>
+      src.columns
+        .filter((c) => c.type === "fk" && c.fk === activeBoard?.id)
+        .flatMap((fkc) => {
+          const count = {
+            sourceBoard: src.id,
+            sourceLabel: src.label,
+            viaFk: fkc.name,
+            aggFn: "count" as AggFn,
+            field: undefined as string | undefined,
+            label: `Count of ${src.label}`,
+          }
+          const sums = src.columns
+            .filter((c) => c.type === "num")
+            .map((nc) => ({
+              sourceBoard: src.id,
+              sourceLabel: src.label,
+              viaFk: fkc.name,
+              aggFn: "sum" as AggFn,
+              field: nc.name as string | undefined,
+              label: `Sum of ${src.label} · ${nc.label || nc.name}`,
+            }))
+          return [count, ...sums]
+        }),
+    )
+
+  const handleRollup = (opt: (typeof rollupOptions)[number]) => {
+    addColumn({
+      name: slugify(
+        opt.aggFn === "count"
+          ? `${opt.sourceLabel}_count`
+          : `${opt.sourceLabel}_${opt.field}_sum`,
+      ),
+      label: opt.aggFn === "count" ? `# ${opt.sourceLabel}` : opt.label,
+      type: "rollup",
+      rollup: {
+        sourceBoard: opt.sourceBoard,
+        viaFk: opt.viaFk,
+        aggFn: opt.aggFn,
+        field: opt.field,
+      },
+      width: 120,
     })
   }
 
@@ -277,6 +330,35 @@ export function AddColumnMenu() {
                     {opt.viaLabel}
                   </span>
                   <span className="truncate">{opt.fieldLabel}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        )}
+        {rollupOptions.length > 0 && (
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="gap-2" data-add-rollup>
+              <Sigma
+                className="size-3.5 text-muted-foreground"
+                strokeWidth={1.75}
+              />
+              <span>Rollup</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="max-h-[320px] overflow-auto">
+              <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
+                Aggregate references
+              </DropdownMenuLabel>
+              {rollupOptions.map((opt, i) => (
+                <DropdownMenuItem
+                  key={i}
+                  onSelect={() => handleRollup(opt)}
+                  className="gap-2"
+                  data-rollup-opt={`${opt.viaFk}.${opt.aggFn}.${opt.field ?? ""}`}
+                >
+                  <span className="rounded bg-muted px-1 py-0.5 font-mono text-[9.5px] text-muted-foreground">
+                    {opt.aggFn}
+                  </span>
+                  <span className="truncate">{opt.label}</span>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuSubContent>

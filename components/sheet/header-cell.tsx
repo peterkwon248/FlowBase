@@ -16,6 +16,7 @@ import {
   Link2,
   List,
   MousePointerClick,
+  Sigma,
   SmilePlus,
   Sparkles,
   Tags,
@@ -42,6 +43,7 @@ export const TYPE_ICON: Record<ColumnType, typeof Type> = {
   fk: Link2,
   formula: Calculator,
   lookup: Waypoints,
+  rollup: Sigma,
 }
 
 interface HeaderCellProps {

@@ -35,6 +35,7 @@ export type ColumnType =
   | "fk"
   | "formula"
   | "lookup"
+  | "rollup"
 
 // Formula 컬럼의 결과 타입. 셀 렌더가 이 값으로 포맷 분기.
 export type FormulaResultType = "text" | "number" | "date" | "boolean"
@@ -68,6 +69,10 @@ export interface ColumnDef {
   // P7: Lookup 컬럼 — via(같은 보드의 fk 컬럼명)로 연결된 타겟 행의 field 값을 읽어옴.
   //   read-only · 표시 전용. 타겟 행/필드 없으면 "—".
   lookup?: { via: string; field: string }
+  // P8: Rollup 컬럼 — 이 보드를 참조하는 source 보드 행들을 1:N 집계.
+  //   sourceBoard = source 보드 id · viaFk = source의 fk 컬럼명(이 보드를 가리킴)
+  //   aggFn = count/sum/avg/min/max/median · field = sum 등 대상(count면 무관). read-only.
+  rollup?: { sourceBoard: string; viaFk: string; aggFn: AggFn; field?: string }
 }
 
 // G7-A3 Conditional formatting

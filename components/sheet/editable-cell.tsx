@@ -14,8 +14,21 @@ import {
   CircleHalf,
   CircleNotch,
 } from "@phosphor-icons/react"
-import { ArrowUpRight, Calculator, Clock, Link2, Waypoints } from "lucide-react"
-import { STATUS_LABELS, type ColumnDef, type TableRow, type TicketStatus } from "@/types/flowbase"
+import {
+  ArrowUpRight,
+  Calculator,
+  Clock,
+  Link2,
+  Sigma,
+  Waypoints,
+} from "lucide-react"
+import {
+  STATUS_LABELS,
+  type AggFn,
+  type ColumnDef,
+  type TableRow,
+  type TicketStatus,
+} from "@/types/flowbase"
 import { toast } from "sonner"
 import { MEMORY_MIN_COUNT, useFlowBase } from "@/lib/flowbase-store"
 import { evaluate, FormulaError, parseFormula } from "@/lib/formula"
@@ -76,6 +89,8 @@ export function EditableCell(props: EditableCellProps) {
       return <FkCell {...props} />
     case "lookup":
       return <LookupCell {...props} />
+    case "rollup":
+      return <RollupCell {...props} />
     case "formula":
       return <FormulaCell {...props} />
     default:
@@ -928,6 +943,70 @@ function formatLookupValue(v: unknown): string {
   if (Array.isArray(v)) return v.join(", ")
   if (typeof v === "object") return ""
   return String(v)
+}
+
+// ── rollup ──────────────────────────────────────────────────────────
+// 이 보드를 참조하는 source 보드 행들(viaFk === 이 행 id)을 aggFn으로 집계 (read-only).
+function RollupCell({ col, row }: EditableCellProps) {
+  const rollup = col.rollup
+  const sourceBoard = useFlowBase((s) =>
+    rollup ? s.boards[rollup.sourceBoard] : undefined,
+  )
+  if (!rollup || !sourceBoard) {
+    return <span className="text-xs text-muted-foreground">—</span>
+  }
+  const myId = String(row.id)
+  const matching = sourceBoard.rows.filter(
+    (r) => String(r[rollup.viaFk]) === myId,
+  )
+  const result = aggregateRollup(matching, rollup.aggFn, rollup.field)
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-[13px] tabular-nums text-foreground"
+      data-rollup-cell={col.name}
+      title={`${rollup.aggFn}${rollup.field ? ` of ${rollup.field}` : ""} · ${sourceBoard.label}`}
+    >
+      <Sigma
+        className="size-3 shrink-0 text-muted-foreground/40"
+        strokeWidth={1.75}
+      />
+      {result}
+    </span>
+  )
+}
+
+function aggregateRollup(
+  rows: TableRow[],
+  aggFn: AggFn,
+  field?: string,
+): string {
+  if (aggFn === "count") return String(rows.length)
+  if (!field) return String(rows.length)
+  const nums = rows
+    .map((r) => Number(r[field]))
+    .filter((n) => Number.isFinite(n))
+  if (nums.length === 0) return "—"
+  const sum = nums.reduce((a, b) => a + b, 0)
+  const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2))
+  switch (aggFn) {
+    case "sum":
+      return fmt(sum)
+    case "avg":
+      return fmt(sum / nums.length)
+    case "min":
+      return fmt(Math.min(...nums))
+    case "max":
+      return fmt(Math.max(...nums))
+    case "median": {
+      const sorted = [...nums].sort((a, b) => a - b)
+      const mid = Math.floor(sorted.length / 2)
+      return fmt(
+        sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2,
+      )
+    }
+    default:
+      return String(rows.length)
+  }
 }
 
 // ── 공통 인라인 텍스트 입력 ────────────────────────────────────────
