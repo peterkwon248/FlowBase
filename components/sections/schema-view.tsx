@@ -14,6 +14,7 @@ import {
   ChevronRight,
   GripVertical,
   KeyRound,
+  LayoutGrid,
   Link2,
   List,
   Network,
@@ -160,6 +161,17 @@ export function SchemaView() {
   )
 }
 
+// Fields 카드 그리드 열 수 — auto(반응형) / 1(세로 1열) / 2 / 3. localStorage persist.
+type FieldsCols = "auto" | "1" | "2" | "3"
+const FIELDS_COLS_KEY = "flowbase:fields-cols"
+const FIELDS_COLS_CLASS: Record<FieldsCols, string> = {
+  auto: "grid-cols-[repeat(auto-fill,minmax(280px,1fr))]",
+  "1": "grid-cols-1 max-w-[560px]",
+  "2": "grid-cols-1 sm:grid-cols-2",
+  "3": "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+}
+const FIELDS_COLS_ORDER: FieldsCols[] = ["auto", "1", "2", "3"]
+
 // ─── Fields inventory ──────────────────────────────────────────────
 function FieldsInventory({ boards }: { boards: Board[] }) {
   const [rawQuery, setRawQuery] = useState("")
@@ -168,6 +180,19 @@ function FieldsInventory({ boards }: { boards: Board[] }) {
   const isViewer = useFlowBase(selectIsViewer)
   const [dragId, setDragId] = useState<string | null>(null)
   const [overId, setOverId] = useState<string | null>(null)
+  const [cols, setCols] = useState<FieldsCols>("auto")
+
+  // localStorage에서 열 수 선호 복원 (display preference — store 아님).
+  useEffect(() => {
+    const saved = window.localStorage.getItem(FIELDS_COLS_KEY)
+    if (saved && FIELDS_COLS_ORDER.includes(saved as FieldsCols)) {
+      setCols(saved as FieldsCols)
+    }
+  }, [])
+  const changeCols = (next: FieldsCols) => {
+    setCols(next)
+    window.localStorage.setItem(FIELDS_COLS_KEY, next)
+  }
 
   const q = rawQuery.trim().toLowerCase()
   const filtered = q ? boards.filter((b) => boardMatchesQuery(b, q)) : boards
@@ -245,6 +270,44 @@ function FieldsInventory({ boards }: { boards: Board[] }) {
               </button>
             )}
           </div>
+          {/* 열 수 토글 — Auto / 1(세로) / 2 / 3. localStorage persist. */}
+          <div
+            className="inline-flex h-8 shrink-0 items-center rounded-md border border-border p-0.5"
+            role="group"
+            aria-label="Columns"
+            data-fields-cols={cols}
+          >
+            {FIELDS_COLS_ORDER.map((opt) => {
+              const on = cols === opt
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => changeCols(opt)}
+                  title={
+                    opt === "auto"
+                      ? "Auto-fit columns"
+                      : opt === "1"
+                        ? "Single column (stacked)"
+                        : `${opt} columns`
+                  }
+                  data-fields-cols-opt={opt}
+                  className={cn(
+                    "inline-flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-[11.5px] font-medium transition-colors",
+                    on
+                      ? "bg-foreground/[0.08] text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {opt === "auto" ? (
+                    <LayoutGrid className="size-3.5" strokeWidth={2} />
+                  ) : (
+                    opt
+                  )}
+                </button>
+              )
+            })}
+          </div>
           {boards.length > 1 && (
             <button
               type="button"
@@ -271,7 +334,7 @@ function FieldsInventory({ boards }: { boards: Board[] }) {
           .
         </div>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] items-start gap-4">
+        <div className={cn("grid items-start gap-4", FIELDS_COLS_CLASS[cols])}>
           {filtered.map((b) => (
             <BoardFieldsCard
               key={b.id}
