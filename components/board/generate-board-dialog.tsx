@@ -74,7 +74,7 @@ export function GenerateBoardDialog({ open, onOpenChange }: GenerateBoardDialogP
       })
       const data = (await res.json()) as Template & { error?: string }
       if (!res.ok) {
-        toast.error(data.error || "AI generation failed")
+        toast.error(t(data.error || "AI generation failed"))
         return
       }
       setTemplate({ label: data.label, columns: data.columns, rows: data.rows })

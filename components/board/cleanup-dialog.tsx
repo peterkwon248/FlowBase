@@ -103,7 +103,7 @@ export function CleanupDialog({ open, onOpenChange, board }: CleanupDialogProps)
         error?: string
       }
       if (!res.ok) {
-        toast.error(data.error || "AI cleanup failed")
+        toast.error(t(data.error || "AI cleanup failed"))
         return
       }
       setSuggestions(data.suggestions ?? [])

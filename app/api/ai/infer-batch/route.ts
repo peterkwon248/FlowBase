@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json()
   } catch {
-    return NextResponse.json({ error: "잘못된 JSON 요청" }, { status: 400 })
+    return NextResponse.json({ error: "Invalid JSON request" }, { status: 400 })
   }
 
   const { column, sourceField, rows, themeOptions } = (body ?? {}) as {
@@ -43,25 +43,25 @@ export async function POST(req: NextRequest) {
 
   if (column !== "theme" && column !== "sentiment") {
     return NextResponse.json(
-      { error: "column은 'theme' 또는 'sentiment'여야 합니다." },
+      { error: "column must be 'theme' or 'sentiment'." },
       { status: 400 },
     )
   }
   if (typeof sourceField !== "string" || sourceField.length === 0) {
     return NextResponse.json(
-      { error: "sourceField(소스 텍스트 컬럼명)가 필요합니다." },
+      { error: "sourceField (source text column name) is required." },
       { status: 400 },
     )
   }
   if (!Array.isArray(rows)) {
-    return NextResponse.json({ error: "rows 배열 필요" }, { status: 400 })
+    return NextResponse.json({ error: "rows array required" }, { status: 400 })
   }
   if (rows.length === 0) {
     return NextResponse.json({ results: [], modelUsed: AI_MODEL, durationMs: 0 })
   }
   if (rows.length > 100) {
     return NextResponse.json(
-      { error: "한 번에 최대 100개 행" },
+      { error: "Max 100 rows at a time" },
       { status: 400 },
     )
   }

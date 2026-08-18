@@ -143,6 +143,16 @@
     - **전역 테이블 순서 LOCK**: `reorderBoards(orderedIds)`가 `boards` **Record를 재구성**(별도 `boardOrder` 필드 ❌). `Object.values(boards)`를 쓰는 모든 곳(사이드바 TABLES · Schema 자동레이아웃 · Fields 인벤토리)이 자동 일관. persist는 Record 순서 그대로 저장 → **마이그레이션 불필요**. ensureCanEdit 가드. dnd = **네이티브 HTML5 + grip 핸들**(dnd lib ❌ LOCK 답습, Gallery cardFields 패턴). 드롭 = 대상 카드 앞 삽입. **검색 중 · viewer · 1개일 땐 비활성**(필터 중 순서변경 혼란 회피).
     - **Fields 검색/접기 (테이블 많을 때 1순위)**: 검색 = 가변 항목 로컬 필터(테이블명/id + 필드명/타입 매칭) + 매칭 행 하이라이트 + "N of M tables · K matching fields" 카운트. 카드별 chevron 접기 + Collapse/Expand all. 검색 중 강제 펼침(force-expand) + chevron/grip 숨김, 검색 해제 시 수동 접기 복원. 저비용 + 확장 쉽게(YAGNI: 2·3순위 미니맵/자동레이아웃/도메인그룹/마스터-디테일은 백로그).
 
+27. **i18n — ko/en 토글 (English UI 결정 전환)** (2026-08-18, `e3496f3`~) — 사용자 요청 "한국어 버전이 필요". Key Design #15의 **"English UI" 결정을 명시적으로 뒤집음**. 이전 영어화 작업(`605b9f3`·`57fadb6`·`a7a1c77`)은 버리지 않고 en 사전으로 재활용.
+    - **키 = 영어 원문 LOCK** (gettext 방식). `board.header.save` 식 별도 키 네이밍 ❌. → en 사전 불필요(항등), ko 사전만 유지 → 유지비 절반. 번역 누락 시 영어 원문 fallback이라 빈 문자열·키 노출이 구조적으로 불가능. 단점은 원문 수정 시 키도 같이 고쳐야 한다는 것(감수).
+    - **외부 i18n 라이브러리 ❌ LOCK**. next-intl은 App Router locale 라우팅(`/ko`, `/en`)을 요구하는데 본 앱은 로컬 first(#17) 클라이언트 상태라 부적합. dnd ❌ · framer-motion ❌ 와 같은 의존성 최소 컨벤션. **신규 의존성 0**.
+    - **언어 = `settings.language`** (store v18, 기본 `ko`). themeAccent와 같은 자리. 기존 설치도 migrate에서 ko로 올림.
+    - **데이터는 번역하지 않는다 LOCK** — 시드/행 값은 영어 그대로 두고 **표시 시점에만** `t()`. 이유: theme/sentiment 값이 AI 분류 계약(`app/api/ai/infer-batch` 하드코딩 목록 + `Sentiment` 타입)과 테스트 2개에 묶여 있음. Status가 쓰던 방식(#8: 키는 한국어 enum, 표시는 영어)과 **정확히 같은 패턴을 방향만 바꿔 적용**. 부수 효과로 언어 전환이 완전 가역 — en 전환 시 한글 0자 확인.
+    - **컴포넌트 = `useT()` 훅 · 훅을 못 쓰는 렌더 헬퍼 = `t` 파라미터 주입**(기본값 항등). `renderChartBody`·`buildInValues`·`renderCondChips` 3곳. 부모의 useT 구독에 암묵적으로 기대는 것보다 의존성이 드러나는 편이 안전.
+    - **API 라우트는 영어 키 반환**, 클라이언트가 표시 직전 `t(data.error)`. 서버는 사용자 언어를 모르므로(로케일 라우팅 ❌) 번역 책임을 클라이언트로 밀어냄.
+    - **정적 metadata 한계**: `app/layout.tsx`의 title은 서버 계산이라 클라이언트 언어를 모름 → 기본값(ko)을 담당하고, `components/i18n/document-language.tsx`가 마운트 후 `<html lang>`과 탭 제목을 보정.
+    - **한국어 라벨 nowrap**: 좁은 컬럼에서 "날짜"가 글자 단위로 줄바꿈 → header-cell에 `whitespace-nowrap` (status pill nowrap 컨벤션 `a7e91c5` 답습).
+
 ---
 
 ## Architecture Notes

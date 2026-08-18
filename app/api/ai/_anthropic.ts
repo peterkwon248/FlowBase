@@ -17,7 +17,7 @@ let cached: Anthropic | null = null
 function getClient(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY 미설정 — .env.local에 키를 추가하세요.")
+    throw new Error("ANTHROPIC_API_KEY is not set — add the key to .env.local.")
   }
   if (!cached) cached = new Anthropic({ apiKey })
   return cached
@@ -48,14 +48,14 @@ export async function ask(opts: AskOptions): Promise<string> {
 // 응답 텍스트에서 첫 JSON 배열 추출 (AI-CONTRACTS §0.1).
 export function parseJsonArray(text: string): unknown[] {
   const m = text.match(/\[[\s\S]*\]/)
-  if (!m) throw new Error("응답에 JSON 배열 없음: " + text.slice(0, 200))
+  if (!m) throw new Error("No JSON array in response: " + text.slice(0, 200))
   return JSON.parse(m[0]) as unknown[]
 }
 
 // 응답 텍스트에서 첫 JSON 객체 추출 (AI-CONTRACTS §0.1) — Phase 3 analyze-import.
 export function parseJsonObject(text: string): Record<string, unknown> {
   const m = text.match(/\{[\s\S]*\}/)
-  if (!m) throw new Error("응답에 JSON 객체 없음: " + text.slice(0, 200))
+  if (!m) throw new Error("No JSON object in response: " + text.slice(0, 200))
   return JSON.parse(m[0]) as Record<string, unknown>
 }
 
@@ -63,16 +63,16 @@ export function parseJsonObject(text: string): Record<string, unknown> {
 export function aiErrorResponse(err: unknown): NextResponse {
   if (err instanceof Anthropic.RateLimitError) {
     return NextResponse.json(
-      { error: "AI 사용량 한도 초과 — 잠시 후 다시 시도하세요." },
+      { error: "AI rate limit exceeded — try again shortly." },
       { status: 429 },
     )
   }
   if (err instanceof Anthropic.AuthenticationError) {
     return NextResponse.json(
-      { error: "AI 인증 실패 — ANTHROPIC_API_KEY를 확인하세요." },
+      { error: "AI authentication failed — check ANTHROPIC_API_KEY." },
       { status: 401 },
     )
   }
-  const message = err instanceof Error ? err.message : "AI 호출 실패"
+  const message = err instanceof Error ? err.message : "AI call failed"
   return NextResponse.json({ error: message }, { status: 500 })
 }

@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json()
   } catch {
-    return NextResponse.json({ error: "잘못된 JSON 요청" }, { status: 400 })
+    return NextResponse.json({ error: "Invalid JSON request" }, { status: 400 })
   }
 
   const { prompt, context } = (body ?? {}) as {
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (typeof prompt !== "string" || prompt.trim() === "") {
-    return NextResponse.json({ error: "prompt 필요" }, { status: 400 })
+    return NextResponse.json({ error: "prompt required" }, { status: 400 })
   }
 
   const boardLabel = context?.boardLabel ?? "this board"

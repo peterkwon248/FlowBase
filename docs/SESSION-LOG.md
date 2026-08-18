@@ -4,6 +4,43 @@
 
 ---
 
+## 2026-08-18 (Claude Code 클라우드 세션, 4 commit) — before-work 타당성 확인 → Vercel 배포 → i18n ko/en 토글
+
+### 흐름
+사용자가 "클라우드에서 before-work 해도 되나?"로 시작 → 6단계 중 5단계 동작 확인(로컬 메모리
+rehydrate만 구조상 불가) → npm install + dev 서버 + Chromium 스크린샷으로 앱 실측 →
+"앱을 직접 보고 싶다" → Vercel preview 배포 → **"왜 한글화가 없지?"** → 조사 결과 English UI가
+의도된 결정(`605b9f3`·`57fadb6`·`a7a1c77`)이나 3곳에서 한국어가 새고 있음을 보고 →
+사용자 "한국어 버전이 필요" → **MEMORY Key Design #15 전환 결정** → i18n 구축.
+
+### 커밋
+- `e0124d0` **fix(build)**: 낡은 `pnpm-lock.yaml` 제거. Vercel이 pnpm을 골랐는데 lockfile이
+  package.json과 어긋나 `ERR_PNPM_OUTDATED_LOCKFILE`로 빌드 실패. 이 저장소는 npm 단일
+  (CI `npm ci` · packageManager 필드 없음 · package-lock 현행). 두 lockfile 공존이 Vercel
+  빌드를 상시로 깨뜨리던 상태.
+- `e3496f3` **feat(i18n) 인프라**: `lib/i18n/{index,ko}.ts` · `WorkspaceSettings.language` ·
+  store v17→v18 migrate · Settings>Appearance LanguageSection · `components/i18n/document-language.tsx`.
+- `2ebb145` **feat(i18n) UI 치환**: 컴포넌트 67개 546건. 코드모드(JSX 텍스트·속성·toast) +
+  tsc "Cannot find name 't'" 근거 훅 주입. 상수/배열 라벨(view-switcher·STATUS_LABELS 12곳·
+  pending-card·tables-mode)은 수동.
+- (본 커밋) **시드 표시 번역 + API 에러**: 컬럼 헤더/테이블 이름 표시 시점 t() · API 라우트
+  한국어 → 영어 키 · 클라이언트 `t(data.error)` · header-cell nowrap.
+
+### 배운 것 / 함정
+- **훅 주입기 v1 버그**: 함수 시그니처의 첫 `{`를 본문으로 오인 → 구조분해 파라미터
+  `({ a, b })` 안에 `const t = useT()`를 삽입해 TS1005 대량 발생. **괄호 깊이를 추적해
+  파라미터 목록이 닫힌 뒤의 `{`를 찾도록** 수정. 자동 코드 변환은 반드시 소수 파일 diff
+  확인 → tsc → 확산 순서로.
+- **이름 충돌**: `row-context-menu.tsx`의 지역 `const t = targets()`가 i18n `t`를 가려
+  `t("...")`가 `string[]` 호출이 됨. 코드모드가 만든 게 아니라 **원래 있던 변수명과의 충돌** —
+  단문자 지역 변수는 이런 전역 헬퍼 도입 시 지뢰.
+- **클라우드 세션 제약**: 컨테이너 네트워크 정책이 `vercel.app`을 차단(curl exit 56) →
+  **배포된 페이지를 에이전트가 직접 열어 검증할 수 없음**. 빌드 READY까지가 확인 한계.
+- **작업이 끊기는 원인**은 사용자가 자리를 비우는 것이 아니라 **에이전트가 질문으로 턴을 끝내는 것**.
+  긴 작업은 "질문 없이 끝까지" 지시가 유효.
+
+---
+
 ## 2026-05-30 (kkh94 머신, 3 commit) — 테이블 많을 때 1순위 + Schema ER 캔버스(드래그/선택/더블클릭) + 전역 테이블 순서
 
 ### 완료 (3 commit · 베이스 `c35d896`)

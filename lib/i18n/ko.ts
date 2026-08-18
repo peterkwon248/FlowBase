@@ -681,4 +681,59 @@ export const ko: Record<string, string> = {
   "Viewers can't edit workspace settings": "뷰어는 워크스페이스 설정을 바꿀 수 없습니다",
   "Viewers can't manage members": "뷰어는 멤버를 관리할 수 없습니다",
   "Thinking…": "생각 중…",
+  // ── API 에러 (라우트는 영어 키를 반환, 표시 직전 t()) ──
+  "ANTHROPIC_API_KEY is not set — add the key to .env.local.":
+    "ANTHROPIC_API_KEY 미설정 — .env.local에 키를 추가하세요.",
+  "AI rate limit exceeded — try again shortly.":
+    "AI 사용량 한도 초과 — 잠시 후 다시 시도하세요.",
+  "AI authentication failed — check ANTHROPIC_API_KEY.":
+    "AI 인증 실패 — ANTHROPIC_API_KEY를 확인하세요.",
+  "Invalid JSON request": "잘못된 JSON 요청",
+  "headers array required": "headers 배열 필요",
+  "sampleRows array required": "sampleRows 배열 필요",
+  "prompt required": "prompt 필요",
+  "column must be 'theme' or 'sentiment'.": "column은 'theme' 또는 'sentiment'여야 합니다.",
+  "sourceField (source text column name) is required.":
+    "sourceField(소스 텍스트 컬럼명)가 필요합니다.",
+  "rows array required": "rows 배열 필요",
+  "Max 100 rows at a time": "한 번에 최대 100개 행",
+  "AI suggestion failed": "AI 제안 실패",
+  "AI cleanup failed": "AI 정리 실패",
+  "AI generation failed": "AI 생성 실패",
+  "Check ANTHROPIC_API_KEY in .env.local": ".env.local의 ANTHROPIC_API_KEY를 확인하세요",
+  "AI summary failed": "AI 요약 실패",
+  // ── 시드 데이터 표시용 (데이터 자체는 영어 유지) ──────
+  // 시드 값은 AI 분류 계약(app/api/ai/infer-batch)과 테스트에 묶여 있어
+  // **데이터를 바꾸지 않는다**. Status(Key Design #8)와 같은 방식으로
+  // 저장은 영어 키, 화면만 한국어. 언어를 en으로 바꾸면 그대로 되돌아온다.
+  Company: "회사",
+  Votes: "투표",
+  Quote: "인용",
+  Sentiment: "감성",
+  Theme: "테마",
+  Assignee: "담당자",
+  Due: "마감",
+  Reclassify: "재분류",
+  Customer: "고객",
+  Product: "제품",
+  Amount: "금액",
+  Stage: "단계",
+  Contact: "연락처",
+  Orders: "주문",
+  Returns: "반품",
+  Lead: "리드",
+  // 보드/테이블 이름
+  "Customer Interviews": "고객 인터뷰",
+  Tasks: "작업",
+  "Customer Feedback": "고객 피드백",
+  // theme 옵션
+  "Pricing pushback": "가격 저항",
+  "Onboarding friction": "온보딩 마찰",
+  "Feature: AI columns": "기능: AI 컬럼",
+  "Sheet performance": "시트 성능",
+  "Sharing & roles": "공유 · 권한",
+  // sentiment 값
+  Positive: "긍정",
+  Mixed: "혼합",
+  Negative: "부정",
 }

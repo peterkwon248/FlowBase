@@ -533,7 +533,7 @@ function BoardFieldsCard({
           </button>
         )}
         <span className="flex-1 truncate text-[13px] font-bold">
-          {board.label}
+          {t(board.label)}
         </span>
         <span className="font-mono text-[10.5px] opacity-70">{board.id}</span>
         <span className="rounded bg-foreground/10 px-1.5 py-0 text-[10.5px] font-semibold tabular-nums">
@@ -1029,7 +1029,7 @@ function AddRelationDialog({
               <SelectContent>
                 {boards.map((b) => (
                   <SelectItem key={b.id} value={b.id}>
-                    {b.label}
+                    {t(b.label)}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -63,7 +63,7 @@ export function BoardHeader() {
       }
       toast.dismiss(dismissId)
       if (!res.ok || !data.suggested) {
-        toast.error(data.error || "AI suggestion failed", {
+        toast.error(t(data.error || "AI suggestion failed"), {
           description: !process?.env
             ? "Check ANTHROPIC_API_KEY in .env.local"
             : undefined,
@@ -97,7 +97,7 @@ export function BoardHeader() {
         <div className="group/board-label ml-1 flex items-center gap-1.5 text-[13px]">
           <span className="text-muted-foreground">{workspaceLabel}</span>
           <span className="text-muted-foreground/50">/</span>
-          <span className="font-semibold">{board?.label ?? "FlowBase"}</span>
+          <span className="font-semibold">{board ? t(board.label) : "FlowBase"}</span>
           {board && !isViewer && (
             <>
               <button

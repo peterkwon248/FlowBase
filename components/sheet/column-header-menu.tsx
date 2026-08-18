@@ -113,7 +113,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
       }
       toast.dismiss(tid)
       if (!res.ok || !data.type) {
-        toast.error(data.error || "AI suggestion failed")
+        toast.error(t(data.error || "AI suggestion failed"))
         return
       }
       if (data.type === col.type) {

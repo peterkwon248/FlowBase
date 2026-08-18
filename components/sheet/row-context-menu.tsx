@@ -134,7 +134,7 @@ export function RowContextMenu({ rowId, children }: RowContextMenuProps) {
       const data = (await res.json()) as { value?: string; error?: string }
       toast.dismiss(tid)
       if (!res.ok || !data.value) {
-        toast.error(data.error || "AI suggestion failed")
+        toast.error(t(data.error || "AI suggestion failed"))
         return
       }
       // multiSelect는 splitMultiValue 패턴 (lib/multi-select), select/text/date/num/email은 raw string

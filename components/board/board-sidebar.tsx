@@ -184,7 +184,7 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
                   <span
                     className={cn("flex-1 truncate", active && "font-semibold")}
                   >
-                    {b.label}
+                    {t(b.label)}
                   </span>
                   <span className="tabular-nums text-[11px] text-muted-foreground group-hover:hidden">
                     {b.rows.length}

@@ -87,7 +87,7 @@ export function TablesMode() {
               <Database className="size-4" />
             </span>
             <h1 className="truncate text-[22px] font-bold tracking-[-0.02em]">
-              {board?.label ?? "FlowBase"}
+              {board ? t(board.label) : "FlowBase"}
             </h1>
           </div>
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 pl-[38px]">

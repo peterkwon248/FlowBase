@@ -59,6 +59,13 @@ branding:
   user_facing: "FlowBase"                      # 사용자 노출 모든 곳
   internal_docs_legacy: "FlowDB"               # 점진 정리 (긴급 ❌)
 
+i18n:                                          # 2026-08-18 — English UI 결정 전환
+  languages: [ko, en]                          # 기본 ko (settings.language · store v18)
+  key_style: "영어 원문"                        # gettext 방식. 별도 키 네이밍 ❌
+  dictionary: "lib/i18n/ko.ts"                 # ko만 유지 (en은 항등)
+  library: "❌ 외부 i18n 라이브러리 금지"         # next-intl 등. 신규 의존성 0
+  data_policy: "데이터는 번역 ❌, 표시 시점에만 t()"  # AI 분류 계약·테스트와 결합
+
 git_remote: "peterkwon248/FlowBase"
 ```
 
@@ -132,6 +139,8 @@ bkit PDCA 사이클 사용:
 ## 빠뜨리지 말 것
 
 - **Status 색 의미는 절대 override ❌** (LOCK 상수)
+- **새 UI 문자열은 반드시 `t("English source")`** — `useT()` 훅. 사전은 `lib/i18n/ko.ts`.
+  훅을 못 쓰는 렌더 헬퍼는 `t`를 파라미터로 받는다 (기본값 항등 함수)
 - **`<body>` className에 Geist variable이 적용되어 있음** (`app/layout.tsx:39` — fix 완료 2026-05-07)
 - **`docs/design-skills/minimalist-skill/SKILL.md`는 git tracked**. 다른 머신에서도 자동 sync — 별도 install 불필요
 - **`feat/sheet-view` 브랜치 존재** — 옵션 A 트라이얼용. main에서 분기 (2026-05-07)

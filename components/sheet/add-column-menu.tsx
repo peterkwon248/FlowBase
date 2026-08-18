@@ -302,7 +302,7 @@ export function AddColumnMenu() {
                   <span className="font-mono text-[11px] text-muted-foreground">
                     →
                   </span>
-                  <span className="truncate">{b.label}</span>
+                  <span className="truncate">{t(b.label)}</span>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuSubContent>

@@ -483,7 +483,7 @@ function DashboardViewInner({ board }: { board: Board }) {
       const data = (await res.json()) as { summary?: string; error?: string }
       toast.dismiss(toastId)
       if (!res.ok || !data.summary) {
-        toast.error(data.error || "AI summary failed")
+        toast.error(t(data.error || "AI summary failed"))
         return
       }
       setAiSummary(data.summary)

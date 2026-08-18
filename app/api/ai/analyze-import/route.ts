@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json()
   } catch {
-    return NextResponse.json({ error: "잘못된 JSON 요청" }, { status: 400 })
+    return NextResponse.json({ error: "Invalid JSON request" }, { status: 400 })
   }
 
   const { headers, sampleRows } = (body ?? {}) as {
@@ -23,10 +23,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (!Array.isArray(headers) || headers.length === 0) {
-    return NextResponse.json({ error: "headers 배열 필요" }, { status: 400 })
+    return NextResponse.json({ error: "headers array required" }, { status: 400 })
   }
   if (!Array.isArray(sampleRows)) {
-    return NextResponse.json({ error: "sampleRows 배열 필요" }, { status: 400 })
+    return NextResponse.json({ error: "sampleRows array required" }, { status: 400 })
   }
 
   const headersJoined = (headers as string[]).join(" | ")

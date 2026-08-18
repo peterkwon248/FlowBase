@@ -27,6 +27,7 @@ import {
 import { ColumnHeaderMenu } from "@/components/sheet/column-header-menu"
 import type { ColumnDef, ColumnType, SortDir } from "@/types/flowbase"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 // 컬럼 타입 아이콘 맵 — Import 위저드(import-step-review)에서도 재사용
 export const TYPE_ICON: Record<ColumnType, typeof Type> = {
@@ -54,6 +55,7 @@ interface HeaderCellProps {
 }
 
 export function HeaderCell({ col, sortDir, onSort }: HeaderCellProps) {
+  const t = useT()
   const Icon = TYPE_ICON[col.type] ?? Type
   const sorted = sortDir !== null
 
@@ -67,11 +69,13 @@ export function HeaderCell({ col, sortDir, onSort }: HeaderCellProps) {
         <Icon className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
         <span
           className={cn(
-            "text-xs font-medium",
+            // whitespace-nowrap LOCK — 한국어 라벨("날짜"·"감성")이 좁은 컬럼에서
+            // 글자 단위로 줄바꿈되던 문제. status pill nowrap 컨벤션(a7e91c5)과 동일.
+            "whitespace-nowrap text-xs font-medium",
             sorted ? "text-foreground" : "text-muted-foreground",
           )}
         >
-          {col.label?.trim() || col.name}
+          {t(col.label?.trim() || col.name)}
         </span>
         {col.ai && (
           <span className="inline-flex items-center gap-0.5 rounded bg-primary/15 px-1 py-px text-[10px] font-semibold text-primary">

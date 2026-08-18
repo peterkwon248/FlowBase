@@ -503,7 +503,7 @@ export function SchemaERDiagram() {
                         style={{ background: b.colorVar ?? "var(--chart-1)" }}
                       />
                       <span className="min-w-0 flex-1 truncate font-medium">
-                        {b.label}
+                        {t(b.label)}
                       </span>
                       <span className="shrink-0 font-mono text-[10.5px] text-muted-foreground">
                         {b.id}
@@ -643,7 +643,7 @@ function TableCard({
           color,
         }}
       >
-        <span className="text-[13px] font-bold">{board.label}</span>
+        <span className="text-[13px] font-bold">{t(board.label)}</span>
         <div className="flex-1" />
         <span className="font-mono text-[10.5px] opacity-70">{board.id}</span>
       </div>

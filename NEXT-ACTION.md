@@ -1,11 +1,13 @@
 # NEXT-ACTION
 
 > 다음 세션 시작 시 이 파일부터 읽으세요.
-> 마지막 갱신: 2026-05-30 (kkh94 머신, 테이블 많을 때 1순위 + Schema ER 캔버스 + 전역 테이블 순서, 3 commit)
+> 마지막 갱신: 2026-08-18 (클라우드 세션, i18n ko/en 토글 3 commit)
 
 ---
 
-**테이블 많을 때 1순위 + Schema ER 캔버스 + 전역 테이블 순서 (3 commit, 베이스 `c35d896`): Fields 검색+카드 접기(매칭 행 하이라이트·카운트·Collapse/Expand all·검색 중 force-expand) · Schema ER 검색 포커스(검색창+드롭다운 → 카드 중앙 이동 + ring) · Schema ER 캔버스(카드 본문 전체 드래그 이동·클릭 선택 ring·빈곳 클릭 해제·더블클릭 테이블 열기 — 기존 헤더 한정 철회) · 전역 테이블 순서(`reorderBoards` = boards Record 재정렬 → 사이드바·Schema 자동레이아웃·Fields 일관 · Fields grip 네이티브 HTML5 dnd). vitest 317 · tsc 0 · eslint 0/0. 커밋 `2d31752`(store)·`3b2ddef`(ER)·`9938f9b`(Fields). 다음: 상용화 마일스톤(M1 BaaS·M2 인증·M4 반응형). 2·3순위는 YAGNI 백로그.**
+**i18n ko/en 토글 (3 commit): 기본 한국어.** 인프라(`lib/i18n/` 사전+useT 훅 · `settings.language` store v18 · Settings>Appearance 언어 카드 토글 · `<html lang>`/탭 제목 동기화) + UI 문자열 치환(컴포넌트 67개 · 546건, 코드모드+tsc 근거 훅 주입) + 시드 표시 번역(컬럼 헤더·테이블 이름) + API 에러 영어 키 통일 후 클라이언트 t(). **데이터는 안 건드림** — theme/sentiment 값이 AI 분류 계약과 테스트에 묶여 있어 표시 시점에만 번역, 덕분에 언어 전환이 완전 가역(en에서 한글 0자 실측). vitest 317 · tsc 0 · eslint 0/0. 다음: 상용화 마일스톤(M1 BaaS · M2 인증 · M4 반응형).**
+
+> 이전 (2026-05-30, 3 commit): 테이블 많을 때 1순위 + Schema ER 캔버스 + 전역 테이블 순서.
 
 > 이전 (2026-05-30, 15 commit): Schema 관계 시스템(FK→Lookup/Rollup) + IA 정합성 + 계정 메뉴.
 
