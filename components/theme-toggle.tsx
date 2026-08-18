@@ -4,8 +4,10 @@ import * as React from "react"
 import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
+import { useT } from "@/lib/i18n"
 
 export function ThemeToggle() {
+  const t = useT()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
 
@@ -33,7 +35,7 @@ export function ThemeToggle() {
       ) : (
         <Moon className="h-4 w-4" />
       )}
-      <span className="sr-only">Toggle theme</span>
+      <span className="sr-only">{t("Toggle theme")}</span>
     </Button>
   )
 }

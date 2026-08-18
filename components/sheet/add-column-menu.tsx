@@ -36,6 +36,7 @@ import {
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import type { AggFn, ColumnDef, ColumnType } from "@/types/flowbase"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 const BASIC_TYPES: {
   type: ColumnType
@@ -87,6 +88,7 @@ function slugify(name: string): string {
 }
 
 export function AddColumnMenu() {
+  const t = useT()
   const library = useFlowBase((s) => s.library)
   const addColumn = useFlowBase((s) => s.addColumn)
   const boards = useFlowBase((s) => s.boards)
@@ -262,7 +264,7 @@ export function AddColumnMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
-          Basic types
+          {t("Basic types")}
         </DropdownMenuLabel>
         {BASIC_TYPES.map(({ type, label, Icon, defaultLabel, defaults }) => (
           <DropdownMenuItem
@@ -284,11 +286,11 @@ export function AddColumnMenu() {
                 className="size-3.5 text-muted-foreground"
                 strokeWidth={1.75}
               />
-              <span>Relation</span>
+              <span>{t("Relation")}</span>
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
               <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
-                Link to table
+                {t("Link to table")}
               </DropdownMenuLabel>
               {boardList.map((b) => (
                 <DropdownMenuItem
@@ -313,11 +315,11 @@ export function AddColumnMenu() {
                 className="size-3.5 text-muted-foreground"
                 strokeWidth={1.75}
               />
-              <span>Lookup</span>
+              <span>{t("Lookup")}</span>
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="max-h-[320px] overflow-auto">
               <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
-                Pull field via relation
+                {t("Pull field via relation")}
               </DropdownMenuLabel>
               {lookupOptions.map((opt) => (
                 <DropdownMenuItem
@@ -342,11 +344,11 @@ export function AddColumnMenu() {
                 className="size-3.5 text-muted-foreground"
                 strokeWidth={1.75}
               />
-              <span>Rollup</span>
+              <span>{t("Rollup")}</span>
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="max-h-[320px] overflow-auto">
               <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
-                Aggregate references
+                {t("Aggregate references")}
               </DropdownMenuLabel>
               {rollupOptions.map((opt, i) => (
                 <DropdownMenuItem
@@ -369,7 +371,7 @@ export function AddColumnMenu() {
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="flex items-center gap-1 text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
               <Sparkles className="size-2.5 text-primary" />
-              From Library
+              {t("From Library")}
             </DropdownMenuLabel>
             {library.fields.slice(0, 8).map((f) => (
               <DropdownMenuItem

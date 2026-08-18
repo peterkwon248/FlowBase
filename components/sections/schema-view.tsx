@@ -60,6 +60,7 @@ import { TYPE_ICON } from "@/components/sheet/header-cell"
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { Board, ColumnDef, ColumnType } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 // Schema Fields 편집에서 변경 가능한 타입 — fk(타겟 필요)·formula(expression 필요)·
 // reaction·button은 제외 (단순 타입만 인라인 전환).
@@ -180,6 +181,7 @@ const FIELDS_COLS_ORDER: FieldsCols[] = ["auto", "1", "2", "3"]
 
 // ─── Fields inventory ──────────────────────────────────────────────
 function FieldsInventory({ boards }: { boards: Board[] }) {
+  const t = useT()
   const [rawQuery, setRawQuery] = useState("")
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const reorderBoards = useFlowBase((s) => s.reorderBoards)
@@ -237,7 +239,7 @@ function FieldsInventory({ boards }: { boards: Board[] }) {
     <div className="flex-1 overflow-auto bg-background p-5">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-[14px] font-semibold">Field inventory</h3>
+          <h3 className="text-[14px] font-semibold">{t("Field inventory")}</h3>
           <p className="mt-0.5 text-[12px] text-muted-foreground">
             {q ? (
               <>
@@ -261,7 +263,7 @@ function FieldsInventory({ boards }: { boards: Board[] }) {
               onKeyDown={(e) => {
                 if (e.key === "Escape") setRawQuery("")
               }}
-              placeholder="Search tables & fields…"
+              placeholder={t("Search tables & fields…")}
               data-fields-search
               className="h-8 w-56 pl-7 pr-7 text-[12px]"
             />
@@ -269,7 +271,7 @@ function FieldsInventory({ boards }: { boards: Board[] }) {
               <button
                 type="button"
                 onClick={() => setRawQuery("")}
-                title="Clear search"
+                title={t("Clear search")}
                 className="absolute right-1.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
               >
                 <X className="size-3" strokeWidth={2} />
@@ -282,7 +284,7 @@ function FieldsInventory({ boards }: { boards: Board[] }) {
             <PopoverTrigger asChild>
               <button
                 type="button"
-                title="Display options"
+                title={t("Display options")}
                 data-fields-display
                 className={cn(
                   "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-border-subtle px-2.5 text-[12px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground",
@@ -291,7 +293,7 @@ function FieldsInventory({ boards }: { boards: Board[] }) {
                 )}
               >
                 <Settings2 className="size-3.5" strokeWidth={1.75} />
-                <span>Display</span>
+                <span>{t("Display")}</span>
                 {cols !== "auto" && (
                   <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9.5px] font-semibold text-primary-foreground tabular-nums">
                     1
@@ -307,17 +309,17 @@ function FieldsInventory({ boards }: { boards: Board[] }) {
             >
               <div className="space-y-0.5 py-1">
                 <div className="px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                  Display · Fields
+                  {t("Display · Fields")}
                 </div>
                 <div className="px-3 pb-2 pt-1">
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-[12px] text-muted-foreground">
-                      Columns
+                      {t("Columns")}
                     </span>
                     <div
                       className="inline-flex rounded-md border border-border-subtle p-0.5"
                       role="group"
-                      aria-label="Columns"
+                      aria-label={t("Columns")}
                       data-fields-cols={cols}
                     >
                       {FIELDS_COLS_ORDER.map((opt) => {
@@ -438,6 +440,7 @@ function BoardFieldsCard({
   onReorderDrop?: () => void
   onReorderEnd?: () => void
 }) {
+  const t = useT()
   const color = board.colorVar ?? "var(--chart-1)"
   const showBody = !collapsed || forceExpand
   const isViewer = useFlowBase(selectIsViewer)
@@ -507,7 +510,7 @@ function BoardFieldsCard({
               onReorderStart?.()
             }}
             onDragEnd={() => onReorderEnd?.()}
-            title="Drag to reorder table"
+            title={t("Drag to reorder table")}
             data-board-card-grip={board.id}
             className="-ml-1 flex size-5 shrink-0 cursor-grab items-center justify-center rounded opacity-60 transition hover:bg-foreground/10 hover:opacity-100 active:cursor-grabbing"
           >
@@ -599,7 +602,7 @@ function BoardFieldsCard({
               className="flex items-center gap-2 px-3 py-1.5 text-left text-[12px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
             >
               <Plus className="size-3.5" strokeWidth={2} />
-              Add column
+              {t("Add column")}
             </button>
           )}
         </div>
@@ -643,6 +646,7 @@ function EditableFieldRow({
   boardId: string
   highlight?: boolean
 }) {
+  const t = useT()
   const renameColumn = useFlowBase((s) => s.renameColumn)
   const updateColumn = useFlowBase((s) => s.updateColumn)
   const deleteColumn = useFlowBase((s) => s.deleteColumn)
@@ -722,7 +726,7 @@ function EditableFieldRow({
             setEditing(true)
             setDraft(col.name)
           }}
-          title="Click to rename"
+          title={t("Click to rename")}
           data-schema-col-rename={col.name}
           className="min-w-0 flex-1 truncate text-left font-mono transition-colors hover:text-foreground"
         >
@@ -767,7 +771,7 @@ function EditableFieldRow({
         <button
           type="button"
           onClick={() => setConfirmDel(true)}
-          title="Delete column"
+          title={t("Delete column")}
           data-schema-col-delete={col.name}
           className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
         >
@@ -788,13 +792,13 @@ function EditableFieldRow({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteColumn(col.name, boardId)}
               data-schema-col-delete-confirm={col.name}
               className="bg-destructive text-white hover:bg-destructive/90"
             >
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -865,6 +869,7 @@ function RelationsList({
   boards: Board[]
   relations: Relation[]
 }) {
+  const t = useT()
   const findColor = (id: string): string =>
     boards.find((b) => b.id === id)?.colorVar ?? "var(--chart-1)"
   const switchBoard = useFlowBase((s) => s.switchBoard)
@@ -881,9 +886,9 @@ function RelationsList({
     <div className="flex-1 overflow-auto bg-background p-5">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-[14px] font-semibold">Table relations</h3>
+          <h3 className="text-[14px] font-semibold">{t("Table relations")}</h3>
           <p className="mt-0.5 text-[12px] text-muted-foreground">
-            Foreign keys connecting tables. Click a table to open it.
+            {t("Foreign keys connecting tables. Click a table to open it.")}
           </p>
         </div>
         {!isViewer && boards.length > 0 && (
@@ -894,7 +899,7 @@ function RelationsList({
             className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             <Plus className="size-3.5" strokeWidth={2} />
-            Add relation
+            {t("Add relation")}
           </button>
         )}
       </div>
@@ -908,7 +913,7 @@ function RelationsList({
                 onClick={() => setAddOpen(true)}
                 className="font-medium text-primary underline-offset-2 hover:underline"
               >
-                Add a relation
+                {t("Add a relation")}
               </button>{" "}
               to link two tables.
             </>
@@ -975,6 +980,7 @@ function AddRelationDialog({
   open: boolean
   onOpenChange: (o: boolean) => void
 }) {
+  const t = useT()
   const addColumn = useFlowBase((s) => s.addColumn)
   const [fromId, setFromId] = useState("")
   const [toId, setToId] = useState("")
@@ -1006,15 +1012,15 @@ function AddRelationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add relation</DialogTitle>
+          <DialogTitle>{t("Add relation")}</DialogTitle>
           <DialogDescription>
-            Adds an fk column to the source table that points to the target.
+            {t("Adds an fk column to the source table that points to the target.")}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 py-1">
           <div className="flex flex-col gap-1.5">
             <span className="text-[11.5px] font-medium text-muted-foreground">
-              From table (gets the relation column)
+              {t("From table (gets the relation column)")}
             </span>
             <Select value={fromId} onValueChange={setFromId}>
               <SelectTrigger className="h-8" data-relation-from-select>
@@ -1034,7 +1040,7 @@ function AddRelationDialog({
           </div>
           <div className="flex flex-col gap-1.5">
             <span className="text-[11.5px] font-medium text-muted-foreground">
-              To table (referenced)
+              {t("To table (referenced)")}
             </span>
             <Select value={toId} onValueChange={setToId}>
               <SelectTrigger className="h-8" data-relation-to-select>
@@ -1056,7 +1062,7 @@ function AddRelationDialog({
             onClick={() => onOpenChange(false)}
             className="rounded-md border border-border px-3 py-1.5 text-[12.5px] font-medium transition-colors hover:bg-foreground/[0.04]"
           >
-            Cancel
+            {t("Cancel")}
           </button>
           <button
             type="button"
@@ -1064,7 +1070,7 @@ function AddRelationDialog({
             data-relation-create
             className="rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Add relation
+            {t("Add relation")}
           </button>
         </DialogFooter>
       </DialogContent>

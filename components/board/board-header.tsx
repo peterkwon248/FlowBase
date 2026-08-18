@@ -15,9 +15,11 @@ import { TrashDialog } from "@/components/board/trash-dialog"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Kbd } from "@/components/ui/kbd"
 import { selectActiveBoard, selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
+import { useT } from "@/lib/i18n"
 import { PanelsMenu } from "./panels-menu"
 
 export function BoardHeader() {
+  const t = useT()
   const board = useFlowBase(selectActiveBoard)
   const search = useFlowBase((s) => s.search)
   const setSearch = useFlowBase((s) => s.setSearch)
@@ -38,7 +40,7 @@ export function BoardHeader() {
   const handleAutoName = async () => {
     if (!board || autoNaming) return
     setAutoNaming(true)
-    const dismissId = toast.loading("Suggesting a name…")
+    const dismissId = toast.loading(t("Suggesting a name…"))
     try {
       const res = await fetch("/api/ai/suggest-board-label", {
         method: "POST",
@@ -103,7 +105,7 @@ export function BoardHeader() {
                 onClick={handleAutoName}
                 disabled={autoNaming}
                 data-action="auto-name-board"
-                title="Suggest a name with AI"
+                title={t("Suggest a name with AI")}
                 className="ml-0.5 inline-flex size-5 items-center justify-center rounded text-muted-foreground/60 opacity-0 transition-opacity hover:bg-foreground/[0.06] hover:text-primary group-hover/board-label:opacity-100 focus:opacity-100 disabled:opacity-40"
               >
                 <Sparkles className="size-3" strokeWidth={1.75} />
@@ -112,7 +114,7 @@ export function BoardHeader() {
                 type="button"
                 onClick={() => setCleanupOpen(true)}
                 data-action="open-cleanup"
-                title="Suggest data cleanup with AI"
+                title={t("Suggest data cleanup with AI")}
                 className="inline-flex size-5 items-center justify-center rounded text-muted-foreground/60 opacity-0 transition-opacity hover:bg-foreground/[0.06] hover:text-primary group-hover/board-label:opacity-100 focus:opacity-100"
               >
                 <Wand2 className="size-3" strokeWidth={1.75} />
@@ -129,13 +131,13 @@ export function BoardHeader() {
           type="button"
           onClick={() => setSearchOpen(true)}
           className="flex w-56 items-center gap-1.5 rounded-md border border-border-subtle bg-muted px-2 py-1.5 text-left transition-colors hover:border-border"
-          title="Search ⌘K"
+          title={t("Search ⌘K")}
         >
           <Search className="size-3.5 text-muted-foreground" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search…"
+            placeholder={t("Search…")}
             className="w-full bg-transparent text-[12.5px] outline-none placeholder:text-muted-foreground"
             onFocus={(e) => {
               // 입력 포커스만 — ⌘K 모달은 명시적 클릭/단축키만 열림
@@ -150,10 +152,10 @@ export function BoardHeader() {
           onClick={() => requestAskAi()}
           data-ask-ai-trigger
           className="flex items-center gap-1.5 rounded-md border border-border-subtle bg-muted px-2 py-1.5 text-[12.5px] transition-colors hover:border-border"
-          title="Ask AI ⌘J"
+          title={t("Ask AI ⌘J")}
         >
           <Sparkles className="size-3.5 text-primary" />
-          <span className="text-muted-foreground">Ask AI</span>
+          <span className="text-muted-foreground">{t("Ask AI")}</span>
           <Kbd className="ml-0.5 text-[10px]">⌘J</Kbd>
         </button>
         <ThemeToggle />
@@ -174,7 +176,7 @@ export function BoardHeader() {
         </button>
         <button
           type="button"
-          title="Settings"
+          title={t("Settings")}
           onClick={() => setSettingsOpen(true)}
           className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
         >

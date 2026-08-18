@@ -6,6 +6,7 @@
 
 import { useMemo } from "react"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 export interface ScatterPoint {
   x: number
@@ -27,6 +28,7 @@ export function ScatterChart({
   yLabel?: string
   className?: string
 }) {
+  const t = useT()
   const dims = SCATTER_DIMS
   const { points, xMin, xMax, yMin, yMax } = useMemo(() => {
     if (data.length === 0) {
@@ -62,7 +64,7 @@ export function ScatterChart({
   if (data.length === 0) {
     return (
       <div className="flex h-[200px] items-center justify-center text-[11.5px] text-muted-foreground">
-        No data
+        {t("No data")}
       </div>
     )
   }

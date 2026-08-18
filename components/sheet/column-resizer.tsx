@@ -8,6 +8,7 @@
 
 import type React from "react"
 import { useFlowBase } from "@/lib/flowbase-store"
+import { useT } from "@/lib/i18n"
 
 const MIN_WIDTH = 60
 const MAX_WIDTH = 600
@@ -28,6 +29,7 @@ interface ColumnResizerProps {
 }
 
 export function ColumnResizer({ colName, tableRef }: ColumnResizerProps) {
+  const t = useT()
   const setViewOption = useFlowBase((s) => s.setViewOption)
 
   const startDrag = (e: React.MouseEvent) => {
@@ -91,7 +93,7 @@ export function ColumnResizer({ colName, tableRef }: ColumnResizerProps) {
       role="separator"
       aria-orientation="vertical"
       aria-label={`Resize ${colName} column (double-click to fit)`}
-      title="Drag to resize · Double-click to fit"
+      title={t("Drag to resize · Double-click to fit")}
       className="absolute right-0 top-0 z-20 h-full w-1.5 cursor-col-resize select-none transition-colors hover:bg-primary/40 active:bg-primary/60"
     />
   )

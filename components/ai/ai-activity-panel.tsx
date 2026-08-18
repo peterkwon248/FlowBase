@@ -20,6 +20,7 @@ import {
 import { selectActiveBoard, selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { AIHistoryEntry } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 import { AiComposer } from "./ai-composer"
 import { PendingCard } from "./pending-card"
 import { TimelineItem } from "./timeline-item"
@@ -38,6 +39,7 @@ const COLUMN_LABEL: Record<AiColumn, string> = {
 const SOURCE_FIELD = "quote"
 
 export function AiActivityPanel() {
+  const t = useT()
   const board = useFlowBase(selectActiveBoard)
   const acceptAllAi = useFlowBase((s) => s.acceptAllAi)
   const dismissAllAi = useFlowBase((s) => s.dismissAllAi)
@@ -104,7 +106,7 @@ export function AiActivityPanel() {
           toast.loading(`Classifying ${done}/${total}…`, { id: toastId }),
       )
       if (results.length === 0) {
-        toast.error("No results from AI — try again.", {
+        toast.error(t("No results from AI — try again."), {
           id: toastId,
         })
         return
@@ -182,7 +184,7 @@ export function AiActivityPanel() {
       {/* 헤더 */}
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border-subtle px-3.5">
         <Sparkles className="size-3.5 text-primary" />
-        <span className="text-[13px] font-semibold">AI Activity</span>
+        <span className="text-[13px] font-semibold">{t("AI Activity")}</span>
         {pendingTotal > 0 && (
           <span className="rounded bg-primary/15 px-1.5 py-px text-[10px] font-semibold tabular-nums text-primary">
             {pendingTotal} pending
@@ -195,7 +197,7 @@ export function AiActivityPanel() {
         {pendingTotal > 0 && (
           <div className="px-3.5 pb-2 pt-3">
             <div className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-              Pending — needs review
+              {t("Pending — needs review")}
             </div>
             {pendingTheme.length > 0 && (
               <PendingCard
@@ -223,11 +225,11 @@ export function AiActivityPanel() {
         {/* Timeline */}
         <div className="border-t border-border-subtle px-3.5 py-3">
           <div className="mb-2.5 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-            Timeline
+            {t("Timeline")}
           </div>
           {aiHistory.length === 0 ? (
             <div className="text-xs leading-relaxed text-muted-foreground">
-              No AI activity yet.
+              {t("No AI activity yet.")}
             </div>
           ) : (
             <div className="relative pl-3.5">

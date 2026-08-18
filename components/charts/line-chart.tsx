@@ -11,6 +11,7 @@
 
 import { useMemo } from "react"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 export interface LinePoint {
   label: string // x축 라벨 (예: "May 12")
@@ -53,6 +54,7 @@ export function LineChart({
   className,
   onPointClick,
 }: LineChartProps) {
+  const t = useT()
   // single → series 변환 (내부 통일)
   const normalizedSeries: LineSeries[] = useMemo(() => {
     if (series && series.length > 0) return series
@@ -106,7 +108,7 @@ export function LineChart({
   if (normalizedSeries.length === 0 || xLabels.length === 0) {
     return (
       <div className="flex h-[140px] items-center justify-center text-[11.5px] text-muted-foreground">
-        No data
+        {t("No data")}
       </div>
     )
   }
@@ -118,7 +120,7 @@ export function LineChart({
         className="block w-full"
         preserveAspectRatio="none"
         role="img"
-        aria-label="Trend line"
+        aria-label={t("Trend line")}
       >
         {/* horizontal grid */}
         {[0, 0.25, 0.5, 0.75, 1].map((t) => {

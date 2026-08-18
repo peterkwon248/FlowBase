@@ -27,6 +27,7 @@ import {
 import { selectActiveBoard, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { EventKind, TimestampedEvent } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 function formatValue(v: unknown): string {
   if (v === null || v === undefined || v === "") return "—"
@@ -42,6 +43,7 @@ function formatValue(v: unknown): string {
 }
 
 export function DetailBar() {
+  const t = useT()
   const board = useFlowBase(selectActiveBoard)
   const selectedRowIds = useFlowBase((s) => s.selectedRowIds)
   const focusedCell = useFlowBase((s) => s.focusedCell)
@@ -60,7 +62,7 @@ export function DetailBar() {
     <aside className="flex w-[300px] shrink-0 flex-col border-l border-border-subtle bg-surface">
       {/* 헤더 */}
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border-subtle px-3.5">
-        <span className="text-[13px] font-semibold">Detail</span>
+        <span className="text-[13px] font-semibold">{t("Detail")}</span>
         {selectedRowIds.length > 1 && (
           <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
             {selectedRowIds.length} selected
@@ -70,7 +72,7 @@ export function DetailBar() {
         <button
           type="button"
           onClick={() => togglePanel("detailBar")}
-          title="Close (⌘I)"
+          title={t("Close (⌘I)")}
           className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground"
         >
           <X className="size-3.5" />
@@ -81,7 +83,7 @@ export function DetailBar() {
       {!row ? (
         <div className="flex-1 overflow-y-auto p-3.5">
           <div className="rounded-md border border-dashed border-border bg-card p-4 text-center text-[12px] text-muted-foreground">
-            Select a row or focus a cell to see details.
+            {t("Select a row or focus a cell to see details.")}
           </div>
         </div>
       ) : (
@@ -94,13 +96,13 @@ export function DetailBar() {
               value="fields"
               className="h-7 text-[11.5px] data-[state=active]:bg-background"
             >
-              Fields
+              {t("Fields")}
             </TabsTrigger>
             <TabsTrigger
               value="activity"
               className="h-7 text-[11.5px] data-[state=active]:bg-background"
             >
-              Activity
+              {t("Activity")}
             </TabsTrigger>
           </TabsList>
 
@@ -115,12 +117,12 @@ export function DetailBar() {
                 </span>
                 {row.themeConfirmed === false && (
                   <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                    AI theme pending
+                    {t("AI theme pending")}
                   </span>
                 )}
                 {row.sentimentConfirmed === false && (
                   <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                    AI sentiment pending
+                    {t("AI sentiment pending")}
                   </span>
                 )}
               </div>
@@ -229,6 +231,7 @@ function truncate(s: string, n: number): string {
 }
 
 function RowActivity({ boardId, rowId }: { boardId: string; rowId: string }) {
+  const t = useT()
   const events = useFlowBase((s) => s.events)
   // row scoped — boardId 일치 + rowId가 단일 OR rowIds에 포함
   const rowEvents = useMemo(
@@ -251,7 +254,7 @@ function RowActivity({ boardId, rowId }: { boardId: string; rowId: string }) {
           className="size-4 text-muted-foreground/60"
           strokeWidth={1.5}
         />
-        No activity yet for this row.
+        {t("No activity yet for this row.")}
       </div>
     )
   }

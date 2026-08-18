@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 export type InboxFilter = "all" | "alert" | "warn" | "ai" | "info" | "tip" | "log"
 
@@ -70,18 +71,19 @@ export function InboxSidebar({
   onFilter: (f: InboxFilter) => void
   counts: Record<string, number>
 }) {
+  const t = useT()
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r border-border-subtle bg-surface text-[13px]">
       <div className="flex items-center gap-2 border-b border-border-subtle px-3 py-2.5">
         <span className="flex size-5 items-center justify-center rounded bg-primary/15 text-primary">
           <InboxIcon className="size-3" strokeWidth={1.75} />
         </span>
-        <span className="text-[13px] font-semibold">Inbox</span>
+        <span className="text-[13px] font-semibold">{t("Inbox")}</span>
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 py-2">
         <div className="mb-1 px-2.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-          Inbox
+          {t("Inbox")}
         </div>
         {ITEMS.map(({ id, label, Icon, iconClass }) => {
           const on = filter === id
@@ -120,7 +122,7 @@ export function InboxSidebar({
       </div>
 
       <div className="border-t border-border-subtle px-3.5 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
-        Suggestions, alerts,
+        {t("Suggestions, alerts,")}
         <br />
         all in one place.
       </div>

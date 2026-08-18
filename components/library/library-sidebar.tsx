@@ -21,6 +21,7 @@ import { LIBRARY_CATEGORIES } from "@/lib/flowbase-library-seed"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { Library, LibraryCategoryId } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 const CATEGORY_ICON: Record<LibraryCategoryId, LucideIcon> = {
   optionLists: List,
@@ -57,6 +58,7 @@ function getAssets(
 }
 
 export function LibrarySidebar() {
+  const t = useT()
   const library = useFlowBase((s) => s.library)
   const libCategory = useFlowBase((s) => s.libCategory)
   const libAssetId = useFlowBase((s) => s.libAssetId)
@@ -99,7 +101,7 @@ export function LibrarySidebar() {
         <span className="flex size-5 items-center justify-center rounded bg-primary/15 text-primary">
           <LibraryIcon className="size-3" strokeWidth={1.75} />
         </span>
-        <span className="text-[13px] font-semibold">Library</span>
+        <span className="text-[13px] font-semibold">{t("Library")}</span>
       </div>
 
       {/* 검색 — 활성 (자산 name 매치) */}
@@ -115,7 +117,7 @@ export function LibrarySidebar() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search library…"
+            placeholder={t("Search library…")}
             data-library-sidebar-search
             className="w-full bg-transparent text-[12px] outline-none placeholder:text-muted-foreground"
           />
@@ -124,7 +126,7 @@ export function LibrarySidebar() {
               type="button"
               onClick={() => setQuery("")}
               className="flex size-3 items-center justify-center rounded text-muted-foreground hover:text-foreground"
-              title="Clear"
+              title={t("Clear")}
             >
               <X className="size-2.5" strokeWidth={2.5} />
             </button>
@@ -202,7 +204,7 @@ export function LibrarySidebar() {
 
       {/* 푸터 힌트 */}
       <div className="border-t border-border-subtle px-3.5 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
-        Define once,
+        {t("Define once,")}
         <br />
         use anywhere.
       </div>

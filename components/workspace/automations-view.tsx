@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 import type {
   AutomationRule,
   AutomationStatus,
@@ -62,6 +63,7 @@ const STATUS_STYLE: Record<
 }
 
 export function AutomationsView() {
+  const t = useT()
   const automations = useFlowBase((s) => s.automations)
   const suggested = useFlowBase((s) => s.suggestedAutomations)
 
@@ -78,7 +80,7 @@ export function AutomationsView() {
             <Zap className="size-4" strokeWidth={1.75} />
           </span>
           <h1 className="text-[22px] font-bold tracking-[-0.02em]">
-            Automations
+            {t("Automations")}
           </h1>
           <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
             {automations.length}
@@ -131,7 +133,7 @@ export function AutomationsView() {
           <div className="mb-3 flex items-center gap-1.5">
             <Sparkles className="size-3.5 text-primary" />
             <span className="text-[12px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-              AI Suggestions
+              {t("AI Suggestions")}
             </span>
             <span className="rounded bg-primary/15 px-1.5 py-0.5 font-mono text-[10.5px] font-semibold text-primary">
               {suggested.length}
@@ -149,6 +151,7 @@ export function AutomationsView() {
 }
 
 function RuleCard({ rule }: { rule: AutomationRule }) {
+  const t = useT()
   const style = STATUS_STYLE[rule.status]
   const toggleAutomationStatus = useFlowBase(
     (s) => s.toggleAutomationStatus,
@@ -173,7 +176,7 @@ function RuleCard({ rule }: { rule: AutomationRule }) {
           {rule.aiSuggested && (
             <span className="inline-flex items-center gap-1 rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
               <Sparkles className="size-2.5" strokeWidth={2} />
-              AI built
+              {t("AI built")}
             </span>
           )}
           <button
@@ -199,7 +202,7 @@ function RuleCard({ rule }: { rule: AutomationRule }) {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                title="Automation options"
+                title={t("Automation options")}
                 data-automation-menu={rule.id}
                 className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
               >
@@ -213,7 +216,7 @@ function RuleCard({ rule }: { rule: AutomationRule }) {
                 className="gap-2"
               >
                 <PlayCircle className="size-3.5 text-muted-foreground" />
-                Test run
+                {t("Test run")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => setConfirmDelete(true)}
@@ -221,7 +224,7 @@ function RuleCard({ rule }: { rule: AutomationRule }) {
                 className="gap-2 text-destructive focus:text-destructive"
               >
                 <Trash2 className="size-3.5" />
-                Delete
+                {t("Delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -261,12 +264,12 @@ function RuleCard({ rule }: { rule: AutomationRule }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteAutomation(rule.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -276,10 +279,11 @@ function RuleCard({ rule }: { rule: AutomationRule }) {
 }
 
 function TriggerBlock({ when }: { when: AutomationTrigger }) {
+  const t = useT()
   return (
     <div className="flex items-start gap-2 rounded-md border border-chart-1/25 bg-chart-1/[0.06] px-2.5 py-2 text-[12.5px] leading-relaxed">
       <span className="mt-px shrink-0 rounded bg-chart-1 px-1.5 py-px text-[9.5px] font-bold uppercase tracking-[0.06em] text-white">
-        When
+        {t("When")}
       </span>
       <span className="flex-1">
         {when.table && when.table !== "—" && (
@@ -300,10 +304,11 @@ function TriggerBlock({ when }: { when: AutomationTrigger }) {
 }
 
 function ActionBlock({ step }: { step: AutomationStep }) {
+  const t = useT()
   return (
     <div className="flex items-start gap-2 rounded-md border border-chart-2/25 bg-chart-2/[0.06] px-2.5 py-2 text-[12.5px] leading-relaxed">
       <span className="mt-px shrink-0 rounded bg-chart-2 px-1.5 py-px text-[9.5px] font-bold uppercase tracking-[0.06em] text-white">
-        Then
+        {t("Then")}
       </span>
       <span className="flex-1">
         <strong className="font-medium">{step.action}</strong>{" "}
@@ -324,6 +329,7 @@ function ActionBlock({ step }: { step: AutomationStep }) {
 }
 
 function SuggestionCard({ suggestion }: { suggestion: SuggestedAutomation }) {
+  const t = useT()
   const confidencePct = Math.round(suggestion.confidence * 100)
   const acceptSuggestion = useFlowBase((s) => s.acceptSuggestion)
   const dismissSuggestion = useFlowBase((s) => s.dismissSuggestion)
@@ -358,7 +364,7 @@ function SuggestionCard({ suggestion }: { suggestion: SuggestedAutomation }) {
           title={viewerTitle}
           className="h-7 px-2.5 text-[11.5px]"
         >
-          Accept
+          {t("Accept")}
         </Button>
         <Button
           variant="ghost"
@@ -368,7 +374,7 @@ function SuggestionCard({ suggestion }: { suggestion: SuggestedAutomation }) {
           title={viewerTitle}
           className="h-7 px-2.5 text-[11.5px] text-muted-foreground"
         >
-          Dismiss
+          {t("Dismiss")}
         </Button>
       </div>
     </div>

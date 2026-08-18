@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import { useFlowBase } from "@/lib/flowbase-store"
 import type { Board } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 interface Suggestion {
   col: string
@@ -71,6 +72,7 @@ function collectValues(board: Board) {
 }
 
 export function CleanupDialog({ open, onOpenChange, board }: CleanupDialogProps) {
+  const t = useT()
   const updateRow = useFlowBase((s) => s.updateRow)
 
   const [loading, setLoading] = useState(false)
@@ -151,7 +153,7 @@ export function CleanupDialog({ open, onOpenChange, board }: CleanupDialogProps)
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wand2 className="size-4 text-primary" />
-            Cleanup suggestions
+            {t("Cleanup suggestions")}
           </DialogTitle>
           <DialogDescription className="text-[12px]">
             AI scans value spellings and proposes safe merges (Todo / todo / TODO). All merges
@@ -167,7 +169,7 @@ export function CleanupDialog({ open, onOpenChange, board }: CleanupDialogProps)
               {candidateCount === 1 ? "" : "s"} with AI
             </div>
             <p className="mb-3 text-[11.5px] text-muted-foreground">
-              No automatic changes. Each suggestion is yours to accept or skip.
+              {t("No automatic changes. Each suggestion is yours to accept or skip.")}
             </p>
             <Button
               size="sm"
@@ -224,7 +226,7 @@ export function CleanupDialog({ open, onOpenChange, board }: CleanupDialogProps)
                       className="h-6 px-2 text-[11px]"
                       data-action="cleanup-apply"
                     >
-                      Apply
+                      {t("Apply")}
                     </Button>
                     <Button
                       size="sm"
@@ -235,7 +237,7 @@ export function CleanupDialog({ open, onOpenChange, board }: CleanupDialogProps)
                       className="h-6 px-2 text-[11px] text-muted-foreground"
                     >
                       <X className="mr-0.5 size-3" />
-                      Skip
+                      {t("Skip")}
                     </Button>
                   </div>
                 </div>
@@ -243,7 +245,7 @@ export function CleanupDialog({ open, onOpenChange, board }: CleanupDialogProps)
             })}
             {remaining === 0 && (
               <div className="rounded-md border border-border-subtle bg-muted/30 p-3 text-center text-[12px] text-muted-foreground">
-                All suggestions resolved.
+                {t("All suggestions resolved.")}
               </div>
             )}
           </div>
@@ -258,11 +260,11 @@ export function CleanupDialog({ open, onOpenChange, board }: CleanupDialogProps)
                 setSuggestions(null)
               }}
             >
-              Re-analyze
+              {t("Re-analyze")}
             </Button>
           )}
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            Close
+            {t("Close")}
           </Button>
         </DialogFooter>
       </DialogContent>

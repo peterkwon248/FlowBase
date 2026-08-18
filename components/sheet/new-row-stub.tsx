@@ -5,6 +5,7 @@
 "use client"
 
 import { Plus } from "lucide-react"
+import { useT } from "@/lib/i18n"
 
 interface NewRowStubProps {
   colSpan: number
@@ -12,6 +13,7 @@ interface NewRowStubProps {
 }
 
 export function NewRowStub({ colSpan, onAdd }: NewRowStubProps) {
+  const t = useT()
   return (
     <tr>
       <td
@@ -21,7 +23,7 @@ export function NewRowStub({ colSpan, onAdd }: NewRowStubProps) {
       >
         <span className="inline-flex items-center gap-1.5 text-[12.5px]">
           <Plus className="size-3" />
-          New row
+          {t("New row")}
         </span>
       </td>
     </tr>

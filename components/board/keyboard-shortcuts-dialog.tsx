@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Kbd } from "@/components/ui/kbd"
+import { useT } from "@/lib/i18n"
 
 interface ShortcutGroup {
   label: string
@@ -60,6 +61,7 @@ const GROUPS: ShortcutGroup[] = [
 ]
 
 export function KeyboardShortcutsDialog() {
+  const t = useT()
   const [open, setOpen] = useState(false)
   useEffect(() => {
     const handler = () => setOpen((o) => !o)
@@ -73,10 +75,10 @@ export function KeyboardShortcutsDialog() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Keyboard className="size-4" />
-            Keyboard shortcuts
+            {t("Keyboard shortcuts")}
           </DialogTitle>
           <DialogDescription className="text-[12px]">
-            Press <Kbd className="text-[10.5px]">⌘</Kbd>
+            {t("Press")} <Kbd className="text-[10.5px]">⌘</Kbd>
             <Kbd className="text-[10.5px]">/</Kbd> any time to open this.
           </DialogDescription>
         </DialogHeader>

@@ -668,4 +668,17 @@ export const ko: Record<string, string> = {
     "다중 선택 → 단일 선택: 초과 값은 버려집니다",
   "Not auto-applied — AI columns are added as":
     "자동 적용 아님 — AI 컬럼은 다음으로 추가됩니다:",
+  // ── 상수/배열 정의 라벨 (코드모드가 닿지 않는 곳) ─────
+  "Apply all": "모두 적용",
+  "Needs a status column": "상태 컬럼이 필요합니다",
+  "Needs a date column": "날짜 컬럼이 필요합니다",
+  "Free-text quote → 5 categories": "자유 텍스트 인용 → 5개 카테고리",
+  "Quote → Positive / Mixed / Negative": "인용 → 긍정 / 혼합 / 부정",
+  "{count} unconfirmed {label} rows": "미확정 {label} {count}행",
+  "{rows} rows · {cols} columns": "{rows}행 · {cols}컬럼",
+  "{n} rows": "{n}행",
+  "Viewers can't change accent color": "뷰어는 강조 색상을 바꿀 수 없습니다",
+  "Viewers can't edit workspace settings": "뷰어는 워크스페이스 설정을 바꿀 수 없습니다",
+  "Viewers can't manage members": "뷰어는 멤버를 관리할 수 없습니다",
+  "Thinking…": "생각 중…",
 }

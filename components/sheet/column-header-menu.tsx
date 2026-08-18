@@ -58,6 +58,7 @@ import { TYPE_ICON } from "@/components/sheet/header-cell"
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { ColumnDef, ColumnType } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 const CHANGEABLE_TYPES: { type: ColumnType; label: string }[] = [
   { type: "text", label: "Text" },
@@ -71,6 +72,7 @@ const CHANGEABLE_TYPES: { type: ColumnType; label: string }[] = [
 ]
 
 export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
+  const t = useT()
   const renameColumn = useFlowBase((s) => s.renameColumn)
   const deleteColumn = useFlowBase((s) => s.deleteColumn)
   const updateColumn = useFlowBase((s) => s.updateColumn)
@@ -87,7 +89,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
   const handleSuggestType = async () => {
     if (suggesting) return
     setSuggesting(true)
-    const tid = toast.loading("Analyzing column…")
+    const tid = toast.loading(t("Analyzing column…"))
     try {
       const samples = boardRows
         .slice(0, 20)
@@ -197,7 +199,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem onSelect={openRename} className="gap-2">
             <Pencil className="size-3.5 text-muted-foreground" />
-            Rename
+            {t("Rename")}
           </DropdownMenuItem>
           {col.type === "formula" && (
             <DropdownMenuItem
@@ -209,7 +211,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
                 className="size-3.5 text-muted-foreground"
                 strokeWidth={1.75}
               />
-              Edit formula
+              {t("Edit formula")}
             </DropdownMenuItem>
           )}
           <DropdownMenuItem
@@ -224,7 +226,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="gap-2">
               <Type className="size-3.5 text-muted-foreground" />
-              <span>Change type</span>
+              <span>{t("Change type")}</span>
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent
               className="w-40"
@@ -270,7 +272,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
                   className="size-3.5 text-muted-foreground"
                   strokeWidth={1.75}
                 />
-                <span>Apply OptionList</span>
+                <span>{t("Apply OptionList")}</span>
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent
                 className="w-56"
@@ -278,7 +280,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
               >
                 {library.optionLists.length === 0 ? (
                   <div className="px-2 py-1.5 text-[12px] text-muted-foreground">
-                    No OptionLists in Library yet.
+                    {t("No OptionLists in Library yet.")}
                   </div>
                 ) : (
                   library.optionLists.map((list) => {
@@ -384,7 +386,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
                     />
                   )}
                 </span>
-                <span className="text-muted-foreground">None</span>
+                <span className="text-muted-foreground">{t("None")}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {library.functions.map((fn) => {
@@ -431,7 +433,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
                 className="size-3.5 text-muted-foreground"
                 strokeWidth={1.75}
               />
-              <span>Highlight</span>
+              <span>{t("Highlight")}</span>
               {col.formatRules && col.formatRules.length > 0 && (
                 <span className="ml-auto rounded bg-primary/15 px-1 py-px text-[9.5px] text-primary">
                   {col.formatRules.length}
@@ -448,7 +450,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
                   if (v == null) return
                   const n = Number(v)
                   if (!Number.isFinite(n)) {
-                    toast.error("Enter a valid number")
+                    toast.error(t("Enter a valid number"))
                     return
                   }
                   updateColumn(col.name, {
@@ -470,7 +472,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
                   if (v == null) return
                   const n = Number(v)
                   if (!Number.isFinite(n)) {
-                    toast.error("Enter a valid number")
+                    toast.error(t("Enter a valid number"))
                     return
                   }
                   updateColumn(col.name, {
@@ -501,7 +503,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
                 className="gap-2"
               >
                 <span className="inline-block size-2.5 rounded-sm bg-blue-400" />
-                <span>Contains text</span>
+                <span>{t("Contains text")}</span>
               </DropdownMenuItem>
               {col.formatRules && col.formatRules.length > 0 && (
                 <>
@@ -509,12 +511,12 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
                   <DropdownMenuItem
                     onSelect={() => {
                       updateColumn(col.name, { formatRules: undefined })
-                      toast.info("Cleared highlight rules")
+                      toast.info(t("Cleared highlight rules"))
                     }}
                     className="gap-2 text-muted-foreground"
                   >
                     <Trash2 className="size-3" />
-                    <span>Clear all rules</span>
+                    <span>{t("Clear all rules")}</span>
                   </DropdownMenuItem>
                 </>
               )}
@@ -529,7 +531,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
                   className="size-3.5 text-muted-foreground"
                   strokeWidth={1.75}
                 />
-                <span>Source field</span>
+                <span>{t("Source field")}</span>
                 {col.functionSourceField && (
                   <span className="ml-auto rounded bg-muted px-1 py-px font-mono text-[9.5px] text-muted-foreground">
                     {col.functionSourceField}
@@ -543,7 +545,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
                 <DropdownMenuItem
                   onSelect={() => {
                     updateColumn(col.name, { functionSourceField: undefined })
-                    toast.info("Source field reset to auto-detect")
+                    toast.info(t("Source field reset to auto-detect"))
                   }}
                   className="gap-2"
                 >
@@ -552,7 +554,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
                       <Check className="size-3 text-primary" strokeWidth={3} />
                     )}
                   </span>
-                  <span className="text-muted-foreground">Auto</span>
+                  <span className="text-muted-foreground">{t("Auto")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {boardCols
@@ -605,7 +607,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
             className="gap-2 text-destructive focus:text-destructive"
           >
             <Trash2 className="size-3.5" />
-            Delete column
+            {t("Delete column")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -613,7 +615,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Rename column</DialogTitle>
+            <DialogTitle>{t("Rename column")}</DialogTitle>
             <DialogDescription className="text-[12px]">
               Changes the display label. The underlying field key stays as{" "}
               <code className="rounded bg-muted px-1 font-mono text-[11px]">
@@ -624,7 +626,7 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
           </DialogHeader>
           <div className="space-y-1.5">
             <Label htmlFor="col-label" className="text-[12px]">
-              Label
+              {t("Label")}
             </Label>
             <Input
               id="col-label"
@@ -638,9 +640,9 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setRenameOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={submitRename}>Save</Button>
+            <Button onClick={submitRename}>{t("Save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -665,12 +667,12 @@ export function ColumnHeaderMenu({ col }: { col: ColumnDef }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteColumn(col.name)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

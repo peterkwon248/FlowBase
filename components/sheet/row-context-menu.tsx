@@ -17,6 +17,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
 import { selectActiveBoard, selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
+import { useT } from "@/lib/i18n"
 import { toast } from "sonner"
 
 interface RowContextMenuProps {
@@ -25,6 +26,7 @@ interface RowContextMenuProps {
 }
 
 export function RowContextMenu({ rowId, children }: RowContextMenuProps) {
+  const t = useT()
   const selectedRowIds = useFlowBase((s) => s.selectedRowIds)
   const setSelected = useFlowBase((s) => s.setSelected)
   const deleteRows = useFlowBase((s) => s.deleteRows)
@@ -56,26 +58,26 @@ export function RowContextMenu({ rowId, children }: RowContextMenuProps) {
   }
 
   const handleDuplicate = () => {
-    const t = targets()
-    t.forEach((id) => duplicateRow(id))
-    toast.success(`${t.length} row${t.length > 1 ? "s" : ""} duplicated`)
+    const ids = targets()
+    ids.forEach((id) => duplicateRow(id))
+    toast.success(`${ids.length} row${ids.length > 1 ? "s" : ""} duplicated`)
   }
 
   const handleCopyId = async () => {
-    const t = targets()
-    const text = t.join(", ")
+    const ids = targets()
+    const text = ids.join(", ")
     try {
       await navigator.clipboard.writeText(text)
       toast.success(`Copied ${text}`)
     } catch {
-      toast.error("Clipboard write failed")
+      toast.error(t("Clipboard write failed"))
     }
   }
 
   const handleDelete = () => {
-    const t = targets()
-    deleteRows(t)
-    toast.success(`${t.length} row${t.length > 1 ? "s" : ""} deleted (⌘Z to undo)`)
+    const ids = targets()
+    deleteRows(ids)
+    toast.success(`${ids.length} row${ids.length > 1 ? "s" : ""} deleted (⌘Z to undo)`)
   }
 
   // G6-1: AI cell suggest — 행의 첫 빈 cell 찾아 AI 호출 → toast Apply.
@@ -94,7 +96,7 @@ export function RowContextMenu({ rowId, children }: RowContextMenuProps) {
       return false
     })
     if (!emptyCol) {
-      toast.info("No empty cell to fill in this row")
+      toast.info(t("No empty cell to fill in this row"))
       return
     }
     const tid = toast.loading(`Suggesting value for ${emptyCol.label || emptyCol.name}…`)
@@ -173,7 +175,7 @@ export function RowContextMenu({ rowId, children }: RowContextMenuProps) {
       <ContextMenuContent className="w-52">
         <ContextMenuItem onSelect={handleOpenDetail} className="gap-2">
           <Eye className="size-3.5 text-muted-foreground" strokeWidth={1.75} />
-          <span>Open in detail bar</span>
+          <span>{t("Open in detail bar")}</span>
           <ContextMenuShortcut>⌘I</ContextMenuShortcut>
         </ContextMenuItem>
         <ContextMenuItem
@@ -185,12 +187,12 @@ export function RowContextMenu({ rowId, children }: RowContextMenuProps) {
             className="size-3.5 text-muted-foreground"
             strokeWidth={1.75}
           />
-          <span>Duplicate</span>
+          <span>{t("Duplicate")}</span>
           <ContextMenuShortcut>⌘D</ContextMenuShortcut>
         </ContextMenuItem>
         <ContextMenuItem onSelect={handleCopyId} className="gap-2">
           <Copy className="size-3.5 text-muted-foreground" strokeWidth={1.75} />
-          <span>Copy ID</span>
+          <span>{t("Copy ID")}</span>
         </ContextMenuItem>
         <ContextMenuItem
           onSelect={handleAiSuggest}
@@ -199,7 +201,7 @@ export function RowContextMenu({ rowId, children }: RowContextMenuProps) {
           data-action="row-ai-suggest"
         >
           <Sparkles className="size-3.5 text-primary" strokeWidth={1.75} />
-          <span>Suggest empty value (AI)</span>
+          <span>{t("Suggest empty value (AI)")}</span>
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem
@@ -208,7 +210,7 @@ export function RowContextMenu({ rowId, children }: RowContextMenuProps) {
           className="gap-2 text-destructive focus:text-destructive"
         >
           <Trash2 className="size-3.5" strokeWidth={1.75} />
-          <span>Delete</span>
+          <span>{t("Delete")}</span>
           <ContextMenuShortcut>⌫</ContextMenuShortcut>
         </ContextMenuItem>
       </ContextMenuContent>

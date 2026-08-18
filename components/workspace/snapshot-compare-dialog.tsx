@@ -38,6 +38,7 @@ import {
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { Snapshot, SnapshotState } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 interface SnapshotCompareDialogProps {
   snap: Snapshot
@@ -75,6 +76,7 @@ export function SnapshotCompareDialog({
   onRestore,
   compareWith,
 }: SnapshotCompareDialogProps) {
+  const t = useT()
   // store의 raw 슬라이스 구독 — re-render 트리거. (다이얼로그 닫혀 있어도 hook 안전 호출.)
   // boards 변하면 diff 재계산. (compareWith 있을 때는 변경 무관 — snapshot은 immutable.)
   const boards = useFlowBase((s) => s.boards)
@@ -133,20 +135,20 @@ export function SnapshotCompareDialog({
               <CategorySection
                 Icon={Database}
                 hue="text-chart-1"
-                label="Boards"
+                label={t("Boards")}
                 diff={diff.boards}
                 modifications={diff.boardModifications}
               />
               <CategorySection
                 Icon={FileText}
                 hue="text-chart-5"
-                label="Wiki pages"
+                label={t("Wiki pages")}
                 diff={diff.wikiPages}
               />
               <CategorySection
                 Icon={Zap}
                 hue="text-chart-3"
-                label="Automations"
+                label={t("Automations")}
                 diff={diff.automations}
               />
               <LibrarySection diff={diff.library} totalChanges={totalLib} />
@@ -157,7 +159,7 @@ export function SnapshotCompareDialog({
                   className="size-3.5 text-muted-foreground"
                   strokeWidth={1.75}
                 />
-                <span className="font-medium">Workspace settings</span>
+                <span className="font-medium">{t("Workspace settings")}</span>
                 <span className="ml-auto text-muted-foreground">changed</span>
               </div>
             )}
@@ -170,11 +172,11 @@ export function SnapshotCompareDialog({
             onClick={() => onOpenChange(false)}
             className="text-[12px]"
           >
-            Close
+            {t("Close")}
           </Button>
           {onRestore && !diff.identical && (
             <Button onClick={onRestore} className="text-[12px]">
-              Restore this snapshot
+              {t("Restore this snapshot")}
             </Button>
           )}
         </DialogFooter>
@@ -225,6 +227,7 @@ function CategorySection({
   diff: CategoryDiff
   modifications?: BoardModification[]
 }) {
+  const t = useT()
   const totalChanges =
     diff.added.length + diff.removed.length + diff.modified.length
   const hasMods = modifications && modifications.length > 0
@@ -286,9 +289,9 @@ function CategorySection({
                 {m.columnsChanged && (
                   <span
                     className="ml-1 rounded-sm bg-foreground/[0.06] px-1 text-[9.5px] uppercase tracking-[0.04em] text-muted-foreground"
-                    title="Schema changed"
+                    title={t("Schema changed")}
                   >
-                    Schema
+                    {t("Schema")}
                   </span>
                 )}
               </div>
@@ -307,17 +310,18 @@ function LibrarySection({
   diff: LibraryDiff
   totalChanges: number
 }) {
+  const t = useT()
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-border-subtle bg-card p-3">
       <div className="flex items-center gap-2">
         <Layers className="size-3.5 text-chart-4" strokeWidth={1.75} />
-        <span className="text-[13px] font-semibold">Library</span>
+        <span className="text-[13px] font-semibold">{t("Library")}</span>
         <span className="ml-auto rounded-sm bg-foreground/[0.04] px-1.5 py-0.5 text-[10.5px] font-semibold tabular-nums text-muted-foreground">
           {totalChanges} changes
         </span>
       </div>
       {totalChanges === 0 ? (
-        <span className="text-[11.5px] text-muted-foreground">No changes</span>
+        <span className="text-[11.5px] text-muted-foreground">{t("No changes")}</span>
       ) : (
         <ul className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px]">
           {(

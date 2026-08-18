@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input"
 import { TYPE_ICON } from "@/components/sheet/header-cell"
 import { selectActiveBoard, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 import {
   STATUS_LABELS,
   type ColumnDef,
@@ -85,12 +86,14 @@ interface ColumnOption {
 function buildInValues(
   col: ColumnDef,
   rows: TableRow[],
+  // i18n — 컴포넌트가 아니라 훅을 못 쓴다. 호출부(useT 구독)에서 주입받는다.
+  t: (s: string) => string = (s) => s,
 ): { id: string; label: string; count: number }[] {
   if (col.type === "status") {
     const keys = ["미처리", "진행중", "대기", "완료"] as const
     return keys.map((k) => ({
       id: k,
-      label: STATUS_LABELS[k],
+      label: t(STATUS_LABELS[k]),
       count: rows.filter((r) => r[col.name] === k).length,
     }))
   }
@@ -140,6 +143,7 @@ function activeCountOf(conds: FilterCondition[] | undefined): number {
 }
 
 export function FilterMenu() {
+  const t = useT()
   const board = useFlowBase(selectActiveBoard)
   const columnFilters = useFlowBase((s) => s.columnFilters)
   const clearAllFilters = useFlowBase((s) => s.clearAllFilters)
@@ -177,11 +181,11 @@ export function FilterMenu() {
         col.type === "status" ||
         col.type === "select" ||
         col.type === "multiSelect"
-          ? buildInValues(col, board.rows)
+          ? buildInValues(col, board.rows, t)
           : undefined
       return { col, hue, values }
     })
-  }, [board])
+  }, [board, t])
 
   const totalActive = useMemo(
     () =>
@@ -196,7 +200,7 @@ export function FilterMenu() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          title="Filter"
+          title={t("Filter")}
           data-action="filter-menu"
           className={cn(
             "relative inline-flex h-7 items-center gap-1 rounded-md border px-2 text-[12px] transition-colors",
@@ -206,7 +210,7 @@ export function FilterMenu() {
           )}
         >
           <FilterIcon className="size-3.5" strokeWidth={1.75} />
-          <span>Filter</span>
+          <span>{t("Filter")}</span>
           {totalActive > 0 && (
             <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9.5px] font-semibold text-primary-foreground tabular-nums">
               {totalActive}
@@ -221,11 +225,11 @@ export function FilterMenu() {
         data-filter-popover
       >
         <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
-          Add filter…
+          {t("Add filter…")}
         </DropdownMenuLabel>
         {filterableCols.length === 0 ? (
           <div className="px-2 py-2 text-[12px] text-muted-foreground">
-            No filterable columns on this table.
+            {t("No filterable columns on this table.")}
           </div>
         ) : (
           filterableCols.map((option) => (
@@ -242,7 +246,7 @@ export function FilterMenu() {
           <>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
-              Recent
+              {t("Recent")}
             </DropdownMenuLabel>
             {activeRecentFilters.map((r) => {
               const condCount = Object.keys(r.conditions).length
@@ -288,7 +292,7 @@ export function FilterMenu() {
               className="gap-2 text-muted-foreground"
             >
               <X className="size-3.5" />
-              Clear all filters
+              {t("Clear all filters")}
             </DropdownMenuItem>
           </>
         )}
@@ -324,6 +328,7 @@ function FilterColSub({
   option: ColumnOption
   conds: FilterCondition[] | undefined
 }) {
+  const t = useT()
   const Icon = TYPE_ICON[option.col.type]
   const activeCount = activeCountOf(conds)
   const toggleColumnInValue = useFlowBase((s) => s.toggleColumnInValue)
@@ -545,7 +550,7 @@ function FilterColSub({
               className="gap-2 text-muted-foreground"
             >
               <X className="size-3.5" />
-              Clear this filter
+              {t("Clear this filter")}
             </DropdownMenuItem>
           </>
         )}
@@ -562,6 +567,7 @@ function RangeWidget({
   cond: FilterCondition | undefined
   onSet: (c: FilterCondition) => void
 }) {
+  const t = useT()
   const min = cond?.kind === "range" ? cond.min : undefined
   const max = cond?.kind === "range" ? cond.max : undefined
   return (
@@ -569,7 +575,7 @@ function RangeWidget({
       <div className="flex items-center gap-1.5">
         <Input
           type="number"
-          placeholder="Min"
+          placeholder={t("Min")}
           value={min ?? ""}
           onChange={(e) => {
             const v = e.target.value
@@ -587,7 +593,7 @@ function RangeWidget({
         <span className="text-muted-foreground">–</span>
         <Input
           type="number"
-          placeholder="Max"
+          placeholder={t("Max")}
           value={max ?? ""}
           onChange={(e) => {
             const v = e.target.value
@@ -789,6 +795,7 @@ function DateRangeWidget({
 
 // ─── 활성 필터 칩 바 — 컬럼당 multiple condition AND, kind별 라벨 ──────
 export function ActiveFilterChips() {
+  const t = useT()
   const board = useFlowBase(selectActiveBoard)
   const columnFilters = useFlowBase((s) => s.columnFilters)
   const setColumnCondition = useFlowBase((s) => s.setColumnCondition)
@@ -820,6 +827,7 @@ export function ActiveFilterChips() {
           toggleColumnInValue,
           removeColumnCondition,
           setColumnCondition,
+          t,
         ))
       })}
     </div>
@@ -836,6 +844,8 @@ function renderCondChips(
   toggleColumnInValue: (col: string, value: string) => void,
   removeColumnCondition: (col: string, index: number) => void,
   setColumnCondition: (col: string, cond: FilterCondition | null, index?: number) => void,
+  // i18n — 컴포넌트가 아니라 훅을 못 쓴다. 호출부(useT 구독)에서 주입받는다.
+  t: (s: string) => string = (s) => s,
 ): React.ReactNode[] {
   // 단일 cond 제거 helper — totalConds=1이면 컬럼 전체 clear, 아니면 그 cond만
   const removeThis = () => {
@@ -848,7 +858,7 @@ function renderCondChips(
     return cond.values.map((v) => {
       const label =
         colType === "status"
-          ? (STATUS_LABELS[v as keyof typeof STATUS_LABELS] ?? v)
+          ? t(STATUS_LABELS[v as keyof typeof STATUS_LABELS] ?? v)
           : v
       return (
         <Chip
@@ -919,6 +929,7 @@ function Chip({
   onRemove: () => void
   dataAttr: string
 }) {
+  const t = useT()
   return (
     <span
       data-active-filter={dataAttr}
@@ -930,7 +941,7 @@ function Chip({
         type="button"
         onClick={onRemove}
         className="-mr-0.5 ml-0.5 flex size-3.5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.08] hover:text-foreground"
-        title="Remove filter"
+        title={t("Remove filter")}
       >
         <X className="size-2.5" strokeWidth={2.5} />
       </button>

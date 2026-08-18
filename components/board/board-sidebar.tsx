@@ -26,12 +26,14 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 interface BoardSidebarProps {
   onImport: () => void
 }
 
 export function BoardSidebar({ onImport }: BoardSidebarProps) {
+  const t = useT()
   const boards = useFlowBase((s) => s.boards)
   const activeBoardId = useFlowBase((s) => s.activeBoardId)
   const switchBoard = useFlowBase((s) => s.switchBoard)
@@ -68,7 +70,7 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
         <span className="flex size-5 items-center justify-center rounded bg-chart-1/15 text-chart-1">
           <Database className="size-3" strokeWidth={1.75} />
         </span>
-        <span className="text-[13px] font-semibold">Workspace</span>
+        <span className="text-[13px] font-semibold">{t("Workspace")}</span>
       </div>
 
       {/* 액션 */}
@@ -79,7 +81,7 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
           className="flex items-center gap-2 rounded-md bg-primary px-2.5 py-1.5 text-[13px] font-medium text-primary-foreground"
         >
           <Plus className="size-3.5" />
-          New board
+          {t("New board")}
         </button>
         <button
           type="button"
@@ -88,7 +90,7 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
           className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/[0.05] px-2.5 py-1.5 text-[13px] text-primary hover:border-primary/50 hover:bg-primary/[0.08]"
         >
           <Sparkles className="size-3.5" />
-          Generate with AI
+          {t("Generate with AI")}
         </button>
         <button
           type="button"
@@ -96,7 +98,7 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
           className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-[13px] hover:bg-foreground/[0.05]"
         >
           <Upload className="size-3.5" />
-          Import data
+          {t("Import data")}
         </button>
       </div>
 
@@ -113,7 +115,7 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search tables…"
+            placeholder={t("Search tables…")}
             data-board-sidebar-search
             className="w-full bg-transparent text-[12px] outline-none placeholder:text-muted-foreground"
           />
@@ -122,7 +124,7 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
               type="button"
               onClick={() => setQuery("")}
               className="flex size-3 items-center justify-center rounded text-muted-foreground hover:text-foreground"
-              title="Clear"
+              title={t("Clear")}
             >
               <X className="size-2.5" strokeWidth={2.5} />
             </button>
@@ -132,7 +134,7 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
 
       {/* TABLES 목록 */}
       <div className="px-3.5 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-        Tables
+        {t("Tables")}
       </div>
       <nav className="flex flex-col gap-0.5 px-2">
         {filteredBoards.length === 0 && (
@@ -203,7 +205,7 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-36">
                     <DropdownMenuItem onSelect={() => setEditingId(b.id)}>
-                      Rename
+                      {t("Rename")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       variant="destructive"
@@ -216,7 +218,7 @@ export function BoardSidebar({ onImport }: BoardSidebarProps) {
                         }
                       }}
                     >
-                      Delete
+                      {t("Delete")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

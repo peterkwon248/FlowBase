@@ -17,6 +17,7 @@ import {
   useFlowBase,
 } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 import {
   STATUS_LABELS,
   type ColumnDef,
@@ -201,6 +202,7 @@ function pickColumns(board: { columns: ColumnDef[] } | undefined) {
 }
 
 export function TimelineView() {
+  const t = useT()
   const board = useFlowBase(selectActiveBoard)
   const search = useFlowBase((s) => s.search)
   const filter = useFlowBase((s) => s.filter)
@@ -288,7 +290,7 @@ export function TimelineView() {
     return (
       <EmptyState
         Icon={CalendarRange}
-        title="Timeline needs a date column"
+        title={t("Timeline needs a date column")}
         description="Add a date-type column to render the Gantt timeline."
       />
     )
@@ -414,6 +416,7 @@ function GanttRow({
   onToggleSelect,
   onOpenDetail,
 }: GanttRowProps) {
+  const t = useT()
   const due = String(row[dateCol.name] ?? "")
   const start =
     startCol && typeof row[startCol.name] === "string"
@@ -549,7 +552,7 @@ function GanttRow({
             className="absolute flex h-6 items-center gap-1.5 overflow-hidden whitespace-nowrap rounded-md px-2 text-[11px] font-medium"
           >
             {status && (
-              <span className="shrink-0">{STATUS_LABELS[status as TicketStatus] ?? status}</span>
+              <span className="shrink-0">{t(STATUS_LABELS[status as TicketStatus] ?? status)}</span>
             )}
             {status && priority && (
               <span className="text-[10px] opacity-70">·</span>

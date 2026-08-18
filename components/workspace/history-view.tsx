@@ -36,6 +36,7 @@ import {
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { EventKind, TimestampedEvent } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 const KIND_LABELS: Record<EventKind, string> = {
   row_added: "Row added",
@@ -118,6 +119,7 @@ function groupByDate(events: TimestampedEvent[]): DayGroup[] {
 }
 
 export function HistoryView() {
+  const t = useT()
   const events = useFlowBase((s) => s.events)
   const boards = useFlowBase((s) => s.boards)
   const switchBoard = useFlowBase((s) => s.switchBoard)
@@ -151,12 +153,12 @@ export function HistoryView() {
 
   const jump = (event: TimestampedEvent) => {
     if (!event.boardId) {
-      toast.info("This event has no board context.")
+      toast.info(t("This event has no board context."))
       return
     }
     const board = boards[event.boardId]
     if (!board) {
-      toast.warning("Source board was deleted.")
+      toast.warning(t("Source board was deleted."))
       return
     }
     switchBoard(event.boardId)
@@ -187,7 +189,7 @@ export function HistoryView() {
           <span className="inline-flex size-7 items-center justify-center rounded-md bg-chart-4/15 text-chart-4">
             <HistoryIcon className="size-4" strokeWidth={1.75} />
           </span>
-          <h1 className="text-[20px] font-bold tracking-[-0.02em]">History</h1>
+          <h1 className="text-[20px] font-bold tracking-[-0.02em]">{t("History")}</h1>
           <span className="text-xs tabular-nums text-muted-foreground">
             {total} {total === 1 ? "event" : "events"}
           </span>
@@ -206,10 +208,10 @@ export function HistoryView() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-44">
               <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
-                Filter by kind
+                {t("Filter by kind")}
               </DropdownMenuLabel>
               <DropdownMenuItem onSelect={() => setKindFilter("all")}>
-                All kinds
+                {t("All kinds")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {(Object.keys(KIND_LABELS) as EventKind[]).map((k) => {
@@ -240,10 +242,10 @@ export function HistoryView() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-52">
               <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
-                Filter by board
+                {t("Filter by board")}
               </DropdownMenuLabel>
               <DropdownMenuItem onSelect={() => setBoardFilter("all")}>
-                All boards
+                {t("All boards")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {boardOptions.map((b) => (
@@ -266,7 +268,7 @@ export function HistoryView() {
               }}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
-              Clear
+              {t("Clear")}
             </button>
           )}
         </div>
@@ -282,7 +284,7 @@ export function HistoryView() {
                   className="mx-auto mb-2 size-5 text-muted-foreground/60"
                   strokeWidth={1.5}
                 />
-                No events yet. Edit a row or run AI to start.
+                {t("No events yet. Edit a row or run AI to start.")}
               </>
             ) : (
               "No events match these filters."

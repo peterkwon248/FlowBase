@@ -13,6 +13,7 @@ import { WikiHistoryDialog } from "@/components/wiki/wiki-history-dialog"
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { WikiPage } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 const DAY_MS = 86_400_000
 const VERIFY_TTL_DAYS = 90
@@ -30,6 +31,7 @@ function isoPlusDays(days: number): string {
 }
 
 export function WikiPageView({ page }: { page: WikiPage }) {
+  const t = useT()
   const updateWikiPage = useFlowBase((s) => s.updateWikiPage)
   const isViewer = useFlowBase(selectIsViewer)
   const viewerTitle = isViewer ? "Viewers can't edit" : undefined
@@ -79,7 +81,7 @@ export function WikiPageView({ page }: { page: WikiPage }) {
         <div className="mb-5 flex items-center gap-1.5 text-[12px] text-muted-foreground">
           <span>peter&apos;s workspace</span>
           <span className="opacity-50">/</span>
-          <span>Wiki</span>
+          <span>{t("Wiki")}</span>
           <span className="opacity-50">/</span>
           <span>{page.category}</span>
           <span className="opacity-50">/</span>
@@ -101,7 +103,7 @@ export function WikiPageView({ page }: { page: WikiPage }) {
               title={viewerTitle}
               className="rounded-md bg-destructive px-2.5 py-1 text-[11.5px] font-semibold text-destructive-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Re-verify
+              {t("Re-verify")}
             </button>
           </div>
         )}
@@ -123,7 +125,7 @@ export function WikiPageView({ page }: { page: WikiPage }) {
                   data-wiki-history={page.id}
                 >
                   <History className="size-3" strokeWidth={2} />
-                  History
+                  {t("History")}
                   <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground/[0.08] px-1 text-[9.5px] tabular-nums">
                     {revisionCount}
                   </span>
@@ -150,7 +152,7 @@ export function WikiPageView({ page }: { page: WikiPage }) {
                 onClick={cancelEdit}
                 className="h-8 px-2.5 text-[12px] text-muted-foreground"
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 size="sm"
@@ -159,7 +161,7 @@ export function WikiPageView({ page }: { page: WikiPage }) {
                 data-wiki-save={page.id}
               >
                 <Check className="size-3" strokeWidth={2.5} />
-                Save
+                {t("Save")}
               </Button>
             </div>
           )}
@@ -203,7 +205,7 @@ export function WikiPageView({ page }: { page: WikiPage }) {
               onClick={reVerify}
               className="rounded-full border border-dashed border-border px-2.5 py-0.5 text-[11.5px] font-medium text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
             >
-              Mark as verified
+              {t("Mark as verified")}
             </button>
           ) : null}
         </div>
@@ -214,11 +216,11 @@ export function WikiPageView({ page }: { page: WikiPage }) {
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1">
                 <Pencil className="size-3" />
-                Markdown editor
+                {t("Markdown editor")}
               </span>
               <span className="inline-flex items-center gap-1">
                 <Eye className="size-3" />
-                Save to see rendered output
+                {t("Save to see rendered output")}
               </span>
             </div>
             <textarea

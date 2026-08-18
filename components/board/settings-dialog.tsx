@@ -60,29 +60,30 @@ export function SettingsDialog({
   open: boolean
   onOpenChange: (o: boolean) => void
 }) {
+  const t = useT()
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
+          <DialogTitle>{t("Settings")}</DialogTitle>
           <DialogDescription className="text-[12px]">
-            Customize your workspace.
+            {t("Customize your workspace.")}
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="general">
           <TabsList className="w-full">
             <TabsTrigger value="general" data-settings-tab="general">
-              General
+              {t("General")}
             </TabsTrigger>
             <TabsTrigger value="members" data-settings-tab="members">
-              Members
+              {t("Members")}
             </TabsTrigger>
             <TabsTrigger value="appearance" data-settings-tab="appearance">
-              Appearance
+              {t("Appearance")}
             </TabsTrigger>
             <TabsTrigger value="data" data-settings-tab="data">
-              Data
+              {t("Data")}
             </TabsTrigger>
           </TabsList>
 
@@ -106,6 +107,7 @@ export function SettingsDialog({
 
 // ─── General ───────────────────────────────────────
 function GeneralTab({ onClose }: { onClose: () => void }) {
+  const t = useT()
   const settings = useFlowBase((s) => s.settings)
   const updateSettings = useFlowBase((s) => s.updateSettings)
   const isViewer = useFlowBase(selectIsViewer)
@@ -124,7 +126,7 @@ function GeneralTab({ onClose }: { onClose: () => void }) {
     const initial =
       (draftInitial.trim() || label[0] || "W").slice(0, 1).toUpperCase()
     updateSettings({ workspaceLabel: label, workspaceInitial: initial })
-    toast.success("Workspace updated")
+    toast.success(t("Workspace updated"))
     onClose()
   }
 
@@ -136,7 +138,7 @@ function GeneralTab({ onClose }: { onClose: () => void }) {
     <div className="space-y-4">
       <div className="space-y-1.5">
         <Label htmlFor="ws-label" className="text-[12px]">
-          Workspace name
+          {t("Workspace name")}
         </Label>
         <Input
           id="ws-label"
@@ -151,7 +153,7 @@ function GeneralTab({ onClose }: { onClose: () => void }) {
 
       <div className="space-y-1.5">
         <Label htmlFor="ws-initial" className="text-[12px]">
-          Sidebar initial
+          {t("Sidebar initial")}
         </Label>
         <Input
           id="ws-initial"
@@ -164,36 +166,36 @@ function GeneralTab({ onClose }: { onClose: () => void }) {
           title={isViewer ? "Viewers can't edit workspace settings" : undefined}
         />
         <p className="text-[10.5px] text-muted-foreground">
-          The single letter shown on the sidebar workspace badge.
+          {t("The single letter shown on the sidebar workspace badge.")}
         </p>
       </div>
 
       <div className="border-t border-border-subtle pt-3">
         <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-          Storage
+          {t("Storage")}
         </div>
         <div className="flex items-center justify-between text-[12.5px]">
-          <span className="text-muted-foreground">Used</span>
+          <span className="text-muted-foreground">{t("Used")}</span>
           <span className="tabular-nums font-medium">2.1 / 10 GB</span>
         </div>
         <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
           <div className="h-full bg-primary" style={{ width: "21%" }} />
         </div>
         <p className="mt-2 text-[10.5px] text-muted-foreground">
-          Storage tracking is currently a placeholder.
+          {t("Storage tracking is currently a placeholder.")}
         </p>
       </div>
 
       <DialogFooter>
         <Button variant="ghost" onClick={onClose}>
-          Cancel
+          {t("Cancel")}
         </Button>
         <Button
           onClick={save}
           disabled={!dirty || isViewer}
           title={isViewer ? "Viewers can't edit workspace settings" : undefined}
         >
-          Save
+          {t("Save")}
         </Button>
       </DialogFooter>
     </div>
@@ -216,6 +218,7 @@ function relativeLastSeen(iso: string | undefined): string {
 
 // ─── Members ───────────────────────────────────────
 function MembersTab() {
+  const t = useT()
   const members = useFlowBase((s) => s.settings.members)
   const currentUserId = useFlowBase((s) => s.settings.currentUserId)
   const updateMemberRole = useFlowBase((s) => s.updateMemberRole)
@@ -234,7 +237,7 @@ function MembersTab() {
   const submitInvite = () => {
     const name = draftName.trim()
     if (!name) {
-      toast.error("Name is required")
+      toast.error(t("Name is required"))
       return
     }
     addMember({ name, email: draftEmail.trim(), role: draftRole })
@@ -265,7 +268,7 @@ function MembersTab() {
           data-invite-trigger
         >
           <UserPlus className="size-3.5" />
-          Invite
+          {t("Invite")}
         </Button>
       </div>
 
@@ -294,15 +297,15 @@ function MembersTab() {
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Invite member</DialogTitle>
+            <DialogTitle>{t("Invite member")}</DialogTitle>
             <DialogDescription className="text-[12px]">
-              Add a person to this workspace (mock — no email is sent yet).
+              {t("Add a person to this workspace (mock — no email is sent yet).")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label htmlFor="invite-name" className="text-[12px]">
-                Name
+                {t("Name")}
               </Label>
               <Input
                 id="invite-name"
@@ -314,7 +317,7 @@ function MembersTab() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="invite-email" className="text-[12px]">
-                Email
+                {t("Email")}
               </Label>
               <Input
                 id="invite-email"
@@ -325,7 +328,7 @@ function MembersTab() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[12px]">Role</Label>
+              <Label className="text-[12px]">{t("Role")}</Label>
               <Select
                 value={draftRole}
                 onValueChange={(v) => setDraftRole(v as MemberRole)}
@@ -334,19 +337,19 @@ function MembersTab() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="member">Member</SelectItem>
-                  <SelectItem value="viewer">Viewer</SelectItem>
+                  <SelectItem value="admin">{t("Admin")}</SelectItem>
+                  <SelectItem value="member">{t("Member")}</SelectItem>
+                  <SelectItem value="viewer">{t("Viewer")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setInviteOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={submitInvite} data-invite-submit>
-              Invite
+              {t("Invite")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -370,6 +373,7 @@ function MemberRow({
   onRemove: () => void
   onSwitchTo: () => void
 }) {
+  const t = useT()
   const isOwner = member.role === "owner"
   const lastSeen = relativeLastSeen(member.lastSeenAt)
   const viewerTitle = isViewer ? "Viewers can't manage members" : undefined
@@ -387,7 +391,7 @@ function MemberRow({
           <span className="truncate text-[12.5px] font-medium">{member.name}</span>
           {isCurrent && (
             <span className="rounded bg-primary/15 px-1 py-0 text-[9.5px] font-semibold text-primary">
-              You
+              {t("You")}
             </span>
           )}
         </div>
@@ -414,7 +418,7 @@ function MemberRow({
       )}
       {isOwner ? (
         <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10.5px] font-semibold text-amber-700 dark:text-amber-300">
-          Owner
+          {t("Owner")}
         </span>
       ) : (
         <>
@@ -431,9 +435,9 @@ function MemberRow({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="member">Member</SelectItem>
-              <SelectItem value="viewer">Viewer</SelectItem>
+              <SelectItem value="admin">{t("Admin")}</SelectItem>
+              <SelectItem value="member">{t("Member")}</SelectItem>
+              <SelectItem value="viewer">{t("Viewer")}</SelectItem>
             </SelectContent>
           </Select>
           <button
@@ -558,6 +562,7 @@ function LanguageSection() {
 }
 
 function AccentSection() {
+  const t = useT()
   const accent = useFlowBase((s) => s.settings.themeAccent ?? "purple")
   const updateSettings = useFlowBase((s) => s.updateSettings)
   const isViewer = useFlowBase(selectIsViewer)
@@ -567,7 +572,7 @@ function AccentSection() {
   return (
     <div className="space-y-1.5 border-t border-border-subtle pt-3">
       <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-        Accent color
+        {t("Accent color")}
       </div>
       <div className="grid grid-cols-4 gap-2">
         {ACCENT_PRESETS.map((p) => {
@@ -657,6 +662,7 @@ function ThemeCard({
 
 // ─── Data ──────────────────────────────────────────
 function DataTab() {
+  const t = useT()
   const exportData = useFlowBase((s) => s.exportData)
   const anchorRef = useRef<HTMLAnchorElement>(null)
 
@@ -673,7 +679,7 @@ function DataTab() {
       a.click()
       // 다음 tick에 revoke (Safari 호환)
       setTimeout(() => URL.revokeObjectURL(url), 0)
-      toast.success("Export downloaded")
+      toast.success(t("Export downloaded"))
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error"
       toast.error(`Export failed — ${msg}`)
@@ -683,7 +689,7 @@ function DataTab() {
   return (
     <div className="space-y-3">
       <div className="rounded-md border border-border-subtle bg-card p-3">
-        <div className="mb-1 text-[12.5px] font-medium">Export workspace</div>
+        <div className="mb-1 text-[12.5px] font-medium">{t("Export workspace")}</div>
         <p className="mb-2.5 text-[11.5px] text-muted-foreground">
           Download a snapshot of all boards, library assets, automations, wiki
           pages, and settings as a JSON file. Useful for backups.
@@ -695,7 +701,7 @@ function DataTab() {
           data-export-trigger
         >
           <Download className="size-3.5" />
-          Export JSON
+          {t("Export JSON")}
         </Button>
       </div>
 
@@ -708,6 +714,7 @@ function DataTab() {
 }
 
 function ImportSection() {
+  const t = useT()
   const importWorkspace = useFlowBase((s) => s.importWorkspace)
   const isViewer = useFlowBase(selectIsViewer)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -726,7 +733,7 @@ function ImportSection() {
           !parsed.boards ||
           typeof parsed.boards !== "object"
         ) {
-          toast.error("Invalid export file — missing boards")
+          toast.error(t("Invalid export file — missing boards"))
           return
         }
         const boards = parsed.boards as Record<string, unknown>
@@ -741,7 +748,7 @@ function ImportSection() {
         const autoCount = parsed.automations?.length ?? 0
         const totalMeta = libCount + wikiCount + autoCount
         if (boardCount === 0 && totalMeta === 0) {
-          toast.warning("No data to import")
+          toast.warning(t("No data to import"))
           return
         }
         if (
@@ -776,11 +783,11 @@ function ImportSection() {
             ? `Skipped (already exist by ID): ${skipBits.join(", ")}`
             : undefined
         if (totalAdded === 0 && totalSkipped > 0) {
-          toast.info("Nothing new to import", {
+          toast.info(t("Nothing new to import"), {
             description: `All items already exist by ID: ${skipBits.join(", ")}.`,
           })
         } else if (totalAdded === 0) {
-          toast.info("Snapshot was empty — nothing to import")
+          toast.info(t("Snapshot was empty — nothing to import"))
         } else {
           const addedBits =
             `${summary.boards} board${summary.boards === 1 ? "" : "s"}` +
@@ -803,7 +810,7 @@ function ImportSection() {
 
   return (
     <div className="rounded-md border border-border-subtle bg-card p-3">
-      <div className="mb-1 text-[12.5px] font-medium">Import workspace</div>
+      <div className="mb-1 text-[12.5px] font-medium">{t("Import workspace")}</div>
       <p className="mb-2.5 text-[11.5px] text-muted-foreground">
         Import boards, library, wiki, and automations from a previously
         exported JSON. Boards always merge with new IDs; other assets skip on
@@ -827,7 +834,7 @@ function ImportSection() {
         data-import-trigger
       >
         <Upload className="size-3.5" />
-        Choose JSON…
+        {t("Choose JSON…")}
       </Button>
     </div>
   )

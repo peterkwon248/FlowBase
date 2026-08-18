@@ -36,6 +36,7 @@ import type { Expr } from "@/lib/formula"
 import { coerceMultiValue } from "@/lib/multi-select"
 import { statusBgClass, statusColorClass } from "@/lib/tokens"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 import { AiPendingMark } from "./ai-pending-mark"
 import { CellPopover, MultiCellPopover, type CellOption } from "./cell-popover"
 
@@ -119,6 +120,7 @@ function getFormulaAst(src: string): Expr | { __error: string } {
 }
 
 function FormulaCell({ col, row }: EditableCellProps) {
+  const t = useT()
   // useMemo deps: formula src + formulaDeps + 각 dep의 row 값. row 전체 ref는 deps에 안 씀.
   const depKey = useMemo(() => {
     return (col.formulaDeps ?? [])
@@ -160,7 +162,7 @@ function FormulaCell({ col, row }: EditableCellProps) {
     return (
       <span
         className="inline-flex items-center gap-1 text-xs italic text-muted-foreground"
-        title="No formula — click the column header menu to edit"
+        title={t("No formula — click the column header menu to edit")}
       >
         <Calculator className="size-3" strokeWidth={1.75} />
         empty
@@ -404,10 +406,11 @@ function StatusCell({
   onStopEdit,
   onUpdate,
 }: EditableCellProps) {
+  const t = useT()
   const status = (row.status as TicketStatus) ?? "미처리"
   const options: CellOption[] = STATUS_ENUM.map((s) => ({
     value: s,
-    label: STATUS_LABELS[s],
+    label: t(STATUS_LABELS[s]),
     icon: statusIcon(s),
   }))
 
@@ -415,7 +418,7 @@ function StatusCell({
     <CellPopover
       open={editing}
       onOpenChange={(o) => (o ? onStartEdit() : onStopEdit())}
-      label="Status"
+      label={t("Status")}
       width={170}
       options={options}
       value={status}
@@ -430,7 +433,7 @@ function StatusCell({
           )}
         >
           {statusIcon(status)}
-          <span>{STATUS_LABELS[status]}</span>
+          <span>{t(STATUS_LABELS[status])}</span>
         </button>
       }
     />
@@ -786,6 +789,7 @@ function FkCell({
   onStopEdit,
   onUpdate,
 }: EditableCellProps) {
+  const t = useT()
   const targetBoard = useFlowBase((s) => (col.fk ? s.boards[col.fk] : undefined))
   const switchBoard = useFlowBase((s) => s.switchBoard)
   const setActivityMode = useFlowBase((s) => s.setActivityMode)
@@ -808,7 +812,7 @@ function FkCell({
     return (
       <span
         className="font-mono text-xs text-muted-foreground"
-        title="Target table not found"
+        title={t("Target table not found")}
       >
         {currentId || "—"}
       </span>

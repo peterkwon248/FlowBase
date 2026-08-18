@@ -18,8 +18,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useFlowBase } from "@/lib/flowbase-store"
+import { useT } from "@/lib/i18n"
 
 export function PanelsMenu() {
+  const t = useT()
   const panels = useFlowBase((s) => s.panels)
   const togglePanel = useFlowBase((s) => s.togglePanel)
   const showAllPanels = useFlowBase((s) => s.showAllPanels)
@@ -30,7 +32,7 @@ export function PanelsMenu() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          title="Panels"
+          title={t("Panels")}
           className="flex size-7 items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:bg-foreground/[0.05]"
         >
           <Menu className="size-3.5" />
@@ -38,14 +40,14 @@ export function PanelsMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-52">
         <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
-          Panels
+          {t("Panels")}
         </DropdownMenuLabel>
         <DropdownMenuCheckboxItem
           data-panel-id="activityBar"
           checked={panels.activityBar}
           onCheckedChange={() => togglePanel("activityBar")}
         >
-          Activity bar
+          {t("Activity bar")}
           <DropdownMenuShortcut>⌘⇧A</DropdownMenuShortcut>
         </DropdownMenuCheckboxItem>
         <DropdownMenuCheckboxItem
@@ -53,7 +55,7 @@ export function PanelsMenu() {
           checked={panels.sidebar}
           onCheckedChange={() => togglePanel("sidebar")}
         >
-          Sidebar
+          {t("Sidebar")}
           <DropdownMenuShortcut>⌘⇧F</DropdownMenuShortcut>
         </DropdownMenuCheckboxItem>
         <DropdownMenuCheckboxItem
@@ -61,7 +63,7 @@ export function PanelsMenu() {
           checked={panels.detailBar}
           onCheckedChange={() => togglePanel("detailBar")}
         >
-          Detail bar
+          {t("Detail bar")}
           <DropdownMenuShortcut>⌘I</DropdownMenuShortcut>
         </DropdownMenuCheckboxItem>
         <DropdownMenuCheckboxItem
@@ -69,15 +71,15 @@ export function PanelsMenu() {
           checked={panels.aiPanel}
           onCheckedChange={() => togglePanel("aiPanel")}
         >
-          AI panel
+          {t("AI panel")}
           <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
         </DropdownMenuCheckboxItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => showAllPanels()}>
-          Show all panels
+          {t("Show all panels")}
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => hideAllPanels()}>
-          Hide all panels
+          {t("Hide all panels")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -29,12 +29,14 @@ import {
   type SearchKind,
 } from "@/lib/search-index"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 const RESULT_LIMIT = 30
 
 const KIND_ORDER: SearchKind[] = ["table", "library", "wiki", "row"]
 
 export function SearchPalette() {
+  const t = useT()
   const open = useFlowBase((s) => s.searchOpen)
   const setSearchOpen = useFlowBase((s) => s.setSearchOpen)
   const boards = useFlowBase((s) => s.boards)
@@ -133,7 +135,7 @@ export function SearchPalette() {
       onClick={close}
       role="dialog"
       aria-modal="true"
-      aria-label="Search"
+      aria-label={t("Search")}
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -146,7 +148,7 @@ export function SearchPalette() {
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search tables, rows, Library, Wiki…"
+            placeholder={t("Search tables, rows, Library, Wiki…")}
             className="flex-1 bg-transparent text-[14px] text-foreground outline-none placeholder:text-muted-foreground"
           />
           {query && (
@@ -157,7 +159,7 @@ export function SearchPalette() {
                 inputRef.current?.focus()
               }}
               className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
-              aria-label="Clear"
+              aria-label={t("Clear")}
             >
               <X className="size-3" strokeWidth={2} />
             </button>

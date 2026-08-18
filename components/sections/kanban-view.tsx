@@ -19,6 +19,7 @@ import { coerceMultiValue, multiIncludes } from "@/lib/multi-select"
 import { priorityDotClass, statusColorClass } from "@/lib/tokens"
 import { cn } from "@/lib/utils"
 import { STATUS_LABELS, type ColumnDef, type TableRow, type TicketStatus } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 // ── 카드 표시 필드 파생 (D6) ──────────────────────────────────────
 interface CardConfig {
@@ -63,6 +64,7 @@ function cellText(row: TableRow, field: string | null): string {
 }
 
 export function KanbanView() {
+  const t = useT()
   const board = useFlowBase(selectActiveBoard)
   // selectVisibleRows는 새 배열을 반환 → 직접 구독 ❌. 의존 슬라이스 구독 후 useMemo.
   const search = useFlowBase((s) => s.search)
@@ -135,7 +137,7 @@ export function KanbanView() {
           ? rows.filter((r) => multiIncludes(r[groupName], value))
           : rows.filter((r) => r[groupName] === value)
         const label = isStatusGroup
-          ? STATUS_LABELS[value as TicketStatus] ?? value
+          ? t(STATUS_LABELS[value as TicketStatus] ?? value)
           : value
         return (
           <div
@@ -194,7 +196,7 @@ export function KanbanView() {
               ))}
               {items.length === 0 && (
                 <div className="rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
-                  Empty
+                  {t("Empty")}
                 </div>
               )}
             </div>
@@ -229,6 +231,7 @@ function KanbanCard({
   onToggleSelect,
   onMove,
 }: KanbanCardProps) {
+  const t = useT()
   const title = cellText(row, cfg.titleField) || String(row.id)
   const subtitle = cellText(row, cfg.subtitleField)
   const badge = cellText(row, cfg.badgeField)
@@ -299,7 +302,7 @@ function KanbanCard({
           .filter((o) => o !== groupValue)
           .map((to) => {
             const label = isStatusGroup
-              ? STATUS_LABELS[to as TicketStatus] ?? to
+              ? t(STATUS_LABELS[to as TicketStatus] ?? to)
               : to
             return (
               <button

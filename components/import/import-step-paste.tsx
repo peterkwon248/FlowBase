@@ -17,6 +17,7 @@ import {
   type ImportSource,
 } from "@/lib/import-normalizers"
 import { stringifyDelimited, type ParsedTable } from "@/lib/parsers"
+import { useT } from "@/lib/i18n"
 
 interface ImportStepPasteProps {
   raw: string
@@ -35,6 +36,7 @@ export function ImportStepPaste({
   onChange,
   onUseSample,
 }: ImportStepPasteProps) {
+  const t = useT()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const handleFile = async (file: File | undefined) => {
@@ -64,7 +66,7 @@ export function ImportStepPaste({
         const { parseXlsxAsync } = await import("@/lib/xlsx-loader")
         const table = await parseXlsxAsync(buf)
         if (table.headers.length === 0 && table.rows.length === 0) {
-          toast.warning("Empty Excel file — no rows found.")
+          toast.warning(t("Empty Excel file — no rows found."))
           onChange("")
           return
         }
@@ -78,7 +80,7 @@ export function ImportStepPaste({
     // 3) 텍스트(CSV/TSV/MD/TXT) — 기존 reader
     const reader = new FileReader()
     reader.onload = () => onChange(String(reader.result ?? ""))
-    reader.onerror = () => toast.error("Failed to read file.")
+    reader.onerror = () => toast.error(t("Failed to read file."))
     reader.readAsText(file)
   }
 
@@ -87,9 +89,9 @@ export function ImportStepPaste({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <span className="text-[13px] font-medium">Paste data</span>
+        <span className="text-[13px] font-medium">{t("Paste data")}</span>
         <span className="text-[11.5px] text-muted-foreground">
-          CSV · TSV · Markdown · Excel — auto-detect format
+          {t("CSV · TSV · Markdown · Excel — auto-detect format")}
         </span>
         <div className="flex-1" />
         <input
@@ -105,7 +107,7 @@ export function ImportStepPaste({
           className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[11.5px] text-muted-foreground hover:bg-foreground/[0.05]"
         >
           <Upload className="size-3" />
-          Choose file
+          {t("Choose file")}
         </button>
         <button
           type="button"
@@ -113,7 +115,7 @@ export function ImportStepPaste({
           className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[11.5px] text-muted-foreground hover:bg-foreground/[0.05]"
         >
           <Sparkles className="size-3 text-primary" />
-          Use sample
+          {t("Use sample")}
         </button>
       </div>
 
@@ -146,7 +148,7 @@ export function ImportStepPaste({
       )}
       {!detected && raw.trim() !== "" && (
         <div className="rounded-md border border-border bg-muted px-3 py-2.5 text-[12.5px] text-muted-foreground">
-          Couldn't parse — verify CSV, TSV, or Markdown table format.
+          {t("Couldn't parse — verify CSV, TSV, or Markdown table format.")}
         </div>
       )}
 

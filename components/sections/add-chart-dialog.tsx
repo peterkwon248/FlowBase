@@ -42,6 +42,7 @@ import { AGG_FN_LABELS } from "@/lib/chart-aggregate"
 import { selectActiveBoard, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { AggFn, ChartType, ChartWidth, ColumnDef, TimeScale } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 interface ChartTypeOption {
   type: ChartType
@@ -166,6 +167,7 @@ export function AddChartDialog({
   open: boolean
   onOpenChange: (o: boolean) => void
 }) {
+  const t = useT()
   const board = useFlowBase(selectActiveBoard)
   const addChart = useFlowBase((s) => s.addChart)
 
@@ -319,15 +321,15 @@ export function AddChartDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add chart</DialogTitle>
+          <DialogTitle>{t("Add chart")}</DialogTitle>
           <DialogDescription className="text-[12px]">
-            Pick a chart type, then choose a column to derive it from.
+            {t("Pick a chart type, then choose a column to derive it from.")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3.5">
           <div className="space-y-1.5">
-            <Label className="text-[12px]">Chart type</Label>
+            <Label className="text-[12px]">{t("Chart type")}</Label>
             <div className="grid grid-cols-2 gap-1.5">
               {TYPE_OPTIONS.map((opt) => {
                 const on = opt.type === type
@@ -368,7 +370,7 @@ export function AddChartDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="chart-source" className="text-[12px]">
-              Source column
+              {t("Source column")}
             </Label>
             <Select value={sourceCol} onValueChange={setSourceCol}>
               <SelectTrigger
@@ -400,7 +402,7 @@ export function AddChartDialog({
           {meta.needsGroupBy && (
             <div className="space-y-1.5">
               <Label htmlFor="chart-group" className="text-[12px]">
-                Group by
+                {t("Group by")}
               </Label>
               <Select value={groupCol} onValueChange={setGroupCol}>
                 <SelectTrigger
@@ -408,7 +410,7 @@ export function AddChartDialog({
                   data-add-chart-group
                   className="h-8 text-[12.5px]"
                 >
-                  <SelectValue placeholder="Second dimension" />
+                  <SelectValue placeholder={t("Second dimension")} />
                 </SelectTrigger>
                 <SelectContent>
                   {groupOptions.map((c) => (
@@ -425,7 +427,7 @@ export function AddChartDialog({
           {type === "line" && !meta.needsGroupBy && groupOptions.length > 0 && (
             <div className="space-y-1.5">
               <Label htmlFor="chart-line-group" className="text-[12px]">
-                Series by (optional)
+                {t("Series by (optional)")}
               </Label>
               <Select
                 value={groupCol || "__none__"}
@@ -440,7 +442,7 @@ export function AddChartDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">
-                    None · single line
+                    {t("None · single line")}
                   </SelectItem>
                   {groupOptions.map((c) => (
                     <SelectItem key={c.name} value={c.name}>
@@ -456,7 +458,7 @@ export function AddChartDialog({
           {supportsAggFn && (
             <div className="space-y-1.5">
               <Label htmlFor="chart-agg" className="text-[12px]">
-                Aggregate
+                {t("Aggregate")}
               </Label>
               <Select
                 value={aggFn}
@@ -486,7 +488,7 @@ export function AddChartDialog({
           {type === "line" && (
             <div className="space-y-1.5">
               <Label htmlFor="chart-scale" className="text-[12px]">
-                Time scale
+                {t("Time scale")}
               </Label>
               <Select
                 value={timeScale}
@@ -500,11 +502,11 @@ export function AddChartDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="day">Daily · 14 days</SelectItem>
-                  <SelectItem value="week">Weekly · 8 weeks</SelectItem>
-                  <SelectItem value="month">Monthly · 6 months</SelectItem>
-                  <SelectItem value="quarter">Quarterly · 4 quarters</SelectItem>
-                  <SelectItem value="year">Yearly · 3 years</SelectItem>
+                  <SelectItem value="day">{t("Daily · 14 days")}</SelectItem>
+                  <SelectItem value="week">{t("Weekly · 8 weeks")}</SelectItem>
+                  <SelectItem value="month">{t("Monthly · 6 months")}</SelectItem>
+                  <SelectItem value="quarter">{t("Quarterly · 4 quarters")}</SelectItem>
+                  <SelectItem value="year">{t("Yearly · 3 years")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -546,7 +548,7 @@ export function AddChartDialog({
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">
                 <Label htmlFor="chart-goal" className="text-[12px]">
-                  Goal (optional)
+                  {t("Goal (optional)")}
                 </Label>
                 <Input
                   id="chart-goal"
@@ -560,7 +562,7 @@ export function AddChartDialog({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="chart-goal-label" className="text-[12px]">
-                  Goal label
+                  {t("Goal label")}
                 </Label>
                 <Input
                   id="chart-goal-label"
@@ -591,7 +593,7 @@ export function AddChartDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-[12px]">Width</Label>
+            <Label className="text-[12px]">{t("Width")}</Label>
             <div className="flex gap-1">
               {WIDTH_OPTIONS.map((w) => (
                 <button
@@ -614,14 +616,14 @@ export function AddChartDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button
             onClick={create}
             disabled={!canCreate}
             data-add-chart-create
           >
-            Add chart
+            {t("Add chart")}
           </Button>
         </DialogFooter>
       </DialogContent>

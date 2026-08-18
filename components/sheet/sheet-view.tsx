@@ -22,6 +22,7 @@ import { computeAllOutliers } from "@/lib/outlier"
 import type { ColumnDef, SortDir, TableRow } from "@/types/flowbase"
 import { STATUS_LABELS, type TicketStatus } from "@/types/flowbase"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 import { AddColumnMenu } from "./add-column-menu"
 import { ColumnResizer } from "./column-resizer"
 import { EditableCell } from "./editable-cell"
@@ -32,6 +33,7 @@ import { useSheetClipboard } from "./use-sheet-clipboard"
 import { type EditingCell, useSheetKeyboard } from "./use-sheet-keyboard"
 
 export function SheetView() {
+  const t = useT()
   const board = useFlowBase(selectActiveBoard)
   // selectVisibleRows는 새 배열을 반환 → 직접 구독 ❌. 의존 슬라이스 구독 후 useMemo.
   const search = useFlowBase((s) => s.search)
@@ -160,7 +162,7 @@ export function SheetView() {
   if (!board) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-        No active board.
+        {t("No active board.")}
       </div>
     )
   }
@@ -219,7 +221,7 @@ export function SheetView() {
               className="rounded border border-amber-400 bg-white/60 px-2 py-0.5 text-[11px] font-medium hover:bg-white dark:bg-amber-900/20 dark:hover:bg-amber-900/40"
               data-action="select-outliers"
             >
-              Select outliers
+              {t("Select outliers")}
             </button>
             {selectedRowIds.length > 0 && (
               <button
@@ -227,7 +229,7 @@ export function SheetView() {
                 onClick={() => setSelected([])}
                 className="text-[11px] underline opacity-70 hover:opacity-100"
               >
-                Clear
+                {t("Clear")}
               </button>
             )}
           </div>
@@ -257,7 +259,7 @@ export function SheetView() {
                 onChange={(e) =>
                   setSelected(e.target.checked ? rows.map((r) => r.id) : [])
                 }
-                aria-label="Select all"
+                aria-label={t("Select all")}
               />
             </th>
             <th className="sticky top-0 z-10 border-b border-border bg-surface px-2.5 py-2 text-right">
@@ -346,8 +348,8 @@ export function SheetView() {
                         >
                           {isOutlier && (
                             <span
-                              aria-label="Outlier"
-                              title="Value is more than 2σ from mean"
+                              aria-label={t("Outlier")}
+                              title={t("Value is more than 2σ from mean")}
                               className="pointer-events-none absolute right-1 top-1 inline-block size-1.5 rounded-full bg-amber-500 dark:bg-amber-400"
                             />
                           )}
@@ -396,7 +398,7 @@ export function SheetView() {
                 // status 컬럼이면 한→영 매핑(STATUS_LABELS), 그 외는 원본 키
                 const isStatus = sheetGroupBy === "status"
                 const label = isStatus
-                  ? STATUS_LABELS[key as TicketStatus] ?? key
+                  ? t(STATUS_LABELS[key as TicketStatus] ?? key)
                   : key
                 return (
                   <Fragment key={`group-${key}`}>
@@ -461,16 +463,16 @@ export function SheetView() {
               >
                 {search || filter.length > 0 ? (
                   <span className="text-[12.5px] text-muted-foreground">
-                    No rows match the filter.
+                    {t("No rows match the filter.")}
                   </span>
                 ) : (
                   // P1: onboarding hints — 빈 보드에 진입점들 (Add · Import · AI)
                   <div className="mx-auto flex max-w-md flex-col items-center gap-3">
                     <div className="text-[13.5px] font-semibold">
-                      Start adding data
+                      {t("Start adding data")}
                     </div>
                     <div className="text-[11.5px] text-muted-foreground">
-                      Type below, drop a CSV, or generate with AI
+                      {t("Type below, drop a CSV, or generate with AI")}
                     </div>
                     <div className="flex flex-wrap items-center justify-center gap-2">
                       <button
@@ -481,7 +483,7 @@ export function SheetView() {
                         data-action="onboarding-add-row"
                       >
                         <Plus className="size-3" strokeWidth={2.5} />
-                        Add first row
+                        {t("Add first row")}
                         <Kbd className="ml-1 text-[10px]">⌘N</Kbd>
                       </button>
                       <span className="text-[10.5px] text-muted-foreground">
@@ -499,11 +501,11 @@ export function SheetView() {
                         className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/[0.05] px-3 py-1.5 text-[12px] text-primary hover:border-primary/50"
                       >
                         <Sparkles className="size-3" strokeWidth={2} />
-                        Generate with AI
+                        {t("Generate with AI")}
                       </button>
                     </div>
                     <div className="mt-1 text-[10.5px] text-muted-foreground/70">
-                      Tip: drop a .csv/.xlsx into this window to import
+                      {t("Tip: drop a .csv/.xlsx into this window to import")}
                     </div>
                   </div>
                 )}

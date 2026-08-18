@@ -19,6 +19,7 @@ import {
 import { statusBgClass, statusColorClass } from "@/lib/tokens"
 import { cn } from "@/lib/utils"
 import { STATUS_LABELS, type ColumnDef, type TableRow, type TicketStatus } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 export function GalleryView() {
   const board = useFlowBase(selectActiveBoard)
@@ -200,6 +201,7 @@ function GalleryCardHeader({
 }
 
 function GalleryCardField({ col, row }: { col: ColumnDef; row: TableRow }) {
+  const t = useT()
   const Icon = TYPE_ICON[col.type] ?? User
   const value = row[col.name]
   if (value == null || value === "") return null
@@ -237,7 +239,7 @@ function GalleryCardField({ col, row }: { col: ColumnDef; row: TableRow }) {
             statusColorClass(s),
           )}
         >
-          {STATUS_LABELS[s] ?? String(value)}
+          {t(STATUS_LABELS[s] ?? String(value))}
         </span>
       </div>
     )

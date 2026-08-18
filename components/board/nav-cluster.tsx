@@ -10,8 +10,10 @@ import { useEffect, useRef, useState } from "react"
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 export function NavCluster() {
+  const t = useT()
   const navStack = useFlowBase((s) => s.navStack)
   const navIndex = useFlowBase((s) => s.navIndex)
   const goBack = useFlowBase((s) => s.goBack)
@@ -42,7 +44,7 @@ export function NavCluster() {
       <div ref={wrapRef} className="relative">
         <NavButton
           active={hasHistory}
-          title="Recent history"
+          title={t("Recent history")}
           onClick={() => setOpen((o) => !o)}
         >
           <Clock className="size-3.5" strokeWidth={1.75} />
@@ -50,7 +52,7 @@ export function NavCluster() {
         {open && hasHistory && (
           <div className="absolute left-0 top-full z-50 mt-1 max-h-[360px] w-[280px] overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-md">
             <div className="px-2.5 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              Recent
+              {t("Recent")}
             </div>
             {[...navStack]
               .slice(0, 20)
@@ -91,14 +93,14 @@ export function NavCluster() {
       </div>
       <NavButton
         active={canBack}
-        title="Back"
+        title={t("Back")}
         onClick={() => goBack()}
       >
         <ChevronLeft className="size-3.5" strokeWidth={2} />
       </NavButton>
       <NavButton
         active={canForward}
-        title="Forward"
+        title={t("Forward")}
         onClick={() => goForward()}
       >
         <ChevronRight className="size-3.5" strokeWidth={2} />

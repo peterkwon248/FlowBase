@@ -14,6 +14,7 @@
 
 import { useMemo } from "react"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 export interface PivotData {
   rowLabels: string[]
@@ -36,6 +37,7 @@ export function PivotChart({
   onCellClick,
   className,
 }: PivotChartProps) {
+  const t = useT()
   const { rowTotals, colTotals, grandTotal, max } = useMemo(() => {
     const rowTotals = data.cells.map((row) => row.reduce((a, b) => a + b, 0))
     const colTotals = data.colLabels.map((_, ci) =>
@@ -58,7 +60,7 @@ export function PivotChart({
   if (data.rowLabels.length === 0 || data.colLabels.length === 0) {
     return (
       <div className="flex h-[120px] items-center justify-center text-[11.5px] text-muted-foreground">
-        No data
+        {t("No data")}
       </div>
     )
   }
@@ -78,7 +80,7 @@ export function PivotChart({
               </th>
             ))}
             <th className="sticky right-0 top-0 bg-muted/50 px-2 py-1.5 text-right text-[10.5px] font-bold uppercase tracking-[0.06em] text-foreground">
-              Total
+              {t("Total")}
             </th>
           </tr>
         </thead>
@@ -128,7 +130,7 @@ export function PivotChart({
               scope="row"
               className="sticky left-0 bg-muted/50 px-2 py-1.5 text-left text-[10.5px] font-bold uppercase tracking-[0.06em] text-foreground"
             >
-              Total
+              {t("Total")}
             </th>
             {data.colLabels.map((c, ci) => (
               <td key={c} className="px-2 py-1.5 text-right font-bold tabular-nums">

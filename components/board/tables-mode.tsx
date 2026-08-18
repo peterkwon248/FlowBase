@@ -27,6 +27,7 @@ import { KanbanView } from "@/components/sections/kanban-view"
 import { TimelineView } from "@/components/sections/timeline-view"
 import { SheetView } from "@/components/sheet/sheet-view"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 import {
   selectActiveBoard,
   selectActiveView,
@@ -35,6 +36,7 @@ import {
 } from "@/lib/flowbase-store"
 
 export function TablesMode() {
+  const t = useT()
   const [importOpen, setImportOpen] = useState(false)
 
   const board = useFlowBase(selectActiveBoard)
@@ -70,7 +72,7 @@ export function TablesMode() {
           <EdgeCollapse
             side="left"
             onClick={() => togglePanel("sidebar")}
-            title="Close sidebar (⌘⇧F)"
+            title={t("Close sidebar (⌘⇧F)")}
           />
         </div>
       )}
@@ -91,7 +93,7 @@ export function TablesMode() {
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 pl-[38px]">
             <ViewSwitcher />
             <span className="text-xs tabular-nums text-muted-foreground">
-              {rowCount} rows · {colCount} columns
+              {t("{rows} rows · {cols} columns", { rows: rowCount, cols: colCount })}
             </span>
             <FilterMenu />
             <DisplayMenu />
@@ -126,7 +128,7 @@ export function TablesMode() {
               )}
             >
               <Upload className="size-3" />
-              Import
+              {t("Import")}
             </button>
             <ExportMenu />
             <button
@@ -140,7 +142,7 @@ export function TablesMode() {
               )}
             >
               <Undo2 className="size-3" />
-              Undo
+              {t("Undo")}
             </button>
             <button
               type="button"
@@ -153,7 +155,7 @@ export function TablesMode() {
               )}
             >
               <Plus className="size-3" />
-              New row
+              {t("New row")}
             </button>
           </div>
           {hasStatus && (
@@ -183,7 +185,7 @@ export function TablesMode() {
         {!panels.sidebar && (
           <ExpandTab
             side="left"
-            label="Sidebar"
+            label={t("Sidebar")}
             onClick={() => togglePanel("sidebar")}
           />
         )}
@@ -204,7 +206,7 @@ export function TablesMode() {
           <EdgeCollapse
             side="right"
             onClick={() => togglePanel("aiPanel")}
-            title="Close AI panel (⌘B)"
+            title={t("Close AI panel (⌘B)")}
           />
         </div>
       )}

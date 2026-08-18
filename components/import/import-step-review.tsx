@@ -7,6 +7,7 @@
 import { TYPE_ICON } from "@/components/sheet/header-cell"
 import type { ColumnType } from "@/types/flowbase"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 // Import 위저드가 다루는 컬럼 (보드 ColumnDef로 커밋 전 임시 형태)
 export interface WizardColumn {
@@ -44,6 +45,7 @@ export function ImportStepReview({
   onColumnsChange,
   onToggleHeader,
 }: ImportStepReviewProps) {
+  const t = useT()
   const preview = dataRows.slice(0, 8)
 
   const updateColumn = (idx: number, patch: Partial<WizardColumn>) => {
@@ -55,9 +57,9 @@ export function ImportStepReview({
   return (
     <div className="flex flex-col gap-3.5">
       <div className="flex items-center gap-3">
-        <span className="text-[13px] font-medium">Review columns</span>
+        <span className="text-[13px] font-medium">{t("Review columns")}</span>
         <span className="text-[11.5px] text-muted-foreground">
-          Type auto-detected — click to change.
+          {t("Type auto-detected — click to change.")}
         </span>
         <div className="flex-1" />
         <label className="inline-flex cursor-pointer items-center gap-1.5 text-[12.5px]">
@@ -66,7 +68,7 @@ export function ImportStepReview({
             checked={headerRow}
             onChange={onToggleHeader}
           />
-          First row is header
+          {t("First row is header")}
         </label>
       </div>
 

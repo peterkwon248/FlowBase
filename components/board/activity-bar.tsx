@@ -24,6 +24,7 @@ import {
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { ActivityMode } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 const MODES: { id: ActivityMode; label: string; Icon: LucideIcon }[] = [
   { id: "inbox", label: "Inbox", Icon: Inbox },
@@ -35,6 +36,7 @@ const MODES: { id: ActivityMode; label: string; Icon: LucideIcon }[] = [
 ]
 
 export function ActivityBar() {
+  const t = useT()
   const activityMode = useFlowBase((s) => s.activityMode)
   const setActivityMode = useFlowBase((s) => s.setActivityMode)
   const members = useFlowBase((s) => s.settings.members)
@@ -85,7 +87,7 @@ export function ActivityBar() {
           </div>
           <div className="p-2">
             <div className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              Workspace
+              {t("Workspace")}
             </div>
             <div className="flex items-center gap-2 rounded-md px-2 py-1.5">
               <span className="flex size-5 shrink-0 items-center justify-center rounded bg-primary/15 text-[10px] font-bold text-primary">

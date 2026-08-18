@@ -14,6 +14,7 @@ import { useState, type ReactNode } from "react"
 import { Check, Clock, Plus, Sparkles, X } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 export interface CellOption {
   value: string
@@ -60,6 +61,7 @@ export function CellPopover({
   recent,
   onPromote,
 }: CellPopoverProps) {
+  const t = useT()
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
@@ -73,7 +75,7 @@ export function CellPopover({
           <div className="mb-1 border-b border-border-subtle px-1 pb-2">
             <div className="mb-1.5 flex items-center gap-1 px-1 pt-1 text-[11px] text-muted-foreground">
               <Sparkles className="size-3 text-primary" />
-              AI suggested · 검토 필요
+              {t("AI suggested · 검토 필요")}
             </div>
             <div className="flex gap-1">
               <button
@@ -85,7 +87,7 @@ export function CellPopover({
                 className="inline-flex flex-1 items-center justify-center gap-1 rounded-md bg-primary px-2 py-1 text-[11.5px] font-medium text-primary-foreground"
               >
                 <Check className="size-3" />
-                Accept
+                {t("Accept")}
               </button>
               <button
                 type="button"
@@ -95,7 +97,7 @@ export function CellPopover({
                 }}
                 className="flex-1 rounded-md border border-border px-2 py-1 text-[11.5px] text-muted-foreground hover:bg-foreground/[0.05]"
               >
-                Dismiss
+                {t("Dismiss")}
               </button>
             </div>
           </div>
@@ -105,7 +107,7 @@ export function CellPopover({
           <>
             <div className="flex items-center gap-1 px-2 pb-1 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
               <Clock className="size-3" strokeWidth={1.75} />
-              Recent
+              {t("Recent")}
             </div>
             <div className="flex flex-col">
               {recent.map((opt) => (
@@ -133,7 +135,7 @@ export function CellPopover({
                         e.stopPropagation()
                         onPromote(opt.value)
                       }}
-                      title="Save as option (add to column)"
+                      title={t("Save as option (add to column)")}
                       aria-label={`Save "${opt.label}" as option`}
                       className="mr-1 inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-0 transition-opacity hover:bg-foreground/[0.08] hover:text-foreground group-hover/recent:opacity-100 focus:opacity-100"
                     >
@@ -217,6 +219,7 @@ export function MultiCellPopover({
   recent,
   onPromote,
 }: MultiCellPopoverProps) {
+  const t = useT()
   const [draft, setDraft] = useState("")
   const set = new Set(values)
   const trimmed = draft.trim()
@@ -244,7 +247,7 @@ export function MultiCellPopover({
           <>
             <div className="flex items-center gap-1 px-2 pb-1 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
               <Clock className="size-3" strokeWidth={1.75} />
-              Recent
+              {t("Recent")}
             </div>
             <div className="flex flex-col">
               {recent.map((opt) => {
@@ -275,7 +278,7 @@ export function MultiCellPopover({
                           e.stopPropagation()
                           onPromote(opt.value)
                         }}
-                        title="Save as option (add to column)"
+                        title={t("Save as option (add to column)")}
                         aria-label={`Save "${opt.label}" as option`}
                         className="mr-1 inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-0 transition-opacity hover:bg-foreground/[0.08] hover:text-foreground group-hover/recent:opacity-100 focus:opacity-100"
                       >
@@ -299,7 +302,7 @@ export function MultiCellPopover({
         <div className="flex max-h-64 flex-col overflow-y-auto">
           {options.length === 0 && !onAddNew && (
             <div className="px-2 py-2 text-[12px] text-muted-foreground">
-              No options yet.
+              {t("No options yet.")}
             </div>
           )}
           {options.map((opt) => {
@@ -340,7 +343,7 @@ export function MultiCellPopover({
               <input
                 type="text"
                 value={draft}
-                placeholder="New option…"
+                placeholder={t("New option…")}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -383,7 +386,7 @@ export function MultiCellPopover({
               className="inline-flex items-center gap-0.5 rounded hover:text-foreground"
             >
               <X className="size-2.5" strokeWidth={2} />
-              Clear
+              {t("Clear")}
             </button>
           </div>
         )}

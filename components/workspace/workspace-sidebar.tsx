@@ -17,6 +17,7 @@ import {
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { ActiveWorkspaceItem } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 interface Item {
   id: ActiveWorkspaceItem
@@ -53,6 +54,7 @@ const ITEMS: Item[] = [
 ]
 
 export function WorkspaceSidebar() {
+  const t = useT()
   const active = useFlowBase((s) => s.activeWorkspaceItem)
   const setActive = useFlowBase((s) => s.setActiveWorkspaceItem)
 
@@ -62,7 +64,7 @@ export function WorkspaceSidebar() {
         <span className="flex size-5 items-center justify-center rounded bg-chart-4/15 text-chart-4">
           <Layers className="size-3" strokeWidth={1.75} />
         </span>
-        <span className="text-[13px] font-semibold">Control</span>
+        <span className="text-[13px] font-semibold">{t("Control")}</span>
       </div>
 
       <div className="flex-1 px-2 py-2">
@@ -110,7 +112,7 @@ export function WorkspaceSidebar() {
       </div>
 
       <div className="border-t border-border-subtle px-3.5 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
-        Where structure and
+        {t("Where structure and")}
         <br />
         behavior are designed.
       </div>

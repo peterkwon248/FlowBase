@@ -8,8 +8,10 @@
 import { WikiPageView } from "@/components/wiki/wiki-page"
 import { WikiSidebar } from "@/components/wiki/wiki-sidebar"
 import { useFlowBase } from "@/lib/flowbase-store"
+import { useT } from "@/lib/i18n"
 
 export function WikiMode() {
+  const t = useT()
   const pages = useFlowBase((s) => s.wikiPages)
   const selectedId = useFlowBase((s) => s.wikiSelectedId)
 
@@ -23,7 +25,7 @@ export function WikiMode() {
         <WikiPageView page={page} />
       ) : (
         <div className="flex min-w-0 flex-1 items-center justify-center bg-background text-[13px] text-muted-foreground">
-          Select a page on the left or create a new one.
+          {t("Select a page on the left or create a new one.")}
         </div>
       )}
     </>

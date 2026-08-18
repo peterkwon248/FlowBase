@@ -7,6 +7,7 @@
 import { Check, Sparkles } from "lucide-react"
 import type { AnalyzeImportRes } from "@/lib/flowbase-ai"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 interface ImportStepAiProps {
   summary: AnalyzeImportRes | null
@@ -25,12 +26,13 @@ export function ImportStepAi({
   onToggleTheme,
   onToggleSentiment,
 }: ImportStepAiProps) {
+  const t = useT()
   return (
     <div className="flex flex-col gap-3.5">
       <div className="flex items-center gap-2.5">
-        <span className="text-[13px] font-medium">Suggest AI columns</span>
+        <span className="text-[13px] font-medium">{t("Suggest AI columns")}</span>
         <span className="text-[11.5px] text-muted-foreground">
-          Added as drafts — confirm per row in the board.
+          {t("Added as drafts — confirm per row in the board.")}
         </span>
       </div>
 
@@ -44,7 +46,7 @@ export function ImportStepAi({
         <Sparkles className="mt-0.5 size-3.5 shrink-0 text-primary" />
         <div className="flex-1">
           <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-            AI summary
+            {t("AI summary")}
           </div>
           <div className="text-[13px] leading-relaxed">
             {analyzeError
@@ -71,7 +73,7 @@ export function ImportStepAi({
 
       <div className="flex items-center gap-1.5 rounded-lg bg-muted p-3 text-[11.5px] text-muted-foreground">
         <Check className="size-3 shrink-0" />
-        Not auto-applied — AI columns are added as <i className="px-0.5">pending</i>.
+        {t("Not auto-applied — AI columns are added as")} <i className="px-0.5">pending</i>.
         Confirm per cell in the board.
       </div>
     </div>
@@ -93,6 +95,7 @@ function AiColumnCard({
   on,
   onToggle,
 }: AiColumnCardProps) {
+  const t = useT()
   return (
     <button
       type="button"
@@ -117,7 +120,7 @@ function AiColumnCard({
           <span className="text-[13.5px] font-semibold">{title}</span>
           {recommended && (
             <span className="rounded bg-primary/15 px-1.5 py-px text-[10px] font-semibold text-primary">
-              Recommended
+              {t("Recommended")}
             </span>
           )}
         </div>

@@ -38,6 +38,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import type { WikiPage } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 export function WikiPageContextMenu({
   page,
@@ -46,6 +47,7 @@ export function WikiPageContextMenu({
   page: WikiPage
   children: ReactNode
 }) {
+  const t = useT()
   const wikiPages = useFlowBase((s) => s.wikiPages)
   const updateWikiPage = useFlowBase((s) => s.updateWikiPage)
   const deleteWikiPage = useFlowBase((s) => s.deleteWikiPage)
@@ -90,12 +92,12 @@ export function WikiPageContextMenu({
             className="gap-2"
           >
             <Pencil className="size-3.5 text-muted-foreground" />
-            Rename
+            {t("Rename")}
           </ContextMenuItem>
           <ContextMenuSub>
             <ContextMenuSubTrigger className="gap-2" disabled={isViewer}>
               <FolderInput className="size-3.5 text-muted-foreground" />
-              <span>Move to</span>
+              <span>{t("Move to")}</span>
             </ContextMenuSubTrigger>
             <ContextMenuSubContent
               className="w-40"
@@ -134,7 +136,7 @@ export function WikiPageContextMenu({
             className="gap-2 text-destructive focus:text-destructive"
           >
             <Trash2 className="size-3.5" />
-            Delete
+            {t("Delete")}
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
@@ -142,14 +144,14 @@ export function WikiPageContextMenu({
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Rename page</DialogTitle>
+            <DialogTitle>{t("Rename page")}</DialogTitle>
             <DialogDescription className="text-[12px]">
-              The page URL/ID stays the same.
+              {t("The page URL/ID stays the same.")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
             <Label htmlFor="wiki-rename" className="text-[12px]">
-              Title
+              {t("Title")}
             </Label>
             <Input
               id="wiki-rename"
@@ -163,9 +165,9 @@ export function WikiPageContextMenu({
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setRenameOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={saveRename}>Save</Button>
+            <Button onClick={saveRename}>{t("Save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -182,12 +184,12 @@ export function WikiPageContextMenu({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteWikiPage(page.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

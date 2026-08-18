@@ -37,6 +37,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { LIBRARY_CATEGORIES } from "@/lib/flowbase-library-seed"
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 import type {
   ChartType,
   ChartWidth,
@@ -153,6 +154,7 @@ function Shell({
   asset: { id: string; name: string; desc?: string; usedIn: string[] }
   children: ReactNode
 }) {
+  const t = useT()
   const libCategory = useFlowBase((s) => s.libCategory)
   const setLibAsset = useFlowBase((s) => s.setLibAsset)
   const boards = useFlowBase((s) => s.boards)
@@ -192,7 +194,7 @@ function Shell({
     else if (libCategory === "templates") updateLibraryTemplate(id, { name: next })
     else if (libCategory === "functions") updateLibraryFunction(id, { name: next })
     else if (libCategory === "dashboards") updateLibraryDashboard(id, { name: next })
-    toast.success("Renamed")
+    toast.success(t("Renamed"))
   }
 
   if (!meta) return null
@@ -328,7 +330,7 @@ function Shell({
 
       {/* Used in — 각 항목 클릭 시 해당 보드/컬럼으로 점프 */}
       <div className="px-6 pb-1">
-        <Section title="Used in" count={asset.usedIn.length}>
+        <Section title={t("Used in")} count={asset.usedIn.length}>
           {asset.usedIn.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {asset.usedIn.map((u) => {
@@ -361,7 +363,7 @@ function Shell({
             </div>
           ) : (
             <p className="text-[12.5px] text-muted-foreground">
-              Not used anywhere yet.
+              {t("Not used anywhere yet.")}
             </p>
           )}
         </Section>
@@ -418,6 +420,7 @@ function DefRow({
 // C2: 옵션 추가/삭제/라벨 rename/색상 변경 (non-viewer). updateLibraryOptionList 재사용
 // (ensureCanEdit 가드 포함). viewer는 기존 read-only.
 function OptionListBody({ asset }: { asset: OptionList }) {
+  const t = useT()
   const isViewer = useFlowBase(selectIsViewer)
   const updateLibraryOptionList = useFlowBase((s) => s.updateLibraryOptionList)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -449,7 +452,7 @@ function OptionListBody({ asset }: { asset: OptionList }) {
 
   if (isViewer) {
     return (
-      <Section title="Options" count={asset.options.length}>
+      <Section title={t("Options")} count={asset.options.length}>
         <div className="overflow-hidden rounded-lg border border-border-subtle bg-card">
           {asset.options.map((o, i) => (
             <div
@@ -478,7 +481,7 @@ function OptionListBody({ asset }: { asset: OptionList }) {
   }
 
   return (
-    <Section title="Options" count={asset.options.length}>
+    <Section title={t("Options")} count={asset.options.length}>
       <div className="overflow-hidden rounded-lg border border-border-subtle bg-card">
         {asset.options.map((o, i) => (
           <div
@@ -493,7 +496,7 @@ function OptionListBody({ asset }: { asset: OptionList }) {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  title="Change color"
+                  title={t("Change color")}
                   data-option-color={o.id}
                   className="size-3.5 shrink-0 rounded-full transition-transform hover:scale-110"
                   style={{
@@ -509,7 +512,7 @@ function OptionListBody({ asset }: { asset: OptionList }) {
                       key={c}
                       type="button"
                       onClick={() => setColor(o.id, c)}
-                      title="Set color"
+                      title={t("Set color")}
                       data-option-swatch={c}
                       className={cn(
                         "size-5 rounded-full transition-transform hover:scale-110",
@@ -548,7 +551,7 @@ function OptionListBody({ asset }: { asset: OptionList }) {
                   setDraft(o.label)
                 }}
                 className="flex-1 cursor-text rounded px-1 py-0.5 text-left text-[13px] font-medium transition-colors hover:bg-foreground/[0.04]"
-                title="Click to rename"
+                title={t("Click to rename")}
                 data-option-label={o.id}
               >
                 {o.label}
@@ -562,7 +565,7 @@ function OptionListBody({ asset }: { asset: OptionList }) {
             <button
               type="button"
               onClick={() => remove(o.id)}
-              title="Remove option"
+              title={t("Remove option")}
               data-option-remove={o.id}
               className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
             >
@@ -581,7 +584,7 @@ function OptionListBody({ asset }: { asset: OptionList }) {
           )}
         >
           <Plus className="size-3.5" strokeWidth={2} />
-          Add option
+          {t("Add option")}
         </button>
       </div>
     </Section>
@@ -598,6 +601,7 @@ function FieldBody({
   asset: LibraryField
   library: Library
 }) {
+  const t = useT()
   const isViewer = useFlowBase(selectIsViewer)
   const updateLibraryField = useFlowBase((s) => s.updateLibraryField)
   const c = asset.config
@@ -622,16 +626,16 @@ function FieldBody({
 
   if (isViewer) {
     return (
-      <Section title="Definition">
+      <Section title={t("Definition")}>
         <div className="rounded-lg border border-border-subtle bg-card p-4">
           <dl className="grid grid-cols-[max-content_1fr] items-baseline gap-x-4 gap-y-2.5 text-[13px]">
-            <DefRow label="Type">
+            <DefRow label={t("Type")}>
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[12px]">
                 {asset.type}
               </code>
             </DefRow>
             {olRef && (
-              <DefRow label="Options">
+              <DefRow label={t("Options")}>
                 <span className="inline-flex items-center gap-1.5">
                   <LinkIcon className="size-2.5 text-primary" strokeWidth={2} />
                   <span className="font-mono">@{olRef.name}</span>
@@ -642,7 +646,7 @@ function FieldBody({
               </DefRow>
             )}
             {c.options && c.options.length > 0 && (
-              <DefRow label="Options">
+              <DefRow label={t("Options")}>
                 <div className="flex flex-wrap gap-1">
                   {c.options.map((o) => (
                     <span
@@ -656,7 +660,7 @@ function FieldBody({
               </DefRow>
             )}
             {c.required !== undefined && (
-              <DefRow label="Required">
+              <DefRow label={t("Required")}>
                 <span
                   className={cn(
                     "whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold",
@@ -670,21 +674,21 @@ function FieldBody({
               </DefRow>
             )}
             {c.default && (
-              <DefRow label="Default">
+              <DefRow label={t("Default")}>
                 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[12px]">
                   {c.default}
                 </code>
               </DefRow>
             )}
             {c.format && (
-              <DefRow label="Format">
+              <DefRow label={t("Format")}>
                 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[12px]">
                   {c.format}
                 </code>
               </DefRow>
             )}
             {c.validation && (
-              <DefRow label="Validation">
+              <DefRow label={t("Validation")}>
                 <span className="text-[12.5px]">{c.validation}</span>
               </DefRow>
             )}
@@ -701,16 +705,16 @@ function FieldBody({
     patchConfig({ [key]: draft[key].trim() || undefined })
 
   return (
-    <Section title="Definition">
+    <Section title={t("Definition")}>
       <div className="rounded-lg border border-border-subtle bg-card p-4">
         <dl className="grid grid-cols-[max-content_1fr] items-center gap-x-4 gap-y-3 text-[13px]">
-          <DefRow label="Type">
+          <DefRow label={t("Type")}>
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[12px]">
               {asset.type}
             </code>
           </DefRow>
 
-          <DefRow label="Required">
+          <DefRow label={t("Required")}>
             <button
               type="button"
               onClick={() => patchConfig({ required: !c.required })}
@@ -726,7 +730,7 @@ function FieldBody({
             </button>
           </DefRow>
 
-          <DefRow label="Option list">
+          <DefRow label={t("Option list")}>
             <Select
               value={c.optionListId ?? "_none"}
               onValueChange={(v) =>
@@ -740,7 +744,7 @@ function FieldBody({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="_none">None</SelectItem>
+                <SelectItem value="_none">{t("None")}</SelectItem>
                 {library.optionLists.map((o) => (
                   <SelectItem key={o.id} value={o.id}>
                     {o.name} ({o.options.length})
@@ -750,7 +754,7 @@ function FieldBody({
             </Select>
           </DefRow>
 
-          <DefRow label="Default">
+          <DefRow label={t("Default")}>
             <Input
               value={draft.default}
               onChange={(e) =>
@@ -763,7 +767,7 @@ function FieldBody({
             />
           </DefRow>
 
-          <DefRow label="Format">
+          <DefRow label={t("Format")}>
             <Input
               value={draft.format}
               onChange={(e) =>
@@ -776,7 +780,7 @@ function FieldBody({
             />
           </DefRow>
 
-          <DefRow label="Validation">
+          <DefRow label={t("Validation")}>
             <Input
               value={draft.validation}
               onChange={(e) =>
@@ -790,7 +794,7 @@ function FieldBody({
           </DefRow>
 
           {c.options && c.options.length > 0 && (
-            <DefRow label="Inline options">
+            <DefRow label={t("Inline options")}>
               <div className="flex flex-wrap gap-1">
                 {c.options.map((o) => (
                   <span
@@ -836,6 +840,7 @@ function TemplateBody({
   asset: LibraryTemplate
   library: Library
 }) {
+  const t = useT()
   const isViewer = useFlowBase(selectIsViewer)
   const updateLibraryTemplate = useFlowBase((s) => s.updateLibraryTemplate)
 
@@ -863,7 +868,7 @@ function TemplateBody({
           </Section>
         ))}
         {asset.recommendedViews && asset.recommendedViews.length > 0 && (
-          <Section title="Recommended views">
+          <Section title={t("Recommended views")}>
             <div className="flex flex-wrap gap-1.5">
               {asset.recommendedViews.map((v) => (
                 <span
@@ -890,7 +895,7 @@ function TemplateBody({
     const total = resolvedFields.length + extras.length
     return (
       <>
-        <Section title="Fields" count={total}>
+        <Section title={t("Fields")} count={total}>
           <FieldList
             items={[
               ...resolvedFields.map((f) => ({
@@ -907,7 +912,7 @@ function TemplateBody({
           />
         </Section>
         {asset.recommendedViews && asset.recommendedViews.length > 0 && (
-          <Section title="Recommended views">
+          <Section title={t("Recommended views")}>
             <div className="flex flex-wrap gap-1.5">
               {asset.recommendedViews.map((v) => (
                 <span
@@ -921,7 +926,7 @@ function TemplateBody({
           </Section>
         )}
         {asset.defaultGroupBy && (
-          <Section title="Default group by">
+          <Section title={t("Default group by")}>
             <code className="rounded bg-muted px-2 py-0.5 font-mono text-[12px]">
               {asset.defaultGroupBy}
             </code>
@@ -966,7 +971,7 @@ function TemplateBody({
 
   return (
     <>
-      <Section title="Linked fields" count={resolvedFields.length}>
+      <Section title={t("Linked fields")} count={resolvedFields.length}>
         <div className="overflow-hidden rounded-lg border border-border-subtle bg-card">
           {resolvedFields.map((f, i) => (
             <div
@@ -985,7 +990,7 @@ function TemplateBody({
               <button
                 type="button"
                 onClick={() => removeField(f.id)}
-                title="Unlink field"
+                title={t("Unlink field")}
                 data-template-field-remove={f.id}
                 className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
               >
@@ -1007,12 +1012,12 @@ function TemplateBody({
                 >
                   <span className="inline-flex items-center gap-2">
                     <Plus className="size-3.5" strokeWidth={2} />
-                    Link a field…
+                    {t("Link a field…")}
                   </span>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="_add" disabled className="hidden">
-                    Link a field…
+                    {t("Link a field…")}
                   </SelectItem>
                   {available.map((f) => (
                     <SelectItem key={f.id} value={f.id}>
@@ -1029,13 +1034,13 @@ function TemplateBody({
                 resolvedFields.length > 0 && "border-t border-border-subtle",
               )}
             >
-              All library fields linked.
+              {t("All library fields linked.")}
             </div>
           )}
         </div>
       </Section>
 
-      <Section title="Extra fields" count={extras.length}>
+      <Section title={t("Extra fields")} count={extras.length}>
         <div className="overflow-hidden rounded-lg border border-border-subtle bg-card">
           {extras.map((f, i) => (
             <ExtraFieldRow
@@ -1056,12 +1061,12 @@ function TemplateBody({
             )}
           >
             <Plus className="size-3.5" strokeWidth={2} />
-            Add extra field
+            {t("Add extra field")}
           </button>
         </div>
       </Section>
 
-      <Section title="Recommended views">
+      <Section title={t("Recommended views")}>
         <div className="flex flex-wrap gap-1.5">
           {VIEW_MODES.map((v) => {
             const on = views.includes(v)
@@ -1086,7 +1091,7 @@ function TemplateBody({
         </div>
       </Section>
 
-      <Section title="Default group by">
+      <Section title={t("Default group by")}>
         <DefaultGroupByEditor
           assetId={asset.id}
           value={asset.defaultGroupBy ?? ""}
@@ -1112,6 +1117,7 @@ function ExtraFieldRow({
   onPatch: (patch: Partial<{ name: string; type: ColumnType }>) => void
   onRemove: () => void
 }) {
+  const t = useT()
   const [name, setName] = useState(field.name)
   useEffect(() => {
     setName(field.name)
@@ -1168,7 +1174,7 @@ function ExtraFieldRow({
       <button
         type="button"
         onClick={onRemove}
-        title="Remove extra field"
+        title={t("Remove extra field")}
         data-template-extra-remove
         className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
       >
@@ -1187,6 +1193,7 @@ function DefaultGroupByEditor({
   value: string
   onCommit: (v: string) => void
 }) {
+  const t = useT()
   const [draft, setDraft] = useState(value)
   useEffect(() => {
     setDraft(value)
@@ -1199,7 +1206,7 @@ function DefaultGroupByEditor({
       onBlur={() => {
         if (draft !== value) onCommit(draft)
       }}
-      placeholder="Field name to group by…"
+      placeholder={t("Field name to group by…")}
       className="h-7 max-w-[260px] font-mono text-[12px]"
       data-template-groupby
     />
@@ -1249,6 +1256,7 @@ const PARAM_TYPES: LibraryFunctionParam["type"][] = [
 ]
 
 function FunctionBody({ asset }: { asset: LibraryFunction }) {
+  const t = useT()
   const isViewer = useFlowBase(selectIsViewer)
   const updateLibraryFunction = useFlowBase((s) => s.updateLibraryFunction)
 
@@ -1266,7 +1274,7 @@ function FunctionBody({ asset }: { asset: LibraryFunction }) {
   if (isViewer) {
     return (
       <>
-        <Section title="Parameters" count={asset.params.length}>
+        <Section title={t("Parameters")} count={asset.params.length}>
           <div className="overflow-hidden rounded-lg border border-border-subtle bg-card">
             {asset.params.map((p, i) => (
               <div
@@ -1305,7 +1313,7 @@ function FunctionBody({ asset }: { asset: LibraryFunction }) {
           </div>
         </Section>
         {asset.example && (
-          <Section title="Example">
+          <Section title={t("Example")}>
             <pre className="whitespace-pre-wrap rounded-lg bg-muted p-3 font-mono text-[12px] text-muted-foreground">
               {asset.example}
             </pre>
@@ -1317,7 +1325,7 @@ function FunctionBody({ asset }: { asset: LibraryFunction }) {
 
   return (
     <>
-      <Section title="Parameters" count={asset.params.length}>
+      <Section title={t("Parameters")} count={asset.params.length}>
         <div className="overflow-hidden rounded-lg border border-border-subtle bg-card">
           {asset.params.map((p, i) => (
             <ParamEditRow
@@ -1338,11 +1346,11 @@ function FunctionBody({ asset }: { asset: LibraryFunction }) {
             )}
           >
             <Plus className="size-3.5" strokeWidth={2} />
-            Add parameter
+            {t("Add parameter")}
           </button>
         </div>
       </Section>
-      <Section title="Example">
+      <Section title={t("Example")}>
         <ExampleEditor
           assetId={asset.id}
           value={asset.example ?? ""}
@@ -1366,6 +1374,7 @@ function ParamEditRow({
   onPatch: (patch: Partial<LibraryFunctionParam>) => void
   onRemove: () => void
 }) {
+  const t = useT()
   const [name, setName] = useState(param.name)
   const [desc, setDesc] = useState(param.desc)
   const [optDraft, setOptDraft] = useState("")
@@ -1436,7 +1445,7 @@ function ParamEditRow({
         <button
           type="button"
           onClick={onRemove}
-          title="Remove parameter"
+          title={t("Remove parameter")}
           data-param-remove
           className="ml-auto flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
         >
@@ -1447,7 +1456,7 @@ function ParamEditRow({
         value={desc}
         onChange={(e) => setDesc(e.target.value)}
         onBlur={commitDesc}
-        placeholder="Description"
+        placeholder={t("Description")}
         className="h-7 text-[12px]"
         data-param-desc
       />
@@ -1461,7 +1470,7 @@ function ParamEditRow({
             <button
               type="button"
               onClick={() => removeOption(o)}
-              title="Remove option"
+              title={t("Remove option")}
               className="text-muted-foreground/50 transition-colors hover:text-destructive"
             >
               <X className="size-2.5" strokeWidth={2.5} />
@@ -1478,7 +1487,7 @@ function ParamEditRow({
             }
           }}
           onBlur={addOption}
-          placeholder="+ option"
+          placeholder={t("+ option")}
           className="h-6 w-[90px] text-[11px]"
           data-param-option-add
         />
@@ -1496,6 +1505,7 @@ function ExampleEditor({
   value: string
   onCommit: (v: string) => void
 }) {
+  const t = useT()
   const [draft, setDraft] = useState(value)
   useEffect(() => {
     setDraft(value)
@@ -1508,7 +1518,7 @@ function ExampleEditor({
       onBlur={() => {
         if (draft !== value) onCommit(draft)
       }}
-      placeholder="Usage example…"
+      placeholder={t("Usage example…")}
       className="min-h-20 rounded-lg bg-muted/40 font-mono text-[12px]"
       data-function-example
     />
@@ -1535,12 +1545,13 @@ const CHART_TYPES: ChartType[] = [
 const CHART_WIDTHS: ChartWidth[] = ["quarter", "half", "two-thirds", "full"]
 
 function DashboardBody({ asset }: { asset: LibraryDashboard }) {
+  const t = useT()
   const isViewer = useFlowBase(selectIsViewer)
   const updateLibraryDashboard = useFlowBase((s) => s.updateLibraryDashboard)
 
   if (isViewer) {
     return (
-      <Section title="Charts" count={asset.charts.length}>
+      <Section title={t("Charts")} count={asset.charts.length}>
         <div className="grid grid-cols-2 gap-2">
           {asset.charts.map((c, i) => (
             <div
@@ -1581,7 +1592,7 @@ function DashboardBody({ asset }: { asset: LibraryDashboard }) {
     ])
 
   return (
-    <Section title="Charts" count={asset.charts.length}>
+    <Section title={t("Charts")} count={asset.charts.length}>
       <div className="grid grid-cols-2 gap-2">
         {asset.charts.map((c, i) => (
           <ChartEditCard
@@ -1599,7 +1610,7 @@ function DashboardBody({ asset }: { asset: LibraryDashboard }) {
         className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border-subtle py-2 text-[12.5px] text-muted-foreground transition-colors hover:border-border hover:bg-foreground/[0.04] hover:text-foreground"
       >
         <Plus className="size-3.5" strokeWidth={2} />
-        Add chart
+        {t("Add chart")}
       </button>
     </Section>
   )
@@ -1614,6 +1625,7 @@ function ChartEditCard({
   onPatch: (patch: Partial<LibraryDashboard["charts"][number]>) => void
   onRemove: () => void
 }) {
+  const t = useT()
   const [title, setTitle] = useState(chart.title)
   useEffect(() => {
     setTitle(chart.title)
@@ -1673,7 +1685,7 @@ function ChartEditCard({
         <button
           type="button"
           onClick={onRemove}
-          title="Remove chart"
+          title={t("Remove chart")}
           data-chart-remove
           className="ml-auto flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
         >
@@ -1691,7 +1703,7 @@ function ChartEditCard({
           }
           if (e.key === "Escape") setTitle(chart.title)
         }}
-        placeholder="Chart title"
+        placeholder={t("Chart title")}
         className="h-7 text-[13px] font-medium"
         data-chart-title
       />

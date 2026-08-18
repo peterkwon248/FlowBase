@@ -22,6 +22,7 @@ import {
   type SearchKind,
 } from "@/lib/search-index"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 const PAGE_LIMIT = 200
 
@@ -36,6 +37,7 @@ const TABS: { id: TabId; label: string }[] = [
 ]
 
 export function SearchMode() {
+  const t = useT()
   const boards = useFlowBase((s) => s.boards)
   const library = useFlowBase((s) => s.library)
   const wikiPages = useFlowBase((s) => s.wikiPages)
@@ -82,7 +84,7 @@ export function SearchMode() {
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search across the entire workspace…"
+            placeholder={t("Search across the entire workspace…")}
             className="flex-1 bg-transparent text-[15px] text-foreground outline-none placeholder:text-muted-foreground"
           />
           {query && (
@@ -93,7 +95,7 @@ export function SearchMode() {
                 inputRef.current?.focus()
               }}
               className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
-              aria-label="Clear"
+              aria-label={t("Clear")}
             >
               <X className="size-3" strokeWidth={2} />
             </button>

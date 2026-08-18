@@ -26,6 +26,7 @@ import { TYPE_ICON } from "@/components/sheet/header-cell"
 import { selectActiveBoard, useFlowBase } from "@/lib/flowbase-store"
 import { extractDeps, parseFormula } from "@/lib/formula"
 import type { ColumnDef, FormulaResultType } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 interface FormulaEditorDialogProps {
   col: ColumnDef
@@ -59,6 +60,7 @@ export function FormulaEditorDialog({
   open,
   onOpenChange,
 }: FormulaEditorDialogProps) {
+  const t = useT()
   const updateColumn = useFlowBase((s) => s.updateColumn)
   const [src, setSrc] = useState(col.formula ?? "")
   const [resultType, setResultType] = useState<FormulaResultType>(
@@ -144,7 +146,7 @@ export function FormulaEditorDialog({
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label htmlFor="formula-src" className="text-[12px]">
-              Expression
+              {t("Expression")}
             </Label>
             <textarea
               id="formula-src"
@@ -188,7 +190,7 @@ export function FormulaEditorDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="formula-result-type" className="text-[12px]">
-              Result type
+              {t("Result type")}
             </Label>
             <Select
               value={resultType}
@@ -214,7 +216,7 @@ export function FormulaEditorDialog({
           {availableColumns.length > 0 && (
             <div>
               <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                Insert column reference
+                {t("Insert column reference")}
               </div>
               <div className="flex flex-wrap gap-1">
                 {availableColumns.map((c) => {
@@ -241,7 +243,7 @@ export function FormulaEditorDialog({
 
           <div>
             <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              Examples
+              {t("Examples")}
             </div>
             <ul className="space-y-0.5">
               {EXAMPLES.map((ex) => (
@@ -262,10 +264,10 @@ export function FormulaEditorDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button onClick={handleSave} disabled={!validation.ok}>
-            Save
+            {t("Save")}
           </Button>
         </DialogFooter>
       </DialogContent>

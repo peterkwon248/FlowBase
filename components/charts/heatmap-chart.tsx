@@ -10,6 +10,7 @@
 import { useMemo } from "react"
 import type { TableRow } from "@/types/flowbase"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 interface HeatmapData {
   categories: string[] // Y축 (rows) — total 내림차순
@@ -64,6 +65,7 @@ export function HeatmapChart({
   groupField: string
   className?: string
 }) {
+  const t = useT()
   const data = useMemo(
     () => buildData(rows, categoryField, groupField),
     [rows, categoryField, groupField],
@@ -72,7 +74,7 @@ export function HeatmapChart({
   if (data.categories.length === 0 || data.groups.length === 0) {
     return (
       <div className="flex h-[160px] items-center justify-center text-[11.5px] text-muted-foreground">
-        No data
+        {t("No data")}
       </div>
     )
   }

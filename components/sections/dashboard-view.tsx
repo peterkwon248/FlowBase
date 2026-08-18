@@ -77,6 +77,7 @@ import type {
   TimeScale,
 } from "@/types/flowbase"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 const WIDTH_OPTIONS: { value: ChartWidth; label: string }[] = [
   { value: "quarter", label: "1/4" },
@@ -395,6 +396,7 @@ export function DashboardView() {
 }
 
 function DashboardViewInner({ board }: { board: Board }) {
+  const t = useT()
   // selectVisibleRows는 새 배열을 반환 → 직접 구독 ❌. 의존 슬라이스 구독 후 useMemo.
   const search = useFlowBase((s) => s.search)
   const filter = useFlowBase((s) => s.filter)
@@ -460,7 +462,7 @@ function DashboardViewInner({ board }: { board: Board }) {
   const handleSummarize = async () => {
     if (!board || summarizing) return
     setSummarizing(true)
-    const toastId = toast.loading("Summarizing…")
+    const toastId = toast.loading(t("Summarizing…"))
     try {
       const res = await fetch("/api/ai/summarize-board", {
         method: "POST",
@@ -517,10 +519,10 @@ function DashboardViewInner({ board }: { board: Board }) {
               strokeWidth={1.5}
             />
             <div className="mb-1 text-sm font-semibold">
-              No columns to aggregate
+              {t("No columns to aggregate")}
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Add a Select/Status/Number/Date column, or click below to add a chart manually.
+              {t("Add a Select/Status/Number/Date column, or click below to add a chart manually.")}
             </p>
             {recommendations.length > 0 && (
               <Button
@@ -539,7 +541,7 @@ function DashboardViewInner({ board }: { board: Board }) {
               className="ml-2 mt-4 gap-1.5"
               data-action="dashboard-add-chart-empty"
             >
-              <Plus className="size-3" /> Add chart
+              <Plus className="size-3" /> {t("Add chart")}
             </Button>
           </div>
         </div>
@@ -574,7 +576,7 @@ function DashboardViewInner({ board }: { board: Board }) {
               onClick={() => clearCustomCharts()}
               className="h-7 px-2 text-[11.5px] text-muted-foreground"
             >
-              Reset to auto
+              {t("Reset to auto")}
             </Button>
           )}
           {/* D5: 추천 차트 진입점. custom 없으면 "Apply recommended", 있으면 "Suggest more (unseen)" */}
@@ -606,11 +608,11 @@ function DashboardViewInner({ board }: { board: Board }) {
             size="sm"
             onClick={() => window.print()}
             className="h-7 gap-1.5 px-2 text-[11.5px] text-muted-foreground"
-            title="Print / Save as PDF (⌘P)"
+            title={t("Print / Save as PDF (⌘P)")}
             data-action="dashboard-print"
           >
             <Printer className="size-3" strokeWidth={1.75} />
-            Print
+            {t("Print")}
           </Button>
           <Button
             size="sm"
@@ -618,7 +620,7 @@ function DashboardViewInner({ board }: { board: Board }) {
             className="h-7 gap-1.5 px-2.5 text-[11.5px]"
             data-action="dashboard-add-chart"
           >
-            <Plus className="size-3" strokeWidth={2.5} /> Add chart
+            <Plus className="size-3" strokeWidth={2.5} /> {t("Add chart")}
           </Button>
         </div>
       </div>
@@ -651,13 +653,13 @@ function DashboardViewInner({ board }: { board: Board }) {
         >
           <div className="mb-1 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-primary">
             <Sparkles className="size-3" />
-            AI summary
+            {t("AI summary")}
           </div>
           <div>{aiSummary}</div>
           <button
             type="button"
             onClick={() => setAiSummary(null)}
-            title="Dismiss"
+            title={t("Dismiss")}
             className="absolute right-1.5 top-1.5 inline-flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
           >
             <X className="size-3" />
@@ -693,7 +695,7 @@ function DashboardViewInner({ board }: { board: Board }) {
 
       {/* KPI 타일 */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3">
-        <KpiTile label="Total rows" value={rows.length} />
+        <KpiTile label={t("Total rows")} value={rows.length} />
         {aggs.slice(0, 3).map(({ col, agg }) => (
           <KpiTile
             key={col.name}
@@ -766,7 +768,7 @@ function DashboardViewInner({ board }: { board: Board }) {
 
       {/* numeric 요약 */}
       {numeric.length > 0 && (
-        <ChartCard title="Number summary" accent={CHART_ACCENT[2]}>
+        <ChartCard title={t("Number summary")} accent={CHART_ACCENT[2]}>
           <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
             {numeric.map((col) => {
               const vals = rows
@@ -821,6 +823,7 @@ function CustomChartCard({
   onMoveDown: () => void
   onUpdate: (patch: Partial<ChartConfig>) => void
 }) {
+  const t = useT()
   const sourceCol = board.columns.find((c) => c.name === chart.sourceCol)
   const groupCol = chart.groupByCol
     ? board.columns.find((c) => c.name === chart.groupByCol)
@@ -914,7 +917,7 @@ function CustomChartCard({
       referenceValue: undefined,
       referenceLabel: undefined,
     })
-    toast.success("Converted to KPI")
+    toast.success(t("Converted to KPI"))
   }
 
   // G1-2: drill-down — chart cell click 시 sourceCol에 filter + sheet 전환.
@@ -993,6 +996,7 @@ function CustomChartCard({
             handlePivotCellClick,
             handleRangeDrillDown,
             handleLineBucketClick,
+            t,
           )}
         </ChartCard>
         <div
@@ -1002,7 +1006,7 @@ function CustomChartCard({
           data-chart-toolbar={chart.id}
         >
           <ToolbarBtn
-            title="Move up"
+            title={t("Move up")}
             disabled={isFirst}
             onClick={onMoveUp}
             data-chart-up={chart.id}
@@ -1010,7 +1014,7 @@ function CustomChartCard({
             <ChevronUp className="size-3" strokeWidth={2.5} />
           </ToolbarBtn>
           <ToolbarBtn
-            title="Move down"
+            title={t("Move down")}
             disabled={isLast}
             onClick={onMoveDown}
             data-chart-down={chart.id}
@@ -1021,7 +1025,7 @@ function CustomChartCard({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                title="More options"
+                title={t("More options")}
                 data-chart-menu={chart.id}
                 className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.08] hover:text-foreground"
               >
@@ -1036,7 +1040,7 @@ function CustomChartCard({
                 }}
                 data-chart-rename={chart.id}
               >
-                Rename…
+                {t("Rename…")}
               </DropdownMenuItem>
               {chart.type === "kpi" && (
                 <DropdownMenuItem
@@ -1044,7 +1048,7 @@ function CustomChartCard({
                   data-chart-convert-bullet={chart.id}
                 >
                   <Target className="size-3.5 text-muted-foreground" strokeWidth={1.75} />
-                  Convert to Bullet…
+                  {t("Convert to Bullet…")}
                 </DropdownMenuItem>
               )}
               {chart.type === "bullet" && (
@@ -1054,13 +1058,13 @@ function CustomChartCard({
                     data-chart-set-goal={chart.id}
                   >
                     <Target className="size-3.5 text-muted-foreground" strokeWidth={1.75} />
-                    Set goal…
+                    {t("Set goal…")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={() => convertBulletToKpi()}
                     data-chart-convert-kpi={chart.id}
                   >
-                    Convert to KPI
+                    {t("Convert to KPI")}
                   </DropdownMenuItem>
                 </>
               )}
@@ -1068,17 +1072,17 @@ function CustomChartCard({
                 onSelect={() => {
                   const csv = chartToCsv(chart, rows, board.columns)
                   if (!csv) {
-                    toast.info("Nothing to export for this chart type yet")
+                    toast.info(t("Nothing to export for this chart type yet"))
                     return
                   }
                   navigator.clipboard
                     .writeText(csv)
-                    .then(() => toast.success("Chart data copied (CSV)"))
-                    .catch(() => toast.error("Clipboard copy failed"))
+                    .then(() => toast.success(t("Chart data copied (CSV)")))
+                    .catch(() => toast.error(t("Clipboard copy failed")))
                 }}
                 data-chart-export-csv={chart.id}
               >
-                Copy data (CSV)
+                {t("Copy data (CSV)")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => {
@@ -1087,11 +1091,11 @@ function CustomChartCard({
                     `[data-chart-card="${chart.id}"]`,
                   ) as HTMLElement | null
                   if (!cardEl) {
-                    toast.error("Chart element not found")
+                    toast.error(t("Chart element not found"))
                     return
                   }
                   downloadChartPng(cardEl, chart.title)
-                    .then(() => toast.success("PNG downloaded"))
+                    .then(() => toast.success(t("PNG downloaded")))
                     .catch((err) =>
                       toast.error(
                         err instanceof Error ? err.message : "PNG export failed",
@@ -1100,11 +1104,11 @@ function CustomChartCard({
                 }}
                 data-chart-export-png={chart.id}
               >
-                Export as PNG
+                {t("Export as PNG")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
-                Width
+                {t("Width")}
               </DropdownMenuLabel>
               <div className="px-2 pb-1.5">
                 <div className="flex gap-1">
@@ -1129,7 +1133,7 @@ function CustomChartCard({
             </DropdownMenuContent>
           </DropdownMenu>
           <ToolbarBtn
-            title="Remove chart"
+            title={t("Remove chart")}
             onClick={onRemove}
             data-chart-remove={chart.id}
             destructive
@@ -1142,14 +1146,14 @@ function CustomChartCard({
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Rename chart</DialogTitle>
+            <DialogTitle>{t("Rename chart")}</DialogTitle>
             <DialogDescription className="text-[12px]">
-              The chart ID and data stay the same.
+              {t("The chart ID and data stay the same.")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
             <Label htmlFor="chart-rename" className="text-[12px]">
-              Title
+              {t("Title")}
             </Label>
             <Input
               id="chart-rename"
@@ -1163,9 +1167,9 @@ function CustomChartCard({
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setRenameOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={saveRename}>Save</Button>
+            <Button onClick={saveRename}>{t("Save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1189,7 +1193,7 @@ function CustomChartCard({
           <div className="space-y-2.5">
             <div className="space-y-1.5">
               <Label htmlFor="chart-goal-value" className="text-[12px]">
-                Goal value (number)
+                {t("Goal value (number)")}
               </Label>
               <Input
                 id="chart-goal-value"
@@ -1202,7 +1206,7 @@ function CustomChartCard({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="chart-goal-label" className="text-[12px]">
-                Goal label (optional)
+                {t("Goal label (optional)")}
               </Label>
               <Input
                 id="chart-goal-label"
@@ -1214,7 +1218,7 @@ function CustomChartCard({
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setGoalOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={() =>
@@ -1274,11 +1278,13 @@ function renderChartBody(
   onRangeDrillDown?: (from: number, to: number) => void,
   // G5-2: line time bucket drill-down — LinePoint rangeStart/rangeEnd ISO.
   onLineBucketClick?: (rangeStart: string, rangeEnd: string, label: string) => void,
+  // i18n — 컴포넌트가 아니라 훅을 못 쓴다. 호출부(useT 구독)에서 주입받는다.
+  t: (s: string) => string = (s) => s,
 ) {
   if (!sourceCol) {
     return (
       <div className="py-6 text-center text-[11.5px] text-muted-foreground">
-        Source column missing.
+        {t("Source column missing.")}
       </div>
     )
   }
@@ -1418,7 +1424,7 @@ function renderChartBody(
     if (!valueCol) {
       return (
         <div className="py-6 text-center text-[11.5px] text-muted-foreground">
-          Pick a numeric Y column.
+          {t("Pick a numeric Y column.")}
         </div>
       )
     }
@@ -1446,7 +1452,7 @@ function renderChartBody(
     if (!chart.groupByCol) {
       return (
         <div className="py-6 text-center text-[11.5px] text-muted-foreground">
-          Pick a column to group rows × cols.
+          {t("Pick a column to group rows × cols.")}
         </div>
       )
     }

@@ -10,6 +10,7 @@ import { WikiPageContextMenu } from "@/components/wiki/wiki-page-context-menu"
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { WikiPage } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 function groupByCategory(pages: WikiPage[]): Record<string, WikiPage[]> {
   const out: Record<string, WikiPage[]> = {}
@@ -33,6 +34,7 @@ function filterPages(pages: WikiPage[], query: string): WikiPage[] {
 }
 
 export function WikiSidebar() {
+  const t = useT()
   const pages = useFlowBase((s) => s.wikiPages)
   const selectedId = useFlowBase((s) => s.wikiSelectedId)
   const setWikiPage = useFlowBase((s) => s.setWikiPage)
@@ -56,7 +58,7 @@ export function WikiSidebar() {
         <span className="flex size-5 items-center justify-center rounded bg-chart-3/15 text-chart-3">
           <BookText className="size-3" strokeWidth={1.75} />
         </span>
-        <span className="flex-1 text-[13px] font-semibold">Wiki</span>
+        <span className="flex-1 text-[13px] font-semibold">{t("Wiki")}</span>
         <button
           type="button"
           title={isViewer ? "Viewers can't create pages" : "New page"}
@@ -82,7 +84,7 @@ export function WikiSidebar() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search pages…"
+            placeholder={t("Search pages…")}
             data-wiki-sidebar-search
             className="w-full bg-transparent text-[12px] outline-none placeholder:text-muted-foreground"
           />
@@ -91,7 +93,7 @@ export function WikiSidebar() {
               type="button"
               onClick={() => setQuery("")}
               className="flex size-3 items-center justify-center rounded text-muted-foreground hover:text-foreground"
-              title="Clear"
+              title={t("Clear")}
             >
               <X className="size-2.5" strokeWidth={2.5} />
             </button>
@@ -159,7 +161,7 @@ export function WikiSidebar() {
                         <span className="flex-1 truncate">{p.title}</span>
                         {!p.verified && (
                           <span
-                            title="Unverified"
+                            title={t("Unverified")}
                             className="rounded bg-destructive/15 px-1 py-0 text-[9px] font-semibold text-destructive"
                           >
                             DRAFT
@@ -176,7 +178,7 @@ export function WikiSidebar() {
 
       {/* 푸터 힌트 */}
       <div className="border-t border-border-subtle px-3.5 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
-        Verified knowledge,
+        {t("Verified knowledge,")}
         <br />
         owners guarantee.
       </div>

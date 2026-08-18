@@ -22,6 +22,7 @@ import { toast } from "sonner"
 import { coerceMultiValue } from "@/lib/multi-select"
 import { selectActiveBoard, selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { STATUS_LABELS, type ColumnDef, type TableRow } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 function isEditableViaBulk(col: ColumnDef): boolean {
   return (
@@ -54,6 +55,7 @@ function valuesForCol(col: ColumnDef, rows: TableRow[]): string[] {
 }
 
 export function BulkEditMenu() {
+  const t = useT()
   const board = useFlowBase(selectActiveBoard)
   const selectedRowIds = useFlowBase((s) => s.selectedRowIds)
   const updateRow = useFlowBase((s) => s.updateRow)
@@ -89,7 +91,7 @@ export function BulkEditMenu() {
       updateRow(id, { [col.name]: value })
     }
     const label = col.type === "status"
-      ? (STATUS_LABELS[value as keyof typeof STATUS_LABELS] ?? value)
+      ? t(STATUS_LABELS[value as keyof typeof STATUS_LABELS] ?? value)
       : value
     toast.success(
       `Set ${col.label || col.name} = ${label} on ${selectedRowIds.length} rows`,
@@ -107,7 +109,7 @@ export function BulkEditMenu() {
           className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.05] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Pencil className="size-3" strokeWidth={1.75} />
-          Set…
+          {t("Set…")}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
@@ -133,7 +135,7 @@ export function BulkEditMenu() {
                 {values.map((v) => {
                   const label =
                     col.type === "status"
-                      ? (STATUS_LABELS[v as keyof typeof STATUS_LABELS] ?? v)
+                      ? t(STATUS_LABELS[v as keyof typeof STATUS_LABELS] ?? v)
                       : v
                   const displayLabel =
                     col.type === "multiSelect" ? `+ ${label}` : label

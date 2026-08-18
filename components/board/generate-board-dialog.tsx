@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useFlowBase } from "@/lib/flowbase-store"
 import type { ColumnDef, TableRow } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 interface ColumnSpec {
   name: string
@@ -49,6 +50,7 @@ const SUGGESTIONS = [
 ]
 
 export function GenerateBoardDialog({ open, onOpenChange }: GenerateBoardDialogProps) {
+  const t = useT()
   const createBoard = useFlowBase((s) => s.createBoard)
   const switchBoard = useFlowBase((s) => s.switchBoard)
   const [prompt, setPrompt] = useState("")
@@ -118,7 +120,7 @@ export function GenerateBoardDialog({ open, onOpenChange }: GenerateBoardDialogP
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wand2 className="size-4 text-primary" />
-            Generate board with AI
+            {t("Generate board with AI")}
           </DialogTitle>
           <DialogDescription className="text-[12px]">
             Describe what you want to track. AI generates columns + a few example rows. You
@@ -128,7 +130,7 @@ export function GenerateBoardDialog({ open, onOpenChange }: GenerateBoardDialogP
 
         <div className="space-y-2">
           <Label htmlFor="generate-prompt" className="text-[12px]">
-            What do you want to track?
+            {t("What do you want to track?")}
           </Label>
           <Input
             id="generate-prompt"
@@ -217,7 +219,7 @@ export function GenerateBoardDialog({ open, onOpenChange }: GenerateBoardDialogP
 
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("Cancel")}
           </Button>
           {!template ? (
             <Button
@@ -236,14 +238,14 @@ export function GenerateBoardDialog({ open, onOpenChange }: GenerateBoardDialogP
                 size="sm"
                 onClick={() => setTemplate(null)}
               >
-                Re-generate
+                {t("Re-generate")}
               </Button>
               <Button
                 size="sm"
                 onClick={handleCreate}
                 data-action="create-from-template"
               >
-                Create board
+                {t("Create board")}
               </Button>
             </>
           )}

@@ -27,6 +27,7 @@ import {
   stringifyMarkdownTable,
 } from "@/lib/parsers"
 import { selectActiveBoard, useFlowBase } from "@/lib/flowbase-store"
+import { useT } from "@/lib/i18n"
 
 function todayStr(): string {
   return new Date().toISOString().slice(0, 10).replace(/-/g, "")
@@ -44,6 +45,7 @@ function sanitize(label: string): string {
 }
 
 export function ExportMenu() {
+  const t = useT()
   const board = useFlowBase(selectActiveBoard)
   const anchorRef = useRef<HTMLAnchorElement>(null)
 
@@ -91,7 +93,7 @@ export function ExportMenu() {
 
   const exportXlsx = async () => {
     const filename = `${sanitize(board.label)}-${todayStr()}.xlsx`
-    const toastId = toast.loading("Building Excel file…", { id: "export-xlsx" })
+    const toastId = toast.loading(t("Building Excel file…"), { id: "export-xlsx" })
     try {
       // dynamic import — xlsx lib은 lazy load (main bundle 보호 LOCK)
       const { tableToXlsxBlob } = await import("@/lib/xlsx-loader")
@@ -120,12 +122,12 @@ export function ExportMenu() {
             className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.05]"
           >
             <Download className="size-3" strokeWidth={1.75} />
-            Export
+            {t("Export")}
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
           <DropdownMenuLabel className="text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
-            Export this board
+            {t("Export this board")}
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -143,7 +145,7 @@ export function ExportMenu() {
             data-export="md"
           >
             <Hash className="size-3" strokeWidth={1.75} />
-            <span className="flex-1">Markdown table</span>
+            <span className="flex-1">{t("Markdown table")}</span>
             <span className="text-[10px] text-muted-foreground">.md</span>
           </DropdownMenuItem>
           <DropdownMenuItem

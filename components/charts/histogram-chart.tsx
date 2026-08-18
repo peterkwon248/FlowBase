@@ -6,6 +6,7 @@
 
 import { useMemo } from "react"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 export interface HistogramBin {
   from: number
@@ -51,13 +52,14 @@ export function HistogramChart({
   // G5-1 drill-down — bin click 시 range 반환 (caller가 sheet filter 적용)
   onBinClick?: (from: number, to: number) => void
 }) {
+  const t = useT()
   const bins = useMemo(() => computeBins(values), [values])
   const dims = { w: 320, h: 180, padL: 24, padR: 8, padT: 8, padB: 22 }
 
   if (bins.length === 0) {
     return (
       <div className="flex h-[180px] items-center justify-center text-[11.5px] text-muted-foreground">
-        No data
+        {t("No data")}
       </div>
     )
   }

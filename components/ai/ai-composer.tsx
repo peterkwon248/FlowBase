@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Send } from "lucide-react"
 import { useFlowBase } from "@/lib/flowbase-store"
+import { useT } from "@/lib/i18n"
 
 interface AiComposerProps {
   busy: boolean
@@ -14,6 +15,7 @@ interface AiComposerProps {
 }
 
 export function AiComposer({ busy, onSend }: AiComposerProps) {
+  const t = useT()
   const [input, setInput] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -44,7 +46,7 @@ export function AiComposer({ busy, onSend }: AiComposerProps) {
             submit()
           }
         }}
-        placeholder="Ask AI…"
+        placeholder={t("Ask AI…")}
         data-ai-composer-input
         className="w-full bg-transparent px-1 py-0.5 text-[12.5px] outline-none placeholder:text-muted-foreground"
       />
@@ -53,7 +55,7 @@ export function AiComposer({ busy, onSend }: AiComposerProps) {
           ↵
         </span>
         <span className="text-[11px] text-muted-foreground">
-          {busy ? "Thinking…" : "Send"}
+          {busy ? t("Thinking…") : t("Send")}
         </span>
         <div className="flex-1" />
         <button
@@ -63,7 +65,7 @@ export function AiComposer({ busy, onSend }: AiComposerProps) {
           className="inline-flex items-center gap-1 rounded bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground disabled:opacity-60"
         >
           <Send className="size-3" />
-          Send
+          {t("Send")}
         </button>
       </div>
     </div>

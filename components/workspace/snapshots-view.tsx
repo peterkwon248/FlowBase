@@ -58,6 +58,7 @@ import {
 } from "@/lib/snapshot-diff"
 import { cn } from "@/lib/utils"
 import type { Snapshot, SnapshotState } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 const AUTO_PREFIX = "Auto-saved before restore:"
 
@@ -101,6 +102,7 @@ function snapshotStats(snap: Snapshot): {
 }
 
 export function SnapshotsView() {
+  const t = useT()
   const snapshots = useFlowBase((s) => s.snapshots)
   const members = useFlowBase((s) => s.settings.members)
   const saveSnapshot = useFlowBase((s) => s.saveSnapshot)
@@ -216,7 +218,7 @@ export function SnapshotsView() {
           <span className="inline-flex size-7 items-center justify-center rounded-md bg-chart-4/15 text-chart-4">
             <Camera className="size-4" strokeWidth={1.75} />
           </span>
-          <h1 className="text-[20px] font-bold tracking-[-0.02em]">Snapshots</h1>
+          <h1 className="text-[20px] font-bold tracking-[-0.02em]">{t("Snapshots")}</h1>
           <span className="text-xs tabular-nums text-muted-foreground">
             {snapshots.length} {snapshots.length === 1 ? "save point" : "save points"}
           </span>
@@ -230,7 +232,7 @@ export function SnapshotsView() {
               data-action="save-snapshot"
             >
               <Camera className="size-3.5" strokeWidth={2} />
-              Save snapshot
+              {t("Save snapshot")}
             </Button>
           </div>
         </div>
@@ -241,7 +243,7 @@ export function SnapshotsView() {
         {/* G3-1: A vs B compare — 최소 2개 snapshot 있을 때만 노출 */}
         {snapshots.length >= 2 && (
           <div className="mt-3 flex flex-wrap items-center gap-1.5 pl-[38px] text-[11.5px]">
-            <span className="text-muted-foreground">Compare</span>
+            <span className="text-muted-foreground">{t("Compare")}</span>
             <select
               value={compareA}
               onChange={(e) => setCompareA(e.target.value)}
@@ -278,7 +280,7 @@ export function SnapshotsView() {
               data-action="compare-dual"
             >
               <GitCompare className="mr-1 size-3" strokeWidth={1.75} />
-              Compare
+              {t("Compare")}
             </Button>
           </div>
         )}
@@ -292,7 +294,7 @@ export function SnapshotsView() {
               className="mx-auto mb-2 size-5 text-muted-foreground/60"
               strokeWidth={1.5}
             />
-            No snapshots yet. Save one before a big edit — you can restore it any time.
+            {t("No snapshots yet. Save one before a big edit — you can restore it any time.")}
           </div>
         ) : (
           <ul className="mx-auto flex max-w-3xl flex-col gap-2">
@@ -354,21 +356,21 @@ export function SnapshotsView() {
               </span>
               {restorePreviewSummary && (
                 <span className="block rounded-md border border-border-subtle bg-muted/40 px-2.5 py-1.5 text-[12px] text-foreground">
-                  <strong>Preview:</strong> {restorePreviewSummary}
+                  <strong>{t("Preview:")}</strong> {restorePreviewSummary}
                 </span>
               )}
               <span className="block">
-                <strong className="text-foreground">Your current state will be auto-saved</strong>{" "}
+                <strong className="text-foreground">{t("Your current state will be auto-saved")}</strong>{" "}
                 as a new snapshot, so you can always restore back.
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => restoreTarget && handleRestore(restoreTarget)}
             >
-              Restore
+              {t("Restore")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -415,12 +417,12 @@ export function SnapshotsView() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteTarget && handleDelete(deleteTarget)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -446,6 +448,7 @@ function SnapshotCard({
   onRename: () => void
   onDelete: () => void
 }) {
+  const t = useT()
   const stats = snapshotStats(snap)
   const isAuto = snap.label.startsWith(AUTO_PREFIX)
   return (
@@ -470,7 +473,7 @@ function SnapshotCard({
           </span>
           {isAuto && (
             <span className="shrink-0 whitespace-nowrap rounded-sm bg-muted-foreground/[0.08] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
-              Auto
+              {t("Auto")}
             </span>
           )}
         </div>
@@ -505,7 +508,7 @@ function SnapshotCard({
           data-action="restore-snapshot"
         >
           <RotateCcw className="size-3" strokeWidth={2} />
-          Restore
+          {t("Restore")}
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -513,7 +516,7 @@ function SnapshotCard({
               type="button"
               className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
               data-action="snapshot-menu"
-              aria-label="Snapshot actions"
+              aria-label={t("Snapshot actions")}
             >
               <MoreHorizontal className="size-3.5" strokeWidth={1.75} />
             </button>
@@ -524,7 +527,7 @@ function SnapshotCard({
               className="gap-2 text-[12px]"
             >
               <GitCompare className="size-3" strokeWidth={1.75} />
-              Compare with current
+              {t("Compare with current")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={onRename}
@@ -532,7 +535,7 @@ function SnapshotCard({
               className="gap-2 text-[12px]"
             >
               <Pencil className="size-3" strokeWidth={1.75} />
-              Rename
+              {t("Rename")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -541,7 +544,7 @@ function SnapshotCard({
               className="gap-2 text-[12px] text-destructive focus:text-destructive"
             >
               <Trash2 className="size-3" strokeWidth={1.75} />
-              Delete
+              {t("Delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -559,6 +562,7 @@ function SaveSnapshotDialog({
   onOpenChange: (o: boolean) => void
   onSave: (label: string, description?: string) => void
 }) {
+  const t = useT()
   const [label, setLabel] = useState("")
   const [description, setDescription] = useState("")
 
@@ -583,16 +587,16 @@ function SaveSnapshotDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Camera className="size-4 text-muted-foreground" strokeWidth={1.75} />
-            Save snapshot
+            {t("Save snapshot")}
           </DialogTitle>
           <DialogDescription className="text-[12px]">
-            Capture the current workspace state. You can restore it any time later.
+            {t("Capture the current workspace state. You can restore it any time later.")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <div className="space-y-1.5">
             <Label htmlFor="snapshot-label" className="text-[11.5px]">
-              Label
+              {t("Label")}
             </Label>
             <Input
               id="snapshot-label"
@@ -627,11 +631,11 @@ function SaveSnapshotDialog({
             onClick={() => handleOpen(false)}
             className="text-[12px]"
           >
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button onClick={submit} className="gap-1.5 text-[12px]">
             <Camera className="size-3" strokeWidth={2} />
-            Save
+            {t("Save")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -650,6 +654,7 @@ function RenameSnapshotDialog({
   snap: Snapshot
   onRename: (label: string, description?: string) => void
 }) {
+  const t = useT()
   const [label, setLabel] = useState(snap.label)
   const [description, setDescription] = useState(snap.description ?? "")
 
@@ -663,13 +668,13 @@ function RenameSnapshotDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Pencil className="size-4 text-muted-foreground" strokeWidth={1.75} />
-            Rename snapshot
+            {t("Rename snapshot")}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <div className="space-y-1.5">
             <Label htmlFor="snapshot-rename-label" className="text-[11.5px]">
-              Label
+              {t("Label")}
             </Label>
             <Input
               id="snapshot-rename-label"
@@ -703,10 +708,10 @@ function RenameSnapshotDialog({
             onClick={() => onOpenChange(false)}
             className="text-[12px]"
           >
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button onClick={submit} className="text-[12px]">
-            Save changes
+            {t("Save changes")}
           </Button>
         </DialogFooter>
       </DialogContent>

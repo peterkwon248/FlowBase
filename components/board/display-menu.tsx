@@ -39,6 +39,7 @@ import {
   useFlowBase,
 } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 import type {
   ColumnDef,
   GalleryViewSettings,
@@ -53,6 +54,7 @@ import type {
 const EMPTY_VS: ViewSettings = {}
 
 export function DisplayMenu() {
+  const t = useT()
   const board = useFlowBase(selectActiveBoard)
   const view = useFlowBase(selectActiveView)
   const viewSettings = useFlowBase(
@@ -93,7 +95,7 @@ export function DisplayMenu() {
       <PopoverTrigger asChild>
         <button
           type="button"
-          title="Display options"
+          title={t("Display options")}
           data-action="display-menu"
           className={cn(
             "inline-flex h-7 items-center gap-1 rounded-md border border-border-subtle px-2 text-[12px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground",
@@ -101,7 +103,7 @@ export function DisplayMenu() {
           )}
         >
           <Settings2 className="size-3.5" strokeWidth={1.75} />
-          <span>Display</span>
+          <span>{t("Display")}</span>
           {activeCount > 0 && (
             <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9.5px] font-semibold text-primary-foreground tabular-nums">
               {activeCount}
@@ -148,6 +150,7 @@ const VIEW_LABEL: Record<string, string> = {
 
 // ─── Sheet — column visibility · group by · multi-sort ────────
 function SheetSection({ board }: { board: { columns: ColumnDef[] } }) {
+  const t = useT()
   const settings = useFlowBase(
     (s) => s.viewSettings[s.activeBoardId]?.sheet,
   ) as SheetViewSettings | undefined
@@ -204,7 +207,7 @@ function SheetSection({ board }: { board: { columns: ColumnDef[] } }) {
     <div className="space-y-3">
       {/* Group by */}
       {groupable.length > 0 && (
-        <Row label="Group by">
+        <Row label={t("Group by")}>
           <Select
             value={groupBy}
             onValueChange={(v) =>
@@ -220,7 +223,7 @@ function SheetSection({ board }: { board: { columns: ColumnDef[] } }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="_none">No grouping</SelectItem>
+              <SelectItem value="_none">{t("No grouping")}</SelectItem>
               {groupable.map((c) => (
                 <SelectItem key={c.name} value={c.name}>
                   {c.label || c.name}
@@ -234,11 +237,11 @@ function SheetSection({ board }: { board: { columns: ColumnDef[] } }) {
       {/* Sorts (다중) */}
       <div>
         <div className="mb-1 text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
-          Ordering
+          {t("Ordering")}
         </div>
         {sorts.length === 0 ? (
           <p className="text-[11.5px] text-muted-foreground">
-            No sort. Click + to add.
+            {t("No sort. Click + to add.")}
           </p>
         ) : (
           <ul className="space-y-0.5">
@@ -277,7 +280,7 @@ function SheetSection({ board }: { board: { columns: ColumnDef[] } }) {
                     type="button"
                     onClick={() => moveSort(i, "up")}
                     disabled={i === 0}
-                    title="Move up"
+                    title={t("Move up")}
                     className="inline-flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.08] disabled:opacity-30"
                   >
                     <ChevronUp className="size-3" strokeWidth={2.5} />
@@ -286,7 +289,7 @@ function SheetSection({ board }: { board: { columns: ColumnDef[] } }) {
                     type="button"
                     onClick={() => moveSort(i, "down")}
                     disabled={i === arr.length - 1}
-                    title="Move down"
+                    title={t("Move down")}
                     className="inline-flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.08] disabled:opacity-30"
                   >
                     <ChevronDown className="size-3" strokeWidth={2.5} />
@@ -294,7 +297,7 @@ function SheetSection({ board }: { board: { columns: ColumnDef[] } }) {
                   <button
                     type="button"
                     onClick={() => removeSort(s.key)}
-                    title="Remove"
+                    title={t("Remove")}
                     className="inline-flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-foreground/[0.08] hover:text-destructive"
                   >
                     <X className="size-3" strokeWidth={2} />
@@ -312,7 +315,7 @@ function SheetSection({ board }: { board: { columns: ColumnDef[] } }) {
             >
               <span className="inline-flex items-center gap-1">
                 <Plus className="size-3" strokeWidth={2} />
-                Add sort
+                {t("Add sort")}
               </span>
             </SelectTrigger>
             <SelectContent>
@@ -329,7 +332,7 @@ function SheetSection({ board }: { board: { columns: ColumnDef[] } }) {
       {/* Shown columns (기존) */}
       <div>
         <div className="mb-1 text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
-          Shown columns
+          {t("Shown columns")}
         </div>
         <div className="max-h-48 space-y-0.5 overflow-y-auto">
           {togglable.map((col) => {
@@ -369,6 +372,7 @@ function SheetSection({ board }: { board: { columns: ColumnDef[] } }) {
 
 // ─── Kanban — group by ─────────────────────────────────
 function KanbanSection({ board }: { board: { columns: ColumnDef[] } }) {
+  const t = useT()
   const settings = useFlowBase(
     (s) => s.viewSettings[s.activeBoardId]?.kanban,
   ) as KanbanViewSettings | undefined
@@ -388,7 +392,7 @@ function KanbanSection({ board }: { board: { columns: ColumnDef[] } }) {
 
   return (
     <div className="space-y-2">
-      <Row label="Group by">
+      <Row label={t("Group by")}>
         <Select
           value={current}
           onValueChange={(v) => setViewOption("kanban", { groupBy: v })}
@@ -414,6 +418,7 @@ function KanbanSection({ board }: { board: { columns: ColumnDef[] } }) {
 
 // ─── Gallery — cover · cards · columns ─────────────────
 function GallerySection({ board }: { board: { columns: ColumnDef[] } }) {
+  const t = useT()
   const settings = useFlowBase(
     (s) => s.viewSettings[s.activeBoardId]?.gallery,
   ) as GalleryViewSettings | undefined
@@ -450,7 +455,7 @@ function GallerySection({ board }: { board: { columns: ColumnDef[] } }) {
 
   return (
     <div className="space-y-3">
-      <Row label="Cover">
+      <Row label={t("Cover")}>
         <Select
           value={settings?.coverField ?? "_auto"}
           onValueChange={(v) =>
@@ -466,7 +471,7 @@ function GallerySection({ board }: { board: { columns: ColumnDef[] } }) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="_auto">Auto</SelectItem>
+            <SelectItem value="_auto">{t("Auto")}</SelectItem>
             {coverCols.map((c) => (
               <SelectItem key={c.name} value={c.name}>
                 {c.label || c.name}
@@ -475,7 +480,7 @@ function GallerySection({ board }: { board: { columns: ColumnDef[] } }) {
           </SelectContent>
         </Select>
       </Row>
-      <Row label="Columns">
+      <Row label={t("Columns")}>
         <div className="inline-flex rounded-md border border-border-subtle p-0.5">
           {[2, 3, 4].map((n) => (
             <button
@@ -499,7 +504,7 @@ function GallerySection({ board }: { board: { columns: ColumnDef[] } }) {
       </Row>
       <div>
         <div className="mb-1 text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
-          Card fields
+          {t("Card fields")}
         </div>
         {/* 선택된 cardFields 우선 표시 + 순서 보존, 그 다음 미선택 컬럼. */}
         <div className="max-h-44 space-y-0.5 overflow-y-auto">
@@ -549,7 +554,7 @@ function GallerySection({ board }: { board: { columns: ColumnDef[] } }) {
               >
                 <span
                   className="flex size-4 shrink-0 cursor-grab items-center justify-center text-muted-foreground/50 active:cursor-grabbing"
-                  title="Drag to reorder"
+                  title={t("Drag to reorder")}
                   aria-hidden
                 >
                   <GripVertical className="size-3" strokeWidth={1.75} />
@@ -558,7 +563,7 @@ function GallerySection({ board }: { board: { columns: ColumnDef[] } }) {
                   type="button"
                   onClick={() => toggleCard(col.name)}
                   className="flex size-3.5 shrink-0 items-center justify-center rounded border border-primary bg-primary text-primary-foreground"
-                  title="Remove from card"
+                  title={t("Remove from card")}
                 >
                   <Check className="size-2.5" strokeWidth={3} />
                 </button>
@@ -574,7 +579,7 @@ function GallerySection({ board }: { board: { columns: ColumnDef[] } }) {
                   onClick={() => move("up")}
                   disabled={i === 0}
                   className="flex size-4 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.08] disabled:opacity-30"
-                  title="Move up"
+                  title={t("Move up")}
                   data-card-up={col.name}
                 >
                   <ChevronUp className="size-3" strokeWidth={2.5} />
@@ -584,7 +589,7 @@ function GallerySection({ board }: { board: { columns: ColumnDef[] } }) {
                   onClick={() => move("down")}
                   disabled={i === arr.length - 1}
                   className="flex size-4 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.08] disabled:opacity-30"
-                  title="Move down"
+                  title={t("Move down")}
                   data-card-down={col.name}
                 >
                   <ChevronDown className="size-3" strokeWidth={2.5} />
@@ -624,6 +629,7 @@ function GallerySection({ board }: { board: { columns: ColumnDef[] } }) {
 
 // ─── Timeline — date field · scale ─────────────────────
 function TimelineSection({ board }: { board: { columns: ColumnDef[] } }) {
+  const t = useT()
   const settings = useFlowBase(
     (s) => s.viewSettings[s.activeBoardId]?.timeline,
   ) as TimelineViewSettings | undefined
@@ -655,7 +661,7 @@ function TimelineSection({ board }: { board: { columns: ColumnDef[] } }) {
           </SelectContent>
         </Select>
       </Row>
-      <Row label="Scale">
+      <Row label={t("Scale")}>
         <div className="inline-flex rounded-md border border-border-subtle p-0.5">
           {(["day", "week", "month"] as const).map((s) => (
             <button

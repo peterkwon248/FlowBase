@@ -46,6 +46,7 @@ import {
 } from "@/lib/parsers"
 import { cn } from "@/lib/utils"
 import type { ColumnDef, ColumnType, TableRow } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 import { ImportStepAi } from "./import-step-ai"
 import { ImportStepPaste } from "./import-step-paste"
 import { ImportStepReview, type WizardColumn } from "./import-step-review"
@@ -120,6 +121,7 @@ interface ImportDialogProps {
 }
 
 export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
+  const t = useT()
   const createBoard = useFlowBase((s) => s.createBoard)
   const switchBoard = useFlowBase((s) => s.switchBoard)
 
@@ -368,9 +370,9 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       <DialogContent className="flex max-h-[calc(100dvh-3rem)] flex-col gap-0 p-0 sm:max-w-4xl">
         <DialogHeader className="flex-row items-center gap-3 border-b border-border-subtle px-5 py-3.5">
           <div className="flex flex-col gap-0.5">
-            <DialogTitle className="text-sm">Import data</DialogTitle>
+            <DialogTitle className="text-sm">{t("Import data")}</DialogTitle>
             <DialogDescription className="text-[11.5px]">
-              Paste from Google Sheets, Excel, Notion, CSV, or Markdown table
+              {t("Paste from Google Sheets, Excel, Notion, CSV, or Markdown table")}
             </DialogDescription>
           </div>
           <div className="flex-1" />
@@ -461,7 +463,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                 onClick={() => onOpenChange(false)}
                 className="rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] text-muted-foreground hover:bg-foreground/[0.05]"
               >
-                Cancel
+                {t("Cancel")}
               </button>
               <button
                 type="button"
@@ -469,7 +471,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                 disabled={!canContinue}
                 className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-semibold text-primary-foreground disabled:opacity-50"
               >
-                Continue
+                {t("Continue")}
                 <ChevronRight className="size-3.5" />
               </button>
             </>
@@ -483,7 +485,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                 className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] text-muted-foreground hover:bg-foreground/[0.05]"
               >
                 <ChevronLeft className="size-3.5" />
-                Back
+                {t("Back")}
               </button>
               <button
                 type="button"
@@ -509,7 +511,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                 className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] text-muted-foreground hover:bg-foreground/[0.05]"
               >
                 <ChevronLeft className="size-3.5" />
-                Back
+                {t("Back")}
               </button>
               <button
                 type="button"

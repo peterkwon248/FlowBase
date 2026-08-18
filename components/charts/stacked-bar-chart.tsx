@@ -9,6 +9,7 @@
 import { useMemo } from "react"
 import type { TableRow } from "@/types/flowbase"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 const CHART_PALETTE = [
   "var(--chart-1)",
@@ -72,6 +73,7 @@ export function StackedBarChart({
   groupField: string
   className?: string
 }) {
+  const t = useT()
   const data = useMemo(
     () => buildData(rows, categoryField, groupField),
     [rows, categoryField, groupField],
@@ -96,7 +98,7 @@ export function StackedBarChart({
   if (data.length === 0) {
     return (
       <div className="flex h-[160px] items-center justify-center text-[11.5px] text-muted-foreground">
-        No data
+        {t("No data")}
       </div>
     )
   }

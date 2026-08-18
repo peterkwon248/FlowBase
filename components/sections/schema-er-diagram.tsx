@@ -16,6 +16,7 @@ import { TYPE_ICON } from "@/components/sheet/header-cell"
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { Board } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 import { NewTableModal } from "./schema-new-table-modal"
 
 const CARD_WIDTH = 240
@@ -148,6 +149,7 @@ function deriveEdges(boards: Board[]): Edge[] {
 }
 
 export function SchemaERDiagram() {
+  const t = useT()
   const boards = useFlowBase((s) => s.boards)
   const boardList = useMemo(() => Object.values(boards), [boards])
   const schemaPositions = useFlowBase((s) => s.schemaPositions)
@@ -440,7 +442,7 @@ export function SchemaERDiagram() {
         {/* Empty state */}
         {boardList.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-[13px] text-muted-foreground">
-            No boards yet.
+            {t("No boards yet.")}
           </div>
         )}
 
@@ -466,7 +468,7 @@ export function SchemaERDiagram() {
                     setFocusedId(null)
                   }
                 }}
-                placeholder="Find a table…"
+                placeholder={t("Find a table…")}
                 data-er-search
                 className="h-8 bg-card pl-7 pr-7 text-[12px] shadow-sm"
               />
@@ -474,7 +476,7 @@ export function SchemaERDiagram() {
                 <button
                   type="button"
                   onClick={() => setQuery("")}
-                  title="Clear search"
+                  title={t("Clear search")}
                   className="absolute right-1.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
                 >
                   <X className="size-3" strokeWidth={2} />
@@ -485,7 +487,7 @@ export function SchemaERDiagram() {
               <div className="mt-1 overflow-hidden rounded-md border border-border bg-card shadow-md">
                 {results.length === 0 ? (
                   <div className="px-3 py-2 text-[12px] text-muted-foreground">
-                    No tables match.
+                    {t("No tables match.")}
                   </div>
                 ) : (
                   results.map((b) => (
@@ -522,7 +524,7 @@ export function SchemaERDiagram() {
         >
           <div className="inline-flex items-center gap-1 rounded-md border border-border bg-card p-1 shadow-sm">
             <ZoomBtn
-              title="Zoom out"
+              title={t("Zoom out")}
               onClick={() =>
                 setZoom((z) => Math.max(ZOOM_MIN, +(z - 0.1).toFixed(2)))
               }
@@ -533,7 +535,7 @@ export function SchemaERDiagram() {
               {Math.round(zoom * 100)}%
             </span>
             <ZoomBtn
-              title="Zoom in"
+              title={t("Zoom in")}
               onClick={() =>
                 setZoom((z) => Math.min(ZOOM_MAX, +(z + 0.1).toFixed(2)))
               }
@@ -566,7 +568,7 @@ export function SchemaERDiagram() {
             data-action="schema-new-table"
           >
             <Plus className="size-3" strokeWidth={2} />
-            New table
+            {t("New table")}
           </Button>
         </div>
 
@@ -574,14 +576,14 @@ export function SchemaERDiagram() {
         <div className="pointer-events-none absolute bottom-3 left-4 inline-flex items-center gap-3.5 rounded-md border border-border bg-card/90 px-2.5 py-1 text-[11.5px] text-muted-foreground backdrop-blur-sm">
           <span className="inline-flex items-center gap-1.5">
             <span className="size-1.5 rounded-full bg-chart-1" />
-            Tables: <b className="font-semibold tabular-nums text-foreground">{boardList.length}</b>
+            {t("Tables:")} <b className="font-semibold tabular-nums text-foreground">{boardList.length}</b>
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="size-1.5 rounded-full bg-chart-4" />
-            Relations: <b className="font-semibold tabular-nums text-foreground">{edges.length}</b>
+            {t("Relations:")} <b className="font-semibold tabular-nums text-foreground">{edges.length}</b>
           </span>
           <span className="opacity-60">·</span>
-          <span>Drag a table to move · double-click to open · ⌘+wheel to zoom</span>
+          <span>{t("Drag a table to move · double-click to open · ⌘+wheel to zoom")}</span>
         </div>
       </div>
 
@@ -603,6 +605,7 @@ function TableCard({
   onHover: (id: string | null) => void
   onOpen: () => void
 }) {
+  const t = useT()
   const { board } = rect
   const color = board.colorVar ?? "var(--chart-1)"
   const accentBg = `color-mix(in oklch, ${color} 18%, var(--background))`
@@ -616,7 +619,7 @@ function TableCard({
       onDoubleClick={onOpen}
       onMouseEnter={() => onHover(board.id)}
       onMouseLeave={() => onHover(null)}
-      title="Drag to move · double-click to open"
+      title={t("Drag to move · double-click to open")}
       className={cn(
         "absolute flex flex-col cursor-grab overflow-hidden rounded-lg border bg-card transition-[border-color,box-shadow] active:cursor-grabbing",
         selected

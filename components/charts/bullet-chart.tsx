@@ -5,6 +5,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 interface BulletChartProps {
   value: number
@@ -26,6 +27,7 @@ export function BulletChart({
   referenceLabel,
   className,
 }: BulletChartProps) {
+  const t = useT()
   // axis 최대값 — value/goal/reference 중 가장 큰 값의 110%
   const candidates = [value, goal, reference].filter(
     (n): n is number => typeof n === "number" && Number.isFinite(n),
@@ -33,7 +35,7 @@ export function BulletChart({
   if (candidates.length === 0) {
     return (
       <div className="flex h-[80px] items-center justify-center text-[11.5px] text-muted-foreground">
-        No data
+        {t("No data")}
       </div>
     )
   }
@@ -77,7 +79,7 @@ export function BulletChart({
         {/* goal marker — 세로 두꺼운 선 */}
         {goalPct != null && (
           <div
-            aria-label="Goal"
+            aria-label={t("Goal")}
             className="absolute top-[-2px] h-[calc(100%+4px)] w-[2px] bg-foreground/80"
             style={{ left: `${goalPct}%` }}
             data-bullet-goal
@@ -86,7 +88,7 @@ export function BulletChart({
         {/* reference marker — 점선 또는 다이아 */}
         {refPct != null && (
           <div
-            aria-label="Reference"
+            aria-label={t("Reference")}
             className="absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border border-foreground/60 bg-card"
             style={{ left: `${refPct}%` }}
             data-bullet-reference

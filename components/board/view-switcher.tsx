@@ -22,6 +22,7 @@ import {
 } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { ViewMode } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 interface ViewDef {
   id: ViewMode
@@ -38,6 +39,7 @@ const VIEWS: ViewDef[] = [
 ]
 
 export function ViewSwitcher() {
+  const t = useT()
   const view = useFlowBase(selectActiveView)
   const board = useFlowBase(selectActiveBoard)
   const setView = useFlowBase((s) => s.setView)
@@ -52,8 +54,8 @@ export function ViewSwitcher() {
   }
 
   const disabledReason = (id: ViewMode): string => {
-    if (id === "kanban") return "Needs a status column"
-    if (id === "timeline") return "Needs a date column"
+    if (id === "kanban") return t("Needs a status column")
+    if (id === "timeline") return t("Needs a date column")
     return ""
   }
 
@@ -69,7 +71,7 @@ export function ViewSwitcher() {
             type="button"
             disabled={disabled}
             onClick={() => setView(v.id)}
-            title={disabled ? disabledReason(v.id) : v.label}
+            title={disabled ? disabledReason(v.id) : t(v.label)}
             className={cn(
               "inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium transition-colors",
               active
@@ -79,7 +81,7 @@ export function ViewSwitcher() {
             )}
           >
             <Icon className="size-3.5" strokeWidth={1.75} />
-            {v.label}
+            {t(v.label)}
           </button>
         )
       })}

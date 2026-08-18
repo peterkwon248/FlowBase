@@ -5,6 +5,7 @@
 
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 const PALETTE = [
   "var(--chart-1)",
@@ -27,13 +28,14 @@ export function DonutChart({
   // G1-2 drill-down — slice click 시 label 반환
   onSliceClick?: (label: string) => void
 }) {
+  const t = useT()
   const items = data.filter((d) => d.value > 0)
   const total = items.reduce((s, d) => s + d.value, 0)
 
   if (items.length === 0) {
     return (
       <div className="py-8 text-center text-xs text-muted-foreground">
-        No data
+        {t("No data")}
       </div>
     )
   }
@@ -67,7 +69,7 @@ export function DonutChart({
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-xl font-bold tabular-nums">{total}</span>
-          <span className="text-[11px] text-muted-foreground">Total</span>
+          <span className="text-[11px] text-muted-foreground">{t("Total")}</span>
         </div>
       </div>
       <ul className="flex flex-1 flex-col gap-1.5">

@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 import type {
   ColumnDef,
   LibraryField,
@@ -80,6 +81,7 @@ export function NewTableModal({
   open: boolean
   onOpenChange: (o: boolean) => void
 }) {
+  const t = useT()
   const library = useFlowBase((s) => s.library)
   const createBoard = useFlowBase((s) => s.createBoard)
   const switchBoard = useFlowBase((s) => s.switchBoard)
@@ -144,9 +146,9 @@ export function NewTableModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[calc(100dvh-4rem)] flex-col gap-0 p-0 sm:max-w-2xl">
         <DialogHeader className="border-b border-border-subtle px-5 py-3.5">
-          <DialogTitle className="text-[14px]">Create a new table</DialogTitle>
+          <DialogTitle className="text-[14px]">{t("Create a new table")}</DialogTitle>
           <DialogDescription className="text-[12px]">
-            Pick a Library template or start blank.
+            {t("Pick a Library template or start blank.")}
           </DialogDescription>
         </DialogHeader>
 
@@ -154,7 +156,7 @@ export function NewTableModal({
           {library.templates.length > 0 && (
             <>
               <div className="mb-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                From Library template
+                {t("From Library template")}
               </div>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2.5">
                 {library.templates.map((tpl) => {
@@ -220,7 +222,7 @@ export function NewTableModal({
           )}
 
           <div className="mb-2.5 mt-5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-            Or start from scratch
+            {t("Or start from scratch")}
           </div>
           <button
             type="button"
@@ -237,9 +239,9 @@ export function NewTableModal({
               <Plus className="size-3.5" strokeWidth={2} />
             </span>
             <div className="flex-1">
-              <div className="text-[13px] font-semibold">Blank table</div>
+              <div className="text-[13px] font-semibold">{t("Blank table")}</div>
               <div className="text-[11.5px] text-muted-foreground">
-                Add columns later from the sheet header.
+                {t("Add columns later from the sheet header.")}
               </div>
             </div>
             {selected?.kind === "blank" && (
@@ -251,7 +253,7 @@ export function NewTableModal({
         <DialogFooter className="flex-row items-center gap-2 border-t border-border-subtle px-5 py-3">
           <div className="flex-1 space-y-0">
             <Label htmlFor="new-table-name" className="sr-only">
-              Table name
+              {t("Table name")}
             </Label>
             <Input
               id="new-table-name"
@@ -260,12 +262,12 @@ export function NewTableModal({
               onKeyDown={(e) => {
                 if (e.key === "Enter" && canCreate) create()
               }}
-              placeholder="Table name (e.g. CS Returns)"
+              placeholder={t("Table name (e.g. CS Returns)")}
               data-new-table-name
             />
           </div>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button
             disabled={!canCreate}
@@ -274,7 +276,7 @@ export function NewTableModal({
             data-new-table-create
           >
             <Plus className="size-3" strokeWidth={2} />
-            Create
+            {t("Create")}
           </Button>
         </DialogFooter>
       </DialogContent>

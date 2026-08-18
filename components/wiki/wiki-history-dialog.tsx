@@ -22,6 +22,7 @@ import { useFlowBase } from "@/lib/flowbase-store"
 import { diffLines } from "@/lib/line-diff"
 import { cn } from "@/lib/utils"
 import type { PageRevision, WikiPage } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 interface WikiHistoryDialogProps {
   page: WikiPage
@@ -55,6 +56,7 @@ export function WikiHistoryDialog({
   open,
   onOpenChange,
 }: WikiHistoryDialogProps) {
+  const t = useT()
   const updateWikiPage = useFlowBase((s) => s.updateWikiPage)
   const revisions = page.revisions ?? []
   const [selectedIdx, setSelectedIdx] = useState<number>(0)
@@ -83,7 +85,7 @@ export function WikiHistoryDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <History className="size-4 text-muted-foreground" strokeWidth={1.75} />
-            Version history
+            {t("Version history")}
           </DialogTitle>
           <DialogDescription className="text-[12px]">
             Last {revisions.length} version{revisions.length === 1 ? "" : "s"} of
@@ -93,7 +95,7 @@ export function WikiHistoryDialog({
 
         {revisions.length === 0 ? (
           <div className="rounded-md border border-dashed border-border bg-card px-6 py-10 text-center text-[12.5px] text-muted-foreground">
-            No previous versions yet. Edits will be tracked here.
+            {t("No previous versions yet. Edits will be tracked here.")}
           </div>
         ) : (
           <div className="grid grid-cols-[180px_1fr] gap-3">
@@ -167,7 +169,7 @@ export function WikiHistoryDialog({
             onClick={() => onOpenChange(false)}
             className="text-[12px]"
           >
-            Close
+            {t("Close")}
           </Button>
           {selectedRev && (
             <Button
@@ -176,7 +178,7 @@ export function WikiHistoryDialog({
               data-wiki-restore
             >
               <RotateCcw className="size-3" strokeWidth={2} />
-              Restore this version
+              {t("Restore this version")}
             </Button>
           )}
         </DialogFooter>

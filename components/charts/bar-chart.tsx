@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
   XAxis,
 } from "recharts"
+import { useT } from "@/lib/i18n"
 
 const PALETTE = [
   "var(--chart-1)",
@@ -32,10 +33,11 @@ export function BarChart({
   // G1-2 drill-down — bar click 시 label 반환
   onBarClick?: (label: string) => void
 }) {
+  const t = useT()
   if (data.length === 0) {
     return (
       <div className="py-8 text-center text-xs text-muted-foreground">
-        No data
+        {t("No data")}
       </div>
     )
   }

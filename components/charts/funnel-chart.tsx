@@ -9,6 +9,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 
 export interface FunnelStage {
   label: string
@@ -30,11 +31,12 @@ export function FunnelChart({
   stages: FunnelStage[]
   className?: string
 }) {
+  const t = useT()
   const data = stages.filter((s) => s.value > 0)
   if (data.length === 0) {
     return (
       <div className="flex h-[160px] items-center justify-center text-[11.5px] text-muted-foreground">
-        No data
+        {t("No data")}
       </div>
     )
   }
@@ -53,7 +55,7 @@ export function FunnelChart({
         viewBox={`0 0 ${dims.w} ${totalH}`}
         className="block w-full"
         role="img"
-        aria-label="Funnel chart"
+        aria-label={t("Funnel chart")}
       >
         {data.map((stage, i) => {
           const y = i * (dims.stageH + dims.gap)

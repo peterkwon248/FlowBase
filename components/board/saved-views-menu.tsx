@@ -50,6 +50,7 @@ import {
 import { deepEqual } from "@/lib/deep-equal"
 import { cn } from "@/lib/utils"
 import type { SavedView, ViewMode, ViewSettings } from "@/types/flowbase"
+import { useT } from "@/lib/i18n"
 
 const VIEW_ICON: Record<ViewMode, LucideIcon> = {
   sheet: Table2,
@@ -63,6 +64,7 @@ const EMPTY_LIST: SavedView[] = []
 const EMPTY_VS: ViewSettings = {}
 
 export function SavedViewsMenu() {
+  const t = useT()
   const board = useFlowBase(selectActiveBoard)
   const isViewer = useFlowBase(selectIsViewer)
   const savedViewsForBoard = useFlowBase(
@@ -201,13 +203,13 @@ export function SavedViewsMenu() {
             <Bookmark className="size-3.5 shrink-0" strokeWidth={1.75} />
           )}
           <span className="truncate">
-            {activeView ? activeView.name : "Views"}
+            {activeView ? activeView.name : t("Views")}
           </span>
           {isModified && (
             <span
               aria-hidden
               className="size-1.5 shrink-0 rounded-full bg-amber-500"
-              title="Modified — current state differs from the saved view"
+              title={t("Modified — current state differs from the saved view")}
             />
           )}
         </button>
@@ -216,17 +218,17 @@ export function SavedViewsMenu() {
         <div className="space-y-0.5 py-1">
           <div className="flex items-center justify-between px-3 py-1.5">
             <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              Saved views
+              {t("Saved views")}
             </span>
             {!creating && !isViewer && (
               <button
                 type="button"
                 onClick={() => setCreating(true)}
                 className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
-                title="Save current as new view"
+                title={t("Save current as new view")}
               >
                 <Plus className="size-3" />
-                Save current
+                {t("Save current")}
               </button>
             )}
           </div>
@@ -248,7 +250,7 @@ export function SavedViewsMenu() {
                       setCreateName("")
                     }
                   }}
-                  placeholder="View name"
+                  placeholder={t("View name")}
                   className="h-7 flex-1 text-[12px]"
                 />
                 <button
@@ -256,7 +258,7 @@ export function SavedViewsMenu() {
                   onClick={handleSave}
                   className="inline-flex h-7 items-center rounded-md bg-primary px-2 text-[11px] font-medium text-primary-foreground"
                 >
-                  Save
+                  {t("Save")}
                 </button>
                 <button
                   type="button"
@@ -265,13 +267,13 @@ export function SavedViewsMenu() {
                     setCreateName("")
                   }}
                   className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-foreground/[0.06]"
-                  title="Cancel"
+                  title={t("Cancel")}
                 >
                   <X className="size-3.5" />
                 </button>
               </div>
               <p className="mt-1 text-[10.5px] text-muted-foreground">
-                Saves filters · sort · display options of the current view.
+                {t("Saves filters · sort · display options of the current view.")}
               </p>
             </div>
           )}
@@ -294,7 +296,7 @@ export function SavedViewsMenu() {
                 <Input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Filter views…"
+                  placeholder={t("Filter views…")}
                   className="h-7 pl-6 text-[11.5px]"
                 />
               </div>
@@ -329,10 +331,10 @@ export function SavedViewsMenu() {
                   type="button"
                   onClick={() => updateSavedViewFromCurrent(activeView.id)}
                   className="inline-flex shrink-0 items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-amber-700 hover:bg-amber-500/25 dark:text-amber-300"
-                  title="Overwrite saved view with current state"
+                  title={t("Overwrite saved view with current state")}
                 >
                   <RefreshCw className="size-3" />
-                  Update
+                  {t("Update")}
                 </button>
               </div>
             </div>
@@ -413,7 +415,7 @@ export function SavedViewsMenu() {
                                   "inline-flex size-5 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-foreground/[0.08] group-hover:opacity-100",
                                   active && "opacity-60",
                                 )}
-                                title="More"
+                                title={t("More")}
                               >
                                 <MoreHorizontal className="size-3.5" />
                               </button>
@@ -431,7 +433,7 @@ export function SavedViewsMenu() {
                                 className="text-[12px]"
                               >
                                 <Pencil className="size-3.5" />
-                                Rename
+                                {t("Rename")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onSelect={(e) => {
@@ -441,7 +443,7 @@ export function SavedViewsMenu() {
                                 className="text-[12px]"
                               >
                                 <RefreshCw className="size-3.5" />
-                                Update from current
+                                {t("Update from current")}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
@@ -453,7 +455,7 @@ export function SavedViewsMenu() {
                                 className="text-[12px]"
                               >
                                 <Trash2 className="size-3.5" />
-                                Delete
+                                {t("Delete")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

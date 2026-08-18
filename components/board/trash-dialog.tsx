@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
+import { useT } from "@/lib/i18n"
 import type {
   TrashedBoard,
   TrashedRow,
@@ -49,6 +50,7 @@ export function TrashDialog({
   open: boolean
   onOpenChange: (o: boolean) => void
 }) {
+  const t = useT()
   const trashedBoards = useFlowBase((s) => s.trashedBoards)
   const trashedRows = useFlowBase((s) => s.trashedRows)
   const trashedWikiPages = useFlowBase((s) => s.trashedWikiPages)
@@ -98,9 +100,9 @@ export function TrashDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Trash</DialogTitle>
+          <DialogTitle>{t("Trash")}</DialogTitle>
           <DialogDescription className="text-[12px]">
-            Items here are permanently deleted after 30 days.
+            {t("Items here are permanently deleted after 30 days.")}
           </DialogDescription>
         </DialogHeader>
 
@@ -108,21 +110,21 @@ export function TrashDialog({
         <div className="flex items-center gap-0 border-b border-border-subtle">
           <TabButton
             id="boards"
-            label="Boards"
+            label={t("Boards")}
             count={trashedBoards.length}
             active={tab === "boards"}
             onClick={setTab}
           />
           <TabButton
             id="rows"
-            label="Rows"
+            label={t("Rows")}
             count={trashedRows.length}
             active={tab === "rows"}
             onClick={setTab}
           />
           <TabButton
             id="wiki"
-            label="Wiki pages"
+            label={t("Wiki pages")}
             count={trashedWikiPages.length}
             active={tab === "wiki"}
             onClick={setTab}
@@ -163,10 +165,10 @@ export function TrashDialog({
               title={viewerTitle}
               className="text-destructive hover:bg-destructive/15 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Empty trash
+              {t("Empty trash")}
             </Button>
           )}
-          <Button onClick={() => onOpenChange(false)}>Close</Button>
+          <Button onClick={() => onOpenChange(false)}>{t("Close")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

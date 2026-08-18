@@ -8,6 +8,7 @@
 
 import { Check, Loader2, Sparkles } from "lucide-react"
 import type { AiColumn } from "@/lib/flowbase-ai"
+import { useT } from "@/lib/i18n"
 
 const LABEL: Record<AiColumn, string> = {
   theme: "Theme",
@@ -36,21 +37,25 @@ export function PendingCard({
   onApply,
   onDismiss,
 }: PendingCardProps) {
+  const t = useT()
   const blocked = busy || disabled
-  const viewerTitle = disabled ? "Viewers can't edit" : undefined
+  const viewerTitle = disabled ? t("Viewers can't edit") : undefined
   return (
     <div className="mb-1.5 rounded-lg border border-primary/30 bg-card p-3">
       <div className="mb-1.5 flex items-center gap-1.5">
         <Sparkles className="size-3.5 shrink-0 text-primary" />
         <span className="flex-1 text-[12.5px] font-semibold leading-snug">
-          {count} unconfirmed {LABEL[column]} rows
+          {t("{count} unconfirmed {label} rows", {
+            count,
+            label: t(LABEL[column]),
+          })}
         </span>
         <span className="rounded bg-primary/15 px-1.5 py-px text-[10px] font-semibold tabular-nums text-primary">
           {count}
         </span>
       </div>
       <div className="mb-2 text-xs leading-relaxed text-muted-foreground">
-        {DETAIL[column]}
+        {t(DETAIL[column])}
       </div>
       <div className="flex items-center gap-1.5">
         <button
@@ -65,7 +70,7 @@ export function PendingCard({
           ) : (
             <Check className="size-3" />
           )}
-          Apply all
+          {t("Apply all")}
         </button>
         <button
           type="button"
@@ -74,7 +79,7 @@ export function PendingCard({
           title={viewerTitle}
           className="rounded-md border border-border px-2.5 py-1 text-[11.5px] text-muted-foreground hover:bg-foreground/[0.05] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Dismiss
+          {t("Dismiss")}
         </button>
       </div>
     </div>
