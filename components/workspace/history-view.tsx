@@ -253,7 +253,7 @@ export function HistoryView() {
                   key={b.id}
                   onSelect={() => setBoardFilter(b.id)}
                 >
-                  {b.label}
+                  {t(b.label)}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -295,7 +295,7 @@ export function HistoryView() {
             {groups.map((g) => (
               <section key={g.dayStart}>
                 <h2 className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-                  {g.label}
+                  {t(g.label)}
                 </h2>
                 <ul className="flex flex-col">
                   {g.events.map((e) => (

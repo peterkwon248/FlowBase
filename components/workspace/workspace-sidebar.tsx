@@ -112,9 +112,7 @@ export function WorkspaceSidebar() {
       </div>
 
       <div className="border-t border-border-subtle px-3.5 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
-        {t("Where structure and")}
-        <br />
-        behavior are designed.
+        {t("Where structure and behavior are designed.")}
       </div>
     </aside>
   )

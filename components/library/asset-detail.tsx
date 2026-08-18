@@ -251,10 +251,10 @@ function Shell({
           className="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-3" strokeWidth={2} />
-          {meta.label}
+          {t(meta.label)}
         </button>
         <span className="text-muted-foreground/40">/</span>
-        <span className="font-semibold">{asset.name}</span>
+        <span className="font-semibold">{t(asset.name)}</span>
       </div>
 
       {/* 헤더 */}
@@ -306,7 +306,7 @@ function Shell({
                   }
                   data-library-asset-name
                 >
-                  {asset.name}
+                  {t(asset.name)}
                   {!isViewer && (
                     <Pencil
                       className="size-3 shrink-0 text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100"
@@ -321,7 +321,7 @@ function Shell({
             </div>
             {asset.desc && (
               <p className="mt-1 text-[13px] text-muted-foreground">
-                {asset.desc}
+                {t(asset.desc)}
               </p>
             )}
           </div>
@@ -469,7 +469,7 @@ function OptionListBody({ asset }: { asset: OptionList }) {
                   boxShadow: `0 0 0 3px color-mix(in oklch, ${o.color} 22%, transparent)`,
                 }}
               />
-              <span className="flex-1 text-[13px] font-medium">{o.label}</span>
+              <span className="flex-1 text-[13px] font-medium">{t(o.label)}</span>
               <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10.5px] text-muted-foreground">
                 {o.id}
               </span>
@@ -554,7 +554,7 @@ function OptionListBody({ asset }: { asset: OptionList }) {
                 title={t("Click to rename")}
                 data-option-label={o.id}
               >
-                {o.label}
+                {t(o.label)}
               </button>
             )}
 
@@ -653,7 +653,7 @@ function FieldBody({
                       key={o.id}
                       className="whitespace-nowrap rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium"
                     >
-                      {o.label}
+                      {t(o.label)}
                     </span>
                   ))}
                 </div>
@@ -747,7 +747,7 @@ function FieldBody({
                 <SelectItem value="_none">{t("None")}</SelectItem>
                 {library.optionLists.map((o) => (
                   <SelectItem key={o.id} value={o.id}>
-                    {o.name} ({o.options.length})
+                    {t(o.name)} ({o.options.length})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -801,7 +801,7 @@ function FieldBody({
                     key={o.id}
                     className="whitespace-nowrap rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium"
                   >
-                    {o.label}
+                    {t(o.label)}
                   </span>
                 ))}
               </div>
@@ -983,7 +983,7 @@ function TemplateBody({
               )}
             >
               <LinkIcon className="size-3 shrink-0 text-primary" strokeWidth={2} />
-              <span className="flex-1 text-[13px]">{f.name}</span>
+              <span className="flex-1 text-[13px]">{t(f.name)}</span>
               <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10.5px] text-muted-foreground">
                 {f.type}
               </span>
@@ -1021,7 +1021,7 @@ function TemplateBody({
                   </SelectItem>
                   {available.map((f) => (
                     <SelectItem key={f.id} value={f.id}>
-                      {f.name} ({f.type})
+                      {t(f.name)} ({f.type})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1218,6 +1218,7 @@ function FieldList({
 }: {
   items: { label: string; type: string; linked?: boolean }[]
 }) {
+  const t = useT()
   return (
     <div className="overflow-hidden rounded-lg border border-border-subtle bg-card">
       {items.map((it, i) => (
@@ -1231,7 +1232,7 @@ function FieldList({
           <span className="w-5 text-right font-mono text-[11px] text-muted-foreground">
             {i + 1}
           </span>
-          <span className="flex-1 text-[13px]">{it.label}</span>
+          <span className="flex-1 text-[13px]">{t(it.label)}</span>
           {it.linked && (
             <LinkIcon className="size-3 text-primary" strokeWidth={2} />
           )}
@@ -1287,14 +1288,14 @@ function FunctionBody({ asset }: { asset: LibraryFunction }) {
               >
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-[13px] font-medium">
-                    {p.name}
+                    {t(p.name)}
                   </span>
                   <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10.5px] text-muted-foreground">
                     {p.type}
                   </span>
                 </div>
                 <div className="mt-0.5 text-[12px] text-muted-foreground">
-                  {p.desc}
+                  {t(p.desc)}
                 </div>
                 {p.options && p.options.length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-1">
@@ -1566,7 +1567,7 @@ function DashboardBody({ asset }: { asset: LibraryDashboard }) {
                   {c.width}
                 </span>
               </div>
-              <div className="text-[13px] font-medium">{c.title}</div>
+              <div className="text-[13px] font-medium">{t(c.title)}</div>
             </div>
           ))}
         </div>

@@ -14,6 +14,8 @@ import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
 import type { WikiPage } from "@/types/flowbase"
 import { useT } from "@/lib/i18n"
+import { useLanguage } from "@/lib/i18n"
+import { wikiDisplay } from "@/lib/i18n/wiki"
 
 const DAY_MS = 86_400_000
 const VERIFY_TTL_DAYS = 90
@@ -43,13 +45,16 @@ export function WikiPageView({ page }: { page: WikiPage }) {
   const initial = (page.owner || "?")[0].toUpperCase()
 
   const [editMode, setEditMode] = useState(false)
-  const [draftBody, setDraftBody] = useState(page.body)
+  // 언어별 표시 해석 — 편집되지 않은 시드 페이지만 한국어본으로 치환된다.
+  const lang = useLanguage()
+  const disp = wikiDisplay(lang, page)
+  const [draftBody, setDraftBody] = useState(disp.body)
   const [historyOpen, setHistoryOpen] = useState(false)
   // 페이지 전환 시 draft 리셋
   useEffect(() => {
     setEditMode(false)
-    setDraftBody(page.body)
-  }, [page.id, page.body])
+    setDraftBody(disp.body)
+  }, [page.id, disp.body])
 
   const revisionCount = page.revisions?.length ?? 0
 
@@ -67,7 +72,7 @@ export function WikiPageView({ page }: { page: WikiPage }) {
   }
 
   const cancelEdit = () => {
-    setDraftBody(page.body)
+    setDraftBody(disp.body)
     setEditMode(false)
   }
 
@@ -83,9 +88,9 @@ export function WikiPageView({ page }: { page: WikiPage }) {
           <span className="opacity-50">/</span>
           <span>{t("Wiki")}</span>
           <span className="opacity-50">/</span>
-          <span>{page.category}</span>
+          <span>{t(disp.category)}</span>
           <span className="opacity-50">/</span>
-          <span className="font-semibold text-foreground">{page.title}</span>
+          <span className="font-semibold text-foreground">{t(disp.title)}</span>
         </div>
 
         {/* Verified expiry banner */}
@@ -93,7 +98,9 @@ export function WikiPageView({ page }: { page: WikiPage }) {
           <div className="mb-4 flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3.5 py-2 text-[12.5px] font-medium text-destructive">
             <AlertTriangle className="size-3.5 shrink-0" strokeWidth={2} />
             <span>
-              Verification expired (before {page.expiresAt}). Owner re-verification needed.
+              {t("Verification expired (before {date}). Owner re-verification needed.", {
+                date: page.expiresAt ?? "",
+              })}
             </span>
             <div className="flex-1" />
             <button
@@ -111,7 +118,7 @@ export function WikiPageView({ page }: { page: WikiPage }) {
         {/* Title + Edit toggle */}
         <div className="mb-2 flex items-start gap-3">
           <h1 className="flex-1 text-[32px] font-bold leading-tight tracking-[-0.02em] text-foreground">
-            {page.title}
+            {t(disp.title)}
           </h1>
           {!editMode ? (
             <div className="mt-2 flex gap-1.5">
@@ -169,7 +176,7 @@ export function WikiPageView({ page }: { page: WikiPage }) {
 
         {/* Metadata row */}
         <div className="mb-6 flex flex-wrap items-center gap-3.5 border-b border-border-subtle pb-3.5 text-[12px] text-muted-foreground">
-          <span>{page.category}</span>
+          <span>{t(disp.category)}</span>
           <span className="opacity-40">·</span>
           <span className="inline-flex items-center gap-1.5">
             <span
@@ -236,7 +243,7 @@ export function WikiPageView({ page }: { page: WikiPage }) {
             </p>
           </div>
         ) : (
-          <MarkdownBody source={page.body} />
+          <MarkdownBody source={disp.body} />
         )}
       </div>
 

@@ -116,6 +116,7 @@ function boardMatchesQuery(b: Board, q: string): boolean {
 }
 
 export function SchemaView() {
+  const t = useT()
   const boards = useFlowBase((s) => s.boards)
   const boardList = Object.values(boards)
   const relations = deriveRelations(boards)
@@ -148,7 +149,7 @@ export function SchemaView() {
               )}
             >
               <Icon className="size-3.5" strokeWidth={1.75} />
-              <span>{label}</span>
+              <span>{t(label)}</span>
               {typeof count === "number" && (
                 <span className="ml-0.5 text-[10.5px] font-normal tabular-nums text-muted-foreground">
                   {count}

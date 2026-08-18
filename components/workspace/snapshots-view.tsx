@@ -253,7 +253,7 @@ export function SnapshotsView() {
               <option value="">(A)</option>
               {snapshots.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.label}
+                  {t(s.label)}
                 </option>
               ))}
             </select>
@@ -267,7 +267,7 @@ export function SnapshotsView() {
               <option value="">(B)</option>
               {snapshots.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.label}
+                  {t(s.label)}
                 </option>
               ))}
             </select>
@@ -469,7 +469,7 @@ function SnapshotCard({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="truncate text-[13px] font-semibold text-foreground">
-            {snap.label}
+            {t(snap.label)}
           </span>
           {isAuto && (
             <span className="shrink-0 whitespace-nowrap rounded-sm bg-muted-foreground/[0.08] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
@@ -479,7 +479,7 @@ function SnapshotCard({
         </div>
         {snap.description && (
           <div className="mt-0.5 line-clamp-2 text-[12px] text-muted-foreground">
-            {snap.description}
+            {t(snap.description)}
           </div>
         )}
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">

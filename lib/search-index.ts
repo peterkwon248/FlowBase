@@ -1,3 +1,4 @@
+import { DEFAULT_LANGUAGE, translate, type Language } from "@/lib/i18n"
 // FlowBase V2 — 통합 검색 인덱스 + 스코어 필터
 // 출처: design-ref/prototype/search-palette.jsx
 //
@@ -58,7 +59,12 @@ export function buildSearchIndex(
   boards: Record<string, Board>,
   library: Library,
   wikiPages: WikiPage[],
+  // 표시 문자열을 번역해 담으므로 언어가 인덱스의 입력이다.
+  // 전역 상태를 읽는 tt() 대신 명시적 인자 — 호출부 useMemo 의존성이 정직해진다.
+  lang: Language = DEFAULT_LANGUAGE,
 ): SearchItem[] {
+  const tt = (v: string, params?: Record<string, string | number>) =>
+    translate(lang, v, params)
   const items: SearchItem[] = []
 
   // Tables + rows
@@ -66,8 +72,11 @@ export function buildSearchIndex(
     items.push({
       kind: "table",
       id: `table-${board.id}`,
-      title: board.label,
-      subtitle: `${board.rows.length} rows · ${board.columns.length} columns`,
+      title: tt(board.label),
+      subtitle: tt("{rows} rows · {cols} columns", {
+        rows: board.rows.length,
+        cols: board.columns.length,
+      }),
       keywords: `${board.label} ${board.id}`.toLowerCase(),
       payload: { kind: "table", boardId: board.id },
     })
@@ -77,7 +86,7 @@ export function buildSearchIndex(
         kind: "row",
         id: `row-${board.id}-${row.id}`,
         title,
-        subtitle: `${board.label} · ${row.id}`,
+        subtitle: `${tt(board.label)} · ${row.id}`,
         keywords: `${row.id} ${rowSearchable(row, board)}`.toLowerCase(),
         payload: { kind: "row", boardId: board.id, rowId: row.id },
       })
@@ -91,8 +100,8 @@ export function buildSearchIndex(
       items.push({
         kind: "library",
         id: `lib-${key}-${a.id}`,
-        title: a.name,
-        subtitle: `Library · ${label}${a.desc ? " · " + a.desc.slice(0, 60) : ""}`,
+        title: tt(a.name),
+        subtitle: `${tt("Library")} · ${tt(label)}${a.desc ? " · " + tt(a.desc).slice(0, 60) : ""}`,
         keywords: `${a.name} ${a.desc ?? ""}`.toLowerCase(),
         payload: { kind: "library", category: key, assetId: a.id },
       })
@@ -104,8 +113,8 @@ export function buildSearchIndex(
     items.push({
       kind: "wiki",
       id: `wiki-${p.id}`,
-      title: p.title,
-      subtitle: `Wiki · ${p.category} · ${p.owner}`,
+      title: tt(p.title),
+      subtitle: `${tt("Wiki")} · ${tt(p.category)} · ${p.owner}`,
       keywords: `${p.title} ${p.category} ${p.body}`.toLowerCase(),
       payload: { kind: "wiki", pageId: p.id },
     })

@@ -22,7 +22,7 @@ import {
   type SearchKind,
 } from "@/lib/search-index"
 import { cn } from "@/lib/utils"
-import { useT } from "@/lib/i18n"
+import { useLanguage, useT } from "@/lib/i18n"
 
 const PAGE_LIMIT = 200
 
@@ -52,9 +52,11 @@ export function SearchMode() {
     inputRef.current?.focus()
   }, [])
 
+  // lang 의존 — 인덱스가 tt()로 번역된 문자열을 담으므로 언어가 바뀌면 재계산해야 한다.
+  const lang = useLanguage()
   const index = useMemo(
-    () => buildSearchIndex(boards, library, wikiPages),
-    [boards, library, wikiPages],
+    () => buildSearchIndex(boards, library, wikiPages, lang),
+    [boards, library, wikiPages, lang],
   )
 
   const counts = useMemo(() => countByKind(index), [index])
@@ -104,16 +106,16 @@ export function SearchMode() {
 
         {/* Tabs */}
         <div className="mt-3.5 flex flex-wrap gap-1.5">
-          {TABS.map((t) => {
-            const on = tab === t.id
+          {TABS.map((tb) => {
+            const on = tab === tb.id
             const cnt =
-              t.id === "all" ? totalCount : counts[t.id as SearchKind]
+              tb.id === "all" ? totalCount : counts[tb.id as SearchKind]
             return (
               <button
-                key={t.id}
+                key={tb.id}
                 type="button"
-                onClick={() => setTab(t.id)}
-                data-search-tab={t.id}
+                onClick={() => setTab(tb.id)}
+                data-search-tab={tb.id}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12.5px] transition-colors",
                   on
@@ -121,7 +123,7 @@ export function SearchMode() {
                     : "border border-border-subtle text-muted-foreground hover:border-border hover:text-foreground",
                 )}
               >
-                <span>{t.label}</span>
+                <span>{t(tb.label)}</span>
                 <span className="text-[10.5px] tabular-nums opacity-70">
                   {cnt}
                 </span>
@@ -137,12 +139,14 @@ export function SearchMode() {
           <EmptyState
             Icon={SearchIcon}
             title={
-              query ? `No results for "${query}"` : "Search the workspace"
+              query
+                ? t('No results for "{query}"', { query })
+                : t("Search the workspace")
             }
             description={
               query
-                ? "Try a different query, or pick a different category above."
-                : "Start typing to search across tables, rows, Library, and Wiki."
+                ? t("Try a different query, or pick a different category above.")
+                : t("Start typing to search across tables, rows, Library, and Wiki.")
             }
             className="mt-12"
           />
@@ -162,7 +166,7 @@ export function SearchMode() {
                       <HighlightMatch text={item.title} query={query} />
                     </div>
                     <div className="truncate text-[11.5px] text-muted-foreground">
-                      {item.subtitle}
+                      {t(item.subtitle)}
                     </div>
                   </div>
                   <span className="shrink-0 text-[10px] text-muted-foreground">

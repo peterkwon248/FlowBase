@@ -171,7 +171,7 @@ function RuleCard({ rule }: { rule: AutomationRule }) {
         <div className="flex items-center gap-2">
           <span className={cn("size-2 shrink-0 rounded-full", style.dot)} />
           <span className="flex-1 text-[13.5px] font-semibold">
-            {rule.name}
+            {t(rule.name)}
           </span>
           {rule.aiSuggested && (
             <span className="inline-flex items-center gap-1 rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
@@ -196,7 +196,7 @@ function RuleCard({ rule }: { rule: AutomationRule }) {
               style.fg,
             )}
           >
-            {style.label}
+            {t(style.label)}
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -319,7 +319,7 @@ function ActionBlock({ step }: { step: AutomationStep }) {
           <>
             <br />
             <span className="text-[11.5px] text-muted-foreground">
-              {step.detail}
+              {t(step.detail)}
             </span>
           </>
         )}
@@ -347,14 +347,14 @@ function SuggestionCard({ suggestion }: { suggestion: SuggestedAutomation }) {
           strokeWidth={2}
         />
         <span className="flex-1 text-[13px] font-semibold">
-          {suggestion.summary}
+          {t(suggestion.summary)}
         </span>
         <span className="rounded bg-primary/15 px-1.5 py-0.5 font-mono text-[10.5px] font-semibold text-primary">
           {confidencePct}%
         </span>
       </div>
       <p className="text-[12px] leading-relaxed text-muted-foreground">
-        {suggestion.detail}
+        {t(suggestion.detail)}
       </p>
       <div className="flex items-center gap-1.5 pt-1">
         <Button

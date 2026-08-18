@@ -29,7 +29,7 @@ import {
   type SearchKind,
 } from "@/lib/search-index"
 import { cn } from "@/lib/utils"
-import { useT } from "@/lib/i18n"
+import { useLanguage, useT } from "@/lib/i18n"
 
 const RESULT_LIMIT = 30
 
@@ -62,10 +62,12 @@ export function SearchPalette() {
   }, [open])
 
   // 인덱스 — 모달 열린 동안만 (close 시엔 미사용이므로 메모 안 함)
+  // lang 의존 — 인덱스가 tt()로 번역된 문자열을 담으므로 언어가 바뀌면 재계산해야 한다.
+  const lang = useLanguage()
   const index = useMemo(() => {
     if (!open) return []
-    return buildSearchIndex(boards, library, wikiPages)
-  }, [open, boards, library, wikiPages])
+    return buildSearchIndex(boards, library, wikiPages, lang)
+  }, [open, boards, library, wikiPages, lang])
 
   const results = useMemo(
     () => filterSearch(index, query, RESULT_LIMIT),

@@ -464,6 +464,7 @@ function SelectCell({
   onCommitAi,
   onDismissAi,
 }: EditableCellProps) {
+  const t = useT()
   const value = row[col.name] == null ? "" : String(row[col.name])
   const options: CellOption[] = (col.options ?? []).map((o) => ({
     value: o,
@@ -538,13 +539,13 @@ function SelectCell({
           SENTIMENT_TONE[value] ?? "bg-muted text-muted-foreground",
         )}
       >
-        {value || "—"}
+        {value ? t(value) : "—"}
       </button>
     )
   } else if (col.name === "theme") {
     trigger = (
       <button type="button" className="text-left text-[13px]">
-        {value || <span className="text-muted-foreground">—</span>}
+        {value ? t(value) : <span className="text-muted-foreground">—</span>}
       </button>
     )
   } else {
@@ -553,7 +554,7 @@ function SelectCell({
         type="button"
         className="whitespace-nowrap rounded border border-border-subtle bg-muted px-1.5 py-0.5 text-xs"
       >
-        {value || "—"}
+        {value ? t(value) : "—"}
       </button>
     )
   }
@@ -596,6 +597,7 @@ function MultiSelectCell({
   onStopEdit,
   onUpdate,
 }: EditableCellProps) {
+  const t = useT()
   const raw = row[col.name]
   const values = useMemo(() => coerceMultiValue(raw), [raw])
   const options: CellOption[] = (col.options ?? []).map((o) => ({
@@ -680,7 +682,7 @@ function MultiSelectCell({
             key={v}
             className="inline-flex items-center whitespace-nowrap rounded border border-border-subtle bg-muted px-1.5 py-0.5 text-xs text-foreground"
           >
-            {v}
+            {t(v)}
           </span>
         ))
       )}

@@ -173,7 +173,7 @@ export function CellPopover({
                 )}
               >
                 {opt.icon}
-                <span className="flex-1 truncate">{opt.label}</span>
+                <span className="flex-1 truncate">{t(opt.label)}</span>
                 {active && <Check className="size-3 text-primary" />}
               </button>
             )
@@ -330,7 +330,7 @@ export function MultiCellPopover({
                   {active && <Check className="size-2.5" strokeWidth={3} />}
                 </span>
                 {opt.icon}
-                <span className="flex-1 truncate">{opt.label}</span>
+                <span className="flex-1 truncate">{t(opt.label)}</span>
               </button>
             )
           })}

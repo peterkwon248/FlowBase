@@ -21,6 +21,7 @@ import { EmptyState } from "@/components/board/empty-state"
 import { InboxSidebar, type InboxFilter } from "@/components/inbox/inbox-sidebar"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 import type {
   Board,
   Library,
@@ -232,6 +233,7 @@ function buildItems(input: {
 }
 
 export function InboxView() {
+  const t = useT()
   const boards = useFlowBase((s) => s.boards)
   const library = useFlowBase((s) => s.library)
   const suggestedAutomations = useFlowBase((s) => s.suggestedAutomations)
@@ -319,7 +321,7 @@ export function InboxView() {
             )}
           </div>
           <p className="pl-[42px] text-[13px] text-muted-foreground">
-            AI suggestions, alerts, and workspace activity that need attention.
+            {t("AI suggestions, alerts, and workspace activity that need attention.")}
           </p>
         </div>
 
@@ -353,6 +355,7 @@ export function InboxView() {
 }
 
 function ItemRow({ item }: { item: InboxItem }) {
+  const t = useT()
   const style = KIND_STYLE[item.kind]
   const Icon = style.Icon
 
@@ -370,7 +373,7 @@ function ItemRow({ item }: { item: InboxItem }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="flex-1 truncate text-[13.5px] font-semibold">
-            {item.title}
+            {t(item.title)}
           </span>
           <span className="shrink-0 font-mono text-[10.5px] tabular-nums text-muted-foreground">
             {item.time}
@@ -378,7 +381,7 @@ function ItemRow({ item }: { item: InboxItem }) {
         </div>
         {item.detail && (
           <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted-foreground">
-            {item.detail}
+            {t(item.detail)}
           </p>
         )}
       </div>
@@ -388,7 +391,7 @@ function ItemRow({ item }: { item: InboxItem }) {
           onClick={item.action.onClick}
           className="shrink-0 rounded-md border border-border bg-card px-2.5 py-1 text-[11.5px] font-medium hover:bg-foreground/[0.04]"
         >
-          {item.action.label}
+          {t(item.action.label)}
         </button>
       )}
     </div>

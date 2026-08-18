@@ -16,6 +16,7 @@ import {
 import { LIBRARY_CATEGORIES } from "@/lib/flowbase-library-seed"
 import { useFlowBase } from "@/lib/flowbase-store"
 import { cn } from "@/lib/utils"
+import { useT } from "@/lib/i18n"
 import type {
   Library,
   LibraryCategoryId,
@@ -51,6 +52,7 @@ const CATEGORY_BG: Record<LibraryCategoryId, string> = {
 }
 
 export function CategoryCatalog() {
+  const t = useT()
   const library = useFlowBase((s) => s.library)
   const libCategory = useFlowBase((s) => s.libCategory)
   const libAssetId = useFlowBase((s) => s.libAssetId)
@@ -79,14 +81,14 @@ export function CategoryCatalog() {
             <Icon className="size-4" strokeWidth={1.75} />
           </span>
           <h1 className="text-[22px] font-bold tracking-[-0.02em]">
-            {meta.label}
+            {t(meta.label)}
           </h1>
           <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
             {count}
           </span>
         </div>
         <p className="pl-[42px] text-[13px] text-muted-foreground">
-          {meta.desc}
+          {t(meta.desc)}
         </p>
       </div>
 
@@ -187,6 +189,7 @@ function CardShell({
   usedCount: number
   children?: ReactNode
 }) {
+  const t = useT()
   return (
     <button
       type="button"
@@ -199,10 +202,10 @@ function CardShell({
       )}
     >
       <div className="flex items-center gap-2">
-        <span className="flex-1 text-[14px] font-semibold">{name}</span>
+        <span className="flex-1 text-[14px] font-semibold">{t(name)}</span>
         {usedCount > 0 ? (
           <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10.5px] font-semibold text-primary">
-            {usedCount} in use
+            {t("{n} in use", { n: usedCount })}
           </span>
         ) : (
           <span className="text-[10.5px] text-muted-foreground">unused</span>
@@ -214,6 +217,7 @@ function CardShell({
 }
 
 function OptionListCard({ asset, active, onSelect }: CardProps<OptionList>) {
+  const t = useT()
   return (
     <CardShell
       active={active}
@@ -222,7 +226,7 @@ function OptionListCard({ asset, active, onSelect }: CardProps<OptionList>) {
       usedCount={asset.usedIn.length}
     >
       {asset.desc && (
-        <div className="text-[12px] text-muted-foreground">{asset.desc}</div>
+        <div className="text-[12px] text-muted-foreground">{t(asset.desc)}</div>
       )}
       <div className="mt-1 flex flex-wrap gap-1">
         {asset.options.slice(0, 5).map((o) => (
@@ -234,7 +238,7 @@ function OptionListCard({ asset, active, onSelect }: CardProps<OptionList>) {
               color: o.color,
             }}
           >
-            {o.label}
+            {t(o.label)}
           </span>
         ))}
         {asset.options.length > 5 && (
@@ -248,6 +252,7 @@ function OptionListCard({ asset, active, onSelect }: CardProps<OptionList>) {
 }
 
 function FieldCard({ asset, active, onSelect }: CardProps<LibraryField>) {
+  const t = useT()
   return (
     <CardShell
       active={active}
@@ -256,7 +261,7 @@ function FieldCard({ asset, active, onSelect }: CardProps<LibraryField>) {
       usedCount={asset.usedIn.length}
     >
       {asset.desc && (
-        <div className="text-[12px] text-muted-foreground">{asset.desc}</div>
+        <div className="text-[12px] text-muted-foreground">{t(asset.desc)}</div>
       )}
       <div className="mt-1 flex items-center gap-1.5">
         <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10.5px] text-muted-foreground">
@@ -273,6 +278,7 @@ function FieldCard({ asset, active, onSelect }: CardProps<LibraryField>) {
 }
 
 function TemplateCard({ asset, active, onSelect }: CardProps<LibraryTemplate>) {
+  const t = useT()
   const fieldCount = asset.multiTable
     ? (asset.tables?.reduce((n, t) => n + t.columns.length, 0) ?? 0)
     : (asset.fields?.length ?? 0) + (asset.extraFields?.length ?? 0)
@@ -284,7 +290,7 @@ function TemplateCard({ asset, active, onSelect }: CardProps<LibraryTemplate>) {
       usedCount={asset.usedIn.length}
     >
       {asset.desc && (
-        <div className="text-[12px] text-muted-foreground">{asset.desc}</div>
+        <div className="text-[12px] text-muted-foreground">{t(asset.desc)}</div>
       )}
       <div className="mt-1 flex flex-wrap items-center gap-1.5">
         <span className="rounded bg-muted px-1.5 py-0.5 text-[10.5px] text-muted-foreground">
@@ -306,6 +312,7 @@ function TemplateCard({ asset, active, onSelect }: CardProps<LibraryTemplate>) {
 }
 
 function FunctionCard({ asset, active, onSelect }: CardProps<LibraryFunction>) {
+  const t = useT()
   return (
     <CardShell
       active={active}
@@ -314,7 +321,7 @@ function FunctionCard({ asset, active, onSelect }: CardProps<LibraryFunction>) {
       usedCount={asset.usedIn.length}
     >
       {asset.desc && (
-        <div className="text-[12px] text-muted-foreground">{asset.desc}</div>
+        <div className="text-[12px] text-muted-foreground">{t(asset.desc)}</div>
       )}
       {asset.example && (
         <div className="mt-1 truncate rounded bg-muted px-2 py-1 font-mono text-[10.5px] text-muted-foreground">
@@ -330,6 +337,7 @@ function DashboardCard({
   active,
   onSelect,
 }: CardProps<LibraryDashboard>) {
+  const t = useT()
   return (
     <CardShell
       active={active}
@@ -338,7 +346,7 @@ function DashboardCard({
       usedCount={asset.usedIn.length}
     >
       {asset.desc && (
-        <div className="text-[12px] text-muted-foreground">{asset.desc}</div>
+        <div className="text-[12px] text-muted-foreground">{t(asset.desc)}</div>
       )}
       <div className="mt-1 text-[10.5px] text-muted-foreground">
         {asset.charts.length} charts

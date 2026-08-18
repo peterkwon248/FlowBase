@@ -120,7 +120,7 @@ export function WikiHistoryDialog({
                         {formatTs(r.ts)}
                       </span>
                       <span className="truncate text-[10.5px] text-muted-foreground/70">
-                        {r.title}
+                        {t(r.title)}
                       </span>
                     </button>
                   </li>

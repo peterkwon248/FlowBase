@@ -258,7 +258,7 @@ function CategorySection({
               key={m.boardId}
               className="flex items-center gap-1.5 text-[11.5px]"
             >
-              <span className="truncate font-medium">{m.label}</span>
+              <span className="truncate font-medium">{t(m.label)}</span>
               <div className="ml-auto flex items-center gap-0.5">
                 {m.rowsAdded > 0 && (
                   <span

@@ -31,7 +31,7 @@ const COLUMNS: ColumnDef[] = [
 const ROWS: TableRow[] = [
   {
     id: "TASK-018",
-    title: "Follow up with Min-ji on pricing",
+    title: "민지님과 가격 관련 후속 논의",
     assignee: "Sarah",
     team: "Sales",
     status: "미처리",
@@ -40,7 +40,7 @@ const ROWS: TableRow[] = [
   },
   {
     id: "TASK-017",
-    title: "Review Sarah's onboarding feedback",
+    title: "Sarah의 온보딩 피드백 검토",
     assignee: "Daniel",
     team: "Product",
     status: "진행중",
@@ -49,7 +49,7 @@ const ROWS: TableRow[] = [
   },
   {
     id: "TASK-016",
-    title: "Fix sheet performance on 300+ rows",
+    title: "300행 이상 시트 성능 개선",
     assignee: "Aisha",
     team: "Eng",
     status: "진행중",
@@ -58,7 +58,7 @@ const ROWS: TableRow[] = [
   },
   {
     id: "TASK-015",
-    title: "Draft Pricing pushback digest",
+    title: "가격 저항 다이제스트 초안 작성",
     assignee: "Peter",
     team: "PM",
     status: "대기",
@@ -67,7 +67,7 @@ const ROWS: TableRow[] = [
   },
   {
     id: "TASK-014",
-    title: "Confirm sharing roles spec",
+    title: "공유 권한 스펙 확정",
     assignee: "Maya",
     team: "Product",
     status: "미처리",
@@ -76,7 +76,7 @@ const ROWS: TableRow[] = [
   },
   {
     id: "TASK-013",
-    title: "Run weekly Customer Feedback dashboard",
+    title: "주간 고객 피드백 대시보드 실행",
     assignee: "Eitan",
     team: "PM",
     status: "완료",
@@ -85,7 +85,7 @@ const ROWS: TableRow[] = [
   },
   {
     id: "TASK-012",
-    title: "Reach out to Han Seungho for AI feedback",
+    title: "한승호님에게 AI 피드백 요청",
     assignee: "Sarah",
     team: "Sales",
     status: "진행중",
@@ -94,7 +94,7 @@ const ROWS: TableRow[] = [
   },
   {
     id: "TASK-011",
-    title: "Investigate Negative sentiment cluster",
+    title: "부정 감성 클러스터 분석",
     assignee: "Aisha",
     team: "Eng",
     status: "미처리",

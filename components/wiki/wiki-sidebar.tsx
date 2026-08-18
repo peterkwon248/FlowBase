@@ -125,7 +125,7 @@ export function WikiSidebar() {
                   )}
                   strokeWidth={2.5}
                 />
-                <span className="flex-1">{cat}</span>
+                <span className="flex-1">{t(cat)}</span>
                 <span className="text-[10.5px] font-normal tabular-nums text-muted-foreground/70">
                   {items.length}
                 </span>
@@ -158,7 +158,7 @@ export function WikiSidebar() {
                           )}
                           strokeWidth={1.75}
                         />
-                        <span className="flex-1 truncate">{p.title}</span>
+                        <span className="flex-1 truncate">{t(p.title)}</span>
                         {!p.verified && (
                           <span
                             title={t("Unverified")}
@@ -178,9 +178,7 @@ export function WikiSidebar() {
 
       {/* 푸터 힌트 */}
       <div className="border-t border-border-subtle px-3.5 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
-        {t("Verified knowledge,")}
-        <br />
-        owners guarantee.
+        {t("Verified knowledge, owners guarantee.")}
       </div>
     </aside>
   )

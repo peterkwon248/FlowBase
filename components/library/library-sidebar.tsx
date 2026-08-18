@@ -172,7 +172,7 @@ export function LibrarySidebar() {
                   className={cn("size-3 shrink-0", color)}
                   strokeWidth={1.75}
                 />
-                <span className="flex-1">{cat.label}</span>
+                <span className="flex-1">{t(cat.label)}</span>
                 <span className="text-[11px] font-normal tabular-nums text-muted-foreground">
                   {assets.length}
                 </span>
@@ -193,7 +193,7 @@ export function LibrarySidebar() {
                           : "text-muted-foreground hover:bg-foreground/[0.04]",
                       )}
                     >
-                      <span className="truncate">{asset.name}</span>
+                      <span className="truncate">{t(asset.name)}</span>
                     </button>
                   )
                 })}
@@ -204,9 +204,7 @@ export function LibrarySidebar() {
 
       {/* 푸터 힌트 */}
       <div className="border-t border-border-subtle px-3.5 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
-        {t("Define once,")}
-        <br />
-        use anywhere.
+        {t("Define once, use anywhere.")}
       </div>
     </aside>
   )
