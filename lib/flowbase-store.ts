@@ -69,7 +69,7 @@ import {
 import { undoStack } from "@/lib/undo-stack"
 
 const STORE_KEY = "flowbase-state-v4"
-const STORE_VERSION = 17 // v17: savedViews + activeSavedViewId (Notion 식 named view · G7-C C-V1)
+const STORE_VERSION = 18 // v18: settings.language (ko/en 토글 · 기본 ko)
 
 // 초기 시드 멤버 — 데모용 4명. 사용자는 Owner. lastSeenAt mock.
 function createSeedMembers(): WorkspaceMember[] {
@@ -342,6 +342,7 @@ function createInitialState(): FlowBaseState {
       workspaceInitial: "P",
       members: createSeedMembers(),
       currentUserId: "mem-peter",
+      language: "ko",
     },
     schemaPositions: {},
     viewSettings: {},
@@ -2717,6 +2718,7 @@ export const useFlowBase = create<FlowBaseStore>()(
       //   v14 → v15: events (EventStore 인프라 · 기존 aiHistory 백필)
       //   v15 → v16: snapshots (GitHub 식 명시 save point · 기본 빈 배열)
       //   v16 → v17: savedViews + activeSavedViewId (Notion 식 named view · 기본 빈 객체)
+      //   v17 → v18: settings.language (ko/en 토글 · 기본 ko)
       migrate: (persistedState, version) => {
         const s = (persistedState ?? {}) as Partial<FlowBaseState>
         if (version < 5) {
@@ -2822,6 +2824,14 @@ export const useFlowBase = create<FlowBaseStore>()(
         if (version < 17) {
           s.savedViews = s.savedViews ?? {}
           s.activeSavedViewId = s.activeSavedViewId ?? {}
+        }
+        if (version < 18) {
+          // 언어 기본값 ko. 기존 설치도 ko로 올림 — 시드 데이터(영어)는 그대로 둠.
+          // 사용자 데이터를 언어 전환으로 덮어쓰지 않는다는 원칙(Key Design #27).
+          s.settings = {
+            ...(s.settings as WorkspaceSettings),
+            language: (s.settings as WorkspaceSettings)?.language ?? "ko",
+          }
         }
         return s as FlowBaseState
       },

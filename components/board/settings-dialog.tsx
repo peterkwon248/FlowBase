@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react"
 import {
   Check,
   Download,
+  Languages,
   LogIn,
   Monitor,
   Moon,
@@ -43,6 +44,7 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { selectIsViewer, useFlowBase } from "@/lib/flowbase-store"
+import { DEFAULT_LANGUAGE, LANGUAGES, useT } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import {
   MEMBER_ROLE_LABELS,
@@ -453,6 +455,7 @@ function MemberRow({
 // ─── Appearance ────────────────────────────────────
 function AppearanceTab() {
   const { theme, setTheme } = useTheme()
+  const t = useT()
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
@@ -461,28 +464,30 @@ function AppearanceTab() {
 
   return (
     <div className="space-y-3">
+      <LanguageSection />
       <div className="text-[12px] text-muted-foreground">
-        Theme applies to the whole workspace. Match system follows your OS
-        preference.
+        {t(
+          "Theme applies to the whole workspace. Match system follows your OS preference.",
+        )}
       </div>
       <div className="grid grid-cols-3 gap-2">
         <ThemeCard
           id="light"
-          label="Light"
+          label={t("Light")}
           icon={<Sun className="size-4" />}
           active={current === "light"}
           onClick={() => setTheme("light")}
         />
         <ThemeCard
           id="dark"
-          label="Dark"
+          label={t("Dark")}
           icon={<Moon className="size-4" />}
           active={current === "dark"}
           onClick={() => setTheme("dark")}
         />
         <ThemeCard
           id="system"
-          label="System"
+          label={t("System")}
           icon={<Monitor className="size-4" />}
           active={current === "system"}
           onClick={() => setTheme("system")}
@@ -500,6 +505,57 @@ const ACCENT_PRESETS: { id: ThemeAccent; label: string; light: string; dark: str
   { id: "emerald", label: "Emerald", light: "oklch(0.50 0.16 155)", dark: "oklch(0.62 0.18 155)" },
   { id: "amber", label: "Amber", light: "oklch(0.62 0.16 75)", dark: "oklch(0.72 0.16 75)" },
 ]
+
+// 언어 — Accent와 같은 카드 토글 패턴. Appearance 최상단(테마보다 상위 개념).
+function LanguageSection() {
+  const t = useT()
+  const lang = useFlowBase((s) => s.settings.language ?? DEFAULT_LANGUAGE)
+  const updateSettings = useFlowBase((s) => s.updateSettings)
+  const isViewer = useFlowBase(selectIsViewer)
+
+  return (
+    <div className="space-y-1.5">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+        {t("Interface language")}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {LANGUAGES.map((l) => {
+          const active = lang === l.id
+          return (
+            <button
+              key={l.id}
+              type="button"
+              onClick={() => updateSettings({ language: l.id })}
+              disabled={isViewer}
+              data-language-option={l.id}
+              className={cn(
+                "relative flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-left transition-colors",
+                active
+                  ? "border-primary bg-foreground/[0.03]"
+                  : "border-border-subtle hover:border-border",
+                isViewer && "cursor-not-allowed opacity-50",
+              )}
+            >
+              <Languages className="size-4 shrink-0 text-muted-foreground" />
+              <span className="text-[12px] font-medium">{l.native}</span>
+              {active && (
+                <Check
+                  className="absolute right-2 top-2 size-3 text-primary"
+                  strokeWidth={2.5}
+                />
+              )}
+            </button>
+          )
+        })}
+      </div>
+      <div className="text-[12px] text-muted-foreground">
+        {t(
+          "Language applies to the whole workspace. Existing table data is not translated.",
+        )}
+      </div>
+    </div>
+  )
+}
 
 function AccentSection() {
   const accent = useFlowBase((s) => s.settings.themeAccent ?? "purple")

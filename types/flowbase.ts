@@ -471,6 +471,9 @@ export interface WorkspaceSettings {
   workspaceInitial: string // 1글자 — 사이드바 아이콘 표시
   members: WorkspaceMember[]
   themeAccent?: ThemeAccent // default 'purple' (settings 모드 영구 적용)
+  // UI 언어 — default 'ko' (store v18). 사전은 lib/i18n/ko.ts.
+  // 이미 입력된 행 데이터는 번역 대상 ❌ (사용자 데이터라 건드리면 안 됨).
+  language?: "ko" | "en"
   // 현재 로그인 사용자 — Members 가운데 1명. role enforcement 기준.
   // 시드/migrate에서 owner(peter)로 init. Phase 2(W11) 실 인증으로 교체.
   currentUserId?: string
